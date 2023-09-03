@@ -11,11 +11,13 @@ def simulate(
 ) -> belief_state.Particle:
     diagram = p.make_plant(vis=vis)
     plant = diagram.GetSubsystemByName("plant")
-    meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
     simulator = Simulator(diagram)
     plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
+    controller = diagram.GetSubsystemByName("controller")
+    controller.motion = motion
     simulator.Initialize()
     if vis:
+        meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
         meshcat_vis.StartRecording()
         simulator.AdvanceTo(motion.timeout)
         meshcat_vis.PublishRecording()

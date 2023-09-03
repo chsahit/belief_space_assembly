@@ -1,7 +1,10 @@
+from typing import Dict
+
 import numpy as np
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
     ContactModel,
+    CoulombFriction,
     DiagramBuilder,
     DiscreteContactSolver,
     Meshcat,
@@ -9,7 +12,9 @@ from pydrake.all import (
     MeshcatVisualizerParams,
     MultibodyPlant,
     Parser,
+    ProximityProperties,
     RigidTransform,
+    Sphere,
     System,
 )
 
@@ -20,8 +25,16 @@ timestep = 0.005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
-def add_collision_spheres_to_peg():
-    pass
+def generate_collision_spheres() -> Dict[str, RigidTransform]:
+    epsilon = 1e-5
+    id_to_rt = dict()
+    for i, x in enumerate([-0.03, 0.03]):
+        for j, y in enumerate([-0.03, 0.03]):
+            for k, z in enumerate([-0.075, 0.075, 0.05]):
+                rt = RigidTransform([x, y, z])
+                name = str(i) + str(j) + str(k)
+                id_to_rt["block::" + name] = rt
+    return id_to_rt
 
 
 def weld_geometries(plant: MultibodyPlant, X_GB: RigidTransform, X_WO: RigidTransform):
@@ -48,7 +61,7 @@ def make_plant(
     X_WO: RigidTransform,
     env_geom: str,
     manip_geom: str,
-    collision_spheres: bool = False,
+    collision_check: bool = False,
     vis: bool = False,
 ) -> System:
 
@@ -65,19 +78,32 @@ def make_plant(
     panda = parser.AddModelFromFile("assets/panda_arm_hand.urdf", model_name="panda")
     env_geometry = parser.AddAllModelsFromFile(env_geom)[0]
     manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
-    if collision_spheres:
-        add_collision_spheres_to_peg()
+    if collision_check:
+        sphere_map = generate_collision_spheres()
+        manipuland_body = plant.get_body(plant.GetBodyIndices(manipuland)[0])
+        for (name, rt) in sphere_map.items():
+            # props = ProximityProperties()
+            # props.AddProperty("material", "coulomb_friction", CoulombFriction(0.0, 0.0))
+            plant.RegisterCollisionGeometry(
+                manipuland_body, rt, Sphere(1e-5), name, CoulombFriction(0.0, 0.0)
+            )
     weld_geometries(plant, X_GB, X_WO)
     plant.Finalize()
     plant.SetDefaultPositions(panda, q_r)
 
     # connect controller
-    compliant_controller = builder.AddSystem(controller.ControllerSystem(plant))
+    compliant_controller = builder.AddNamedSystem(
+        "controller", controller.ControllerSystem(plant)
+    )
     builder.Connect(
         plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
     )
     builder.Connect(
         compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
+    )
+    builder.Connect(
+        scene_graph.get_query_output_port(),
+        compliant_controller.GetInputPort("geom_query"),
     )
     if vis:
         meshcat = Meshcat()
