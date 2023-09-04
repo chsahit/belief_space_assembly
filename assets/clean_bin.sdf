@@ -10,8 +10,6 @@
     Origin:
       (0, 0, 0) at the center bottom of the bin
     -->
-    <!--<static>true</static>
-    <pose> 0.5 0 -0.1 0 0 0</pose>-->
     <link name="bin_base">
       <inertial>
         <mass>18.70</mass>
