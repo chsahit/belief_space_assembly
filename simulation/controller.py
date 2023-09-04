@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 import numpy as np
 from pydrake.all import (
     AbstractValue,
@@ -26,6 +28,7 @@ class ControllerSystem(LeafSystem):
         )
         self.DeclareVectorOutputPort("joint_torques", BasicVector(9), self.CalcOutput)
         self.contacts = frozenset()
+        self.sdf = dict()
         self.motion = None
 
     def compute_error(self, X_WC: RigidTransform, X_WCd: RigidTransform) -> np.ndarray:
@@ -53,7 +56,9 @@ class ControllerSystem(LeafSystem):
         tau_controller = -tau_g + J.T @ (spring_force - damping_force)
         return tau_controller
 
-    def get_collision_set(self, query_object, sg_inspector):
+    def get_collision_set(
+        self, query_object, sg_inspector
+    ) -> Tuple[components.ContactState, Dict[components.Contact, float]]:
         contact_state = []
         penetrations = query_object.ComputePointPairPenetration()
         for penetration in penetrations:
@@ -62,13 +67,26 @@ class ControllerSystem(LeafSystem):
             if "panda" in (name_A + name_B) or "Box" in (name_A + name_B):
                 continue
             contact_state.append((name_A, name_B))
-        return frozenset(contact_state)
+
+        try:
+            sdf_data = query_object.ComputeSignedDistancePairwiseClosestPoints(0.05)
+        except Exception as e:
+            sdf_data = []  # GJK crashes sometimes :(
+        sdf = dict()
+        for dist in sdf_data:
+            name_A = sg_inspector.GetName(dist.id_A)
+            name_B = sg_inspector.GetName(dist.id_B)
+            if ("bin_model" in name_A) and ("block" in name_B):
+                sdf[(name_A, name_B)] = dist.distance
+        return frozenset(contact_state), sdf
 
     def CalcOutput(self, context, output):
         q = self._state_port.Eval(context)
         self.plant.SetPositionsAndVelocities(self.plant_context, self.panda, q)
         query_object = self.geom_port.Eval(context)
-        self.contacts = self.get_collision_set(query_object, query_object.inspector())
+        self.contacts, self.sdf = self.get_collision_set(
+            query_object, query_object.inspector()
+        )
 
         W = self.plant.world_frame()
         G = self.plant.GetBodyByName("panda_hand").body_frame()

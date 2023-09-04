@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from itertools import product
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 from pydrake.all import HPolyhedron, RigidTransform, Simulator, System, VPolytope
@@ -26,6 +26,7 @@ class Particle:
         self.env_geom = env_geom
         self.manip_geom = manip_geom
         self._contacts = None
+        self._sdf = None
         self._constraints = None
 
     def make_plant(self, vis: bool = False, collision: bool = False) -> System:
@@ -39,17 +40,26 @@ class Particle:
             collision_check=collision,
         )
 
-    @property
-    def contacts(self) -> components.ContactState:
-        if self._contacts is not None:
-            return self._contacts
+    def _update_contact_data(self):
         diagram = self.make_plant(collision=True)
         controller = diagram.GetSubsystemByName("controller")
         simulator = Simulator(diagram)
         simulator.Initialize()
         simulator.AdvanceTo(0.01)
         self._contacts = controller.contacts
+        self._sdf = controller.sdf
+
+    @property
+    def contacts(self) -> components.ContactState:
+        if self._contacts is None:
+            self._update_contact_data()
         return self._contacts
+
+    @property
+    def sdf(self) -> Dict[components.Contact, float]:
+        if self._sdf is None:
+            self._update_contact_data()
+        return self._sdf
 
     @property
     def constraints(self):

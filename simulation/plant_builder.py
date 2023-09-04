@@ -85,7 +85,7 @@ def make_plant(
             # props = ProximityProperties()
             # props.AddProperty("material", "coulomb_friction", CoulombFriction(0.0, 0.0))
             plant.RegisterCollisionGeometry(
-                manipuland_body, rt, Sphere(1e-5), name, CoulombFriction(0.0, 0.0)
+                manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
             )
     weld_geometries(plant, X_GB, X_WO)
     plant.Finalize()
