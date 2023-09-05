@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import FrozenSet, Tuple
+from typing import FrozenSet, NamedTuple, Tuple
 
 import numpy as np
-from pydrake.all import RigidTransform
+from pydrake.all import RigidTransform, RollPitchYaw
 
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
@@ -25,3 +25,27 @@ class CompliantMotion:
             return self._B
         else:
             return 4 * np.sqrt(self.K)
+
+
+class Grasp(NamedTuple):
+    x: float
+    z: float
+    pitch: float
+
+    def get_tf(self):
+        return RigidTransform(
+            RollPitchYaw(np.array([0, self.pitch * np.pi / 180, 0])),
+            [self.x, 0, self.z],
+        )
+
+
+class ObjectPose(NamedTuple):
+    x: float
+    y: float
+    yaw: float
+
+    def get_tf(self):
+        return RigidTransform(
+            RollPitchYaw(np.array([0, 0, self.yaw * np.pi / 180])),
+            [self.x, self.y, 0.075],
+        )

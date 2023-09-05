@@ -52,9 +52,10 @@ def simulate(
 def _parallel_simulate(
     simulation_args: List[Tuple[belief_state.Particle, components.CompliantMotion]]
 ) -> List[belief_state.Particle]:
+    num_workers = min(multiprocessing.cpu_count(), len(simulation_args))
     # throw in a bunch of signal flags so the dump when I hit ctr+C is less messy
     p = multiprocessing.Pool(
-        10, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)
+        num_workers, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)
     )
     try:
         resulting_particles = p.starmap(simulate, simulation_args)

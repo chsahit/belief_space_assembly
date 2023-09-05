@@ -100,20 +100,16 @@ class Belief:
 
     @staticmethod
     def make_particles(
-        G_noise: List[float], O_noise: List[float], nominal: Particle
+        grasps: List[components.Grasp],
+        O_poses: List[components.ObjectPose],
+        nominal: Particle,
     ) -> Belief:
-        num_particles = len(G_noise[0])
-        for noise in G_noise + O_noise:
-            assert len(noise) == num_particles
+        assert len(grasps) == len(O_poses)
         particles = []
-        for i in range(num_particles):
-            X_BG = utils.xyz_rpy_deg(
-                [G_noise[0][i], 0, G_noise[1][i]], [0, G_noise[2][i], 0]
-            )
-            X_WO = utils.xyz_rpy_deg(
-                [O_noise[0][i], O_noise[1][i], 0], [0, 0, O_noise[2][i]]
-            )
+        for i in range(len(grasps)):
+            X_GB = grasps[i].get_tf()
+            X_WO = O_poses[i].get_tf()
             particles.append(
-                Particle(nominal.q_r, X_BG, X_WO, nominal.env_geom, nominal.manip_geom)
+                Particle(nominal.q_r, X_GB, X_WO, nominal.env_geom, nominal.manip_geom)
             )
         return Belief(particles)
