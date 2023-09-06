@@ -7,3 +7,4 @@ swap-pane
 restats
 .ipynb_checkpoints/
 *.jpg
+*.png

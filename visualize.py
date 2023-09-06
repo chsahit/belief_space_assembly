@@ -13,9 +13,10 @@ def save_particle_picture(p: belief_state.Particle):
     simulator.Initialize()
     simulator.AdvanceTo(0.1)
     logger = diagram.GetSubsystemByName("camera_logger")
-    white = 255 * np.ones_like(logger.last_image)
-    print(f"{logger.last_image=}")
-    print(f"{np.sum((white - logger.last_image).flatten())=}")
+    # white = 255 * np.ones_like(logger.last_image)
+    # print(f"{logger.last_image=}")
+    # print(f"{np.sum((white - logger.last_image).flatten())=}")
     from PIL import Image
+
     im = Image.fromarray(logger.last_image)
-    im.save("test.jpg")
+    im.save("test.png")

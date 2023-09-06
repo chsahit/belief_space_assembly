@@ -100,13 +100,13 @@ def make_plant_with_cameras(
     depth_cam = DepthRenderCamera(
         RenderCameraCore(
             "renderer",
-            CameraInfo(width=640, height=480, fov_y=np.pi/2),
+            CameraInfo(width=640, height=480, fov_y=np.pi / 2),
             ClippingRange(0.01, 10.0),
             RigidTransform(),
         ),
         DepthRange(0.01, 10.0),
     )
-    X_PB = utils.xyz_rpy_deg([4.0, 0, 0.0], [180, 0, 0])
+    X_PB = utils.xyz_rpy_deg([4.0, 0, 0.2], [-90, 0, 90])
     # X_PB = RigidTransform([0, 0, 0.15])
     world_idx = plant.GetBodyFrameIdOrThrow(plant.world_body().index())
     loc = plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("panda_hand").index())
