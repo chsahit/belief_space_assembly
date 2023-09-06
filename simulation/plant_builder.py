@@ -14,6 +14,7 @@ from pydrake.all import (
     DiagramBuilder,
     DiscreteContactSolver,
     MakeRenderEngineGl,
+    MakeRenderEngineVtk,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
@@ -22,6 +23,7 @@ from pydrake.all import (
     ProximityProperties,
     RenderCameraCore,
     RenderEngineGlParams,
+    RenderEngineVtkParams,
     RgbdSensor,
     RgbdSensorDiscrete,
     RigidTransform,
@@ -96,17 +98,17 @@ def make_plant_with_cameras(
 
     vd = Display(visible=0, size=(1400, 900))
     vd.start()
-    scene_graph.AddRenderer("renderer", MakeRenderEngineGl(RenderEngineGlParams()))
+    scene_graph.AddRenderer("renderer", MakeRenderEngineVtk(RenderEngineVtkParams()))
     depth_cam = DepthRenderCamera(
         RenderCameraCore(
             "renderer",
-            CameraInfo(width=640, height=480, fov_y=np.pi / 2),
+            CameraInfo(width=1920, height=1080, fov_y=np.pi / 4),
             ClippingRange(0.01, 10.0),
             RigidTransform(),
         ),
         DepthRange(0.01, 10.0),
     )
-    X_PB = utils.xyz_rpy_deg([4.0, 0, 0.2], [-90, 0, 90])
+    X_PB = utils.xyz_rpy_deg([1.75, 0, 0.2], [-90, 0, 90])
     # X_PB = RigidTransform([0, 0, 0.15])
     world_idx = plant.GetBodyFrameIdOrThrow(plant.world_body().index())
     loc = plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("panda_hand").index())

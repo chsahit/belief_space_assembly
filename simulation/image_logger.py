@@ -13,7 +13,6 @@ class ImageLogger(LeafSystem):
 
     def update_image(self, context):
         image = self.rgb_image_input_port.Eval(context)
-        # contig_rgb_im = np.ascontiguousarray((image.data[:, :, 3]).astype(np.uint8))
-        # contig_rgb_im = np.ascontiguousarray((image.data[:, :, 3]))
-        self.last_image = image.data
+        contig_rgb_im = np.ascontiguousarray((image.data[:, :, :3]).astype(np.uint8))
+        self.last_image = contig_rgb_im
         return EventStatus.Succeeded()
