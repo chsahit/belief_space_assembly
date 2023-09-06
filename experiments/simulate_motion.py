@@ -3,6 +3,7 @@ from pydrake.all import RigidTransform
 
 import components
 import utils
+import visualize
 from belief import belief_state, dynamics
 from simulation import ik_solver
 
@@ -13,7 +14,7 @@ def init():
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = belief_state.Particle(
-        q_r_0, X_GM, X_WO, "assets/clean_bin.sdf", "assets/peg.urdf"
+        q_r_0, X_GM, X_WO, "assets/chamfered_hole.sdf", "assets/peg.urdf"
     )
     return p_0
 
@@ -58,5 +59,11 @@ def test_belief_dynamics():
     print([p.contacts for p in b1.particles])
 
 
+def test_vis():
+    p0 = init()
+    visualize.save_particle_picture(p0)
+
+
 if __name__ == "__main__":
-    test_simulate()
+    test_vis()
+    # test_simulate()

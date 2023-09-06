@@ -6,3 +6,5 @@ swap-pane
 *.mp4
 restats
 .ipynb_checkpoints/
+*.jpg
+*.png
