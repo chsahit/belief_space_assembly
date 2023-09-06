@@ -9,11 +9,11 @@ from simulation import ik_solver
 
 def init():
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0])
-    X_GB = utils.xyz_rpy_deg([0.0, 0.0, 0.155], [0, 0, 0])
+    X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.155], [0, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = belief_state.Particle(
-        q_r_0, X_GB, X_WO, "assets/clean_bin.sdf", "assets/peg.urdf"
+        q_r_0, X_GM, X_WO, "assets/clean_bin.sdf", "assets/peg.urdf"
     )
     return p_0
 
@@ -59,4 +59,4 @@ def test_belief_dynamics():
 
 
 if __name__ == "__main__":
-    test_belief_dynamics()
+    test_simulate()

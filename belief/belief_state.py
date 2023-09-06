@@ -15,13 +15,13 @@ class Particle:
     def __init__(
         self,
         q_r: np.ndarray,
-        X_GB: RigidTransform,
+        X_GM: RigidTransform,
         X_WO: RigidTransform,
         env_geom: str,
         manip_geom: str,
     ):
         self.q_r = q_r
-        self.X_GB = X_GB
+        self.X_GM = X_GM
         self.X_WO = X_WO
         self.env_geom = env_geom
         self.manip_geom = manip_geom
@@ -32,7 +32,7 @@ class Particle:
     def make_plant(self, vis: bool = False, collision: bool = False) -> System:
         return plant_builder.make_plant(
             self.q_r,
-            self.X_GB,
+            self.X_GM,
             self.X_WO,
             self.env_geom,
             self.manip_geom,
@@ -86,9 +86,18 @@ class Particle:
         return self._constraints
 
     def deepcopy(self) -> Particle:
-        new_p = Particle(self.q_r, self.X_GB, self.X_WO, self.env_geom, self.manip_geom)
+        new_p = Particle(
+            self.q_r.copy(), self.X_GM, self.X_WO, self.env_geom, self.manip_geom
+        )
         new_p._constraints = self._constraints
         return new_p
+
+    def satisfies_contact(self, CF_d: components.ContactState, epsilon=0.001) -> bool:
+        sdf = self.sdf
+        for contact in CF_d:
+            if sdf.get(contact, 0.1) > epsilon:
+                return False
+        return True
 
 
 class Belief:
@@ -97,6 +106,12 @@ class Belief:
 
     def sample(self) -> Particle:
         return random.choice(self.particles)
+
+    def satisfies_contact(self, CF_d: components.ContactState, epsilon=0.001) -> bool:
+        for p in self.particles:
+            if not p.satisfies_contact(CF_d, epsilon=epsilon):
+                return False
+        return True
 
     @staticmethod
     def make_particles(
@@ -107,9 +122,9 @@ class Belief:
         assert len(grasps) == len(O_poses)
         particles = []
         for i in range(len(grasps)):
-            X_GB = grasps[i].get_tf()
+            X_GM = grasps[i].get_tf()
             X_WO = O_poses[i].get_tf()
             particles.append(
-                Particle(nominal.q_r, X_GB, X_WO, nominal.env_geom, nominal.manip_geom)
+                Particle(nominal.q_r, X_GM, X_WO, nominal.env_geom, nominal.manip_geom)
             )
         return Belief(particles)

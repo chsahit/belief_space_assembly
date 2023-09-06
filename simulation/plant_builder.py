@@ -37,7 +37,7 @@ def generate_collision_spheres() -> Dict[str, RigidTransform]:
     return id_to_rt
 
 
-def weld_geometries(plant: MultibodyPlant, X_GB: RigidTransform, X_WO: RigidTransform):
+def weld_geometries(plant: MultibodyPlant, X_GM: RigidTransform, X_WO: RigidTransform):
     plant.WeldFrames(
         frame_on_parent_F=plant.world_frame(),
         frame_on_child_M=plant.GetFrameByName("panda_link0"),
@@ -51,13 +51,13 @@ def weld_geometries(plant: MultibodyPlant, X_GB: RigidTransform, X_WO: RigidTran
     plant.WeldFrames(
         frame_on_parent_F=plant.GetFrameByName("panda_hand"),
         frame_on_child_M=plant.GetFrameByName("base_link"),
-        X_FM=X_GB,
+        X_FM=X_GM,
     )
 
 
 def make_plant(
     q_r: np.ndarray,
-    X_GB: RigidTransform,
+    X_GM: RigidTransform,
     X_WO: RigidTransform,
     env_geom: str,
     manip_geom: str,
@@ -87,7 +87,7 @@ def make_plant(
             plant.RegisterCollisionGeometry(
                 manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
             )
-    weld_geometries(plant, X_GB, X_WO)
+    weld_geometries(plant, X_GM, X_WO)
     plant.Finalize()
     plant.SetDefaultPositions(panda, q_r)
 
