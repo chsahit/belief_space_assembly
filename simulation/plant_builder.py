@@ -1,25 +1,36 @@
-from typing import Dict
+import os
+from typing import Dict, Tuple
 
 import numpy as np
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
+    CameraInfo,
+    ClippingRange,
     ContactModel,
     CoulombFriction,
+    DepthRange,
+    DepthRenderCamera,
+    Diagram,
     DiagramBuilder,
     DiscreteContactSolver,
+    MakeRenderEngineGl,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
     MultibodyPlant,
     Parser,
     ProximityProperties,
+    RenderCameraCore,
+    RenderEngineGlParams,
+    RgbdSensor,
+    RgbdSensorDiscrete,
     RigidTransform,
+    SceneGraph,
     Sphere,
-    System,
 )
 
 import utils
-from simulation import controller
+from simulation import controller, image_logger
 
 timestep = 0.005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
@@ -37,7 +48,7 @@ def generate_collision_spheres() -> Dict[str, RigidTransform]:
     return id_to_rt
 
 
-def weld_geometries(plant: MultibodyPlant, X_GM: RigidTransform, X_WO: RigidTransform):
+def _weld_geometries(plant: MultibodyPlant, X_GM: RigidTransform, X_WO: RigidTransform):
     plant.WeldFrames(
         frame_on_parent_F=plant.world_frame(),
         frame_on_child_M=plant.GetFrameByName("panda_link0"),
@@ -63,7 +74,68 @@ def make_plant(
     manip_geom: str,
     collision_check: bool = False,
     vis: bool = False,
-) -> System:
+) -> Diagram:
+    builder, _, _ = _construct_diagram(
+        q_r, X_GM, X_WO, env_geom, manip_geom, collision_check=collision_check, vis=vis
+    )
+    diagram = builder.Build()
+    return diagram
+
+
+def make_plant_with_cameras(
+    q_r: np.ndarray,
+    X_GM: RigidTransform,
+    X_WO: RigidTransform,
+    env_geom: str,
+    manip_geom: str,
+) -> Diagram:
+    builder, plant, scene_graph = _construct_diagram(
+        q_r, X_GM, X_WO, env_geom, manip_geom
+    )
+    from pyvirtualdisplay import Display
+
+    vd = Display(visible=0, size=(1400, 900))
+    vd.start()
+
+    scene_graph.AddRenderer("renderer", MakeRenderEngineGl(RenderEngineGlParams()))
+    depth_cam = DepthRenderCamera(
+        RenderCameraCore(
+            "renderer",
+            CameraInfo(width=640, height=480, fov_y=45),
+            ClippingRange(0.1, 5.0),
+            RigidTransform(),
+        ),
+        DepthRange(0.11, 4.9),
+    )
+    sensor = RgbdSensor(
+        plant.GetBodyFrameIdOrThrow(plant.world_body().index()),
+        utils.xyz_rpy_deg([1.0, 0, 0.1], [0, 0, 180]),
+        depth_camera=depth_cam,
+        show_window=False,
+    )
+    discrete_sensor = RgbdSensorDiscrete(sensor, 0.1, False)
+    discrete_sensor = builder.AddSystem(discrete_sensor)
+    builder.Connect(
+        scene_graph.get_query_output_port(), discrete_sensor.query_object_input_port()
+    )
+    cam_logger = builder.AddNamedSystem("camera_logger", image_logger.ImageLogger())
+
+    builder.Connect(
+        discrete_sensor.color_image_output_port(), cam_logger.GetInputPort("rbg_in")
+    )
+    diagram = builder.Build()
+    return diagram
+
+
+def _construct_diagram(
+    q_r: np.ndarray,
+    X_GM: RigidTransform,
+    X_WO: RigidTransform,
+    env_geom: str,
+    manip_geom: str,
+    collision_check: bool = False,
+    vis: bool = False,
+) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph]:
 
     # Plant hyperparameters
     builder = DiagramBuilder()
@@ -82,12 +154,10 @@ def make_plant(
         sphere_map = generate_collision_spheres()
         manipuland_body = plant.get_body(plant.GetBodyIndices(manipuland)[0])
         for (name, rt) in sphere_map.items():
-            # props = ProximityProperties()
-            # props.AddProperty("material", "coulomb_friction", CoulombFriction(0.0, 0.0))
             plant.RegisterCollisionGeometry(
                 manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
             )
-    weld_geometries(plant, X_GM, X_WO)
+    _weld_geometries(plant, X_GM, X_WO)
     plant.Finalize()
     plant.SetDefaultPositions(panda, q_r)
 
@@ -110,5 +180,4 @@ def make_plant(
         meshcat_vis = MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )
-    diagram = builder.Build()
-    return diagram
+    return builder, plant, scene_graph

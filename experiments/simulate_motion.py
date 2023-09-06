@@ -3,6 +3,7 @@ from pydrake.all import RigidTransform
 
 import components
 import utils
+import visualize
 from belief import belief_state, dynamics
 from simulation import ik_solver
 
@@ -58,5 +59,10 @@ def test_belief_dynamics():
     print([p.contacts for p in b1.particles])
 
 
+def test_vis():
+    p0 = init()
+    visualize.save_particle_picture(p0)
+
+
 if __name__ == "__main__":
-    test_simulate()
+    test_vis()
