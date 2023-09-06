@@ -96,20 +96,23 @@ def make_plant_with_cameras(
 
     vd = Display(visible=0, size=(1400, 900))
     vd.start()
-
     scene_graph.AddRenderer("renderer", MakeRenderEngineGl(RenderEngineGlParams()))
     depth_cam = DepthRenderCamera(
         RenderCameraCore(
             "renderer",
-            CameraInfo(width=640, height=480, fov_y=45),
-            ClippingRange(0.1, 5.0),
+            CameraInfo(width=640, height=480, fov_y=np.pi/2),
+            ClippingRange(0.01, 10.0),
             RigidTransform(),
         ),
-        DepthRange(0.11, 4.9),
+        DepthRange(0.01, 10.0),
     )
+    X_PB = utils.xyz_rpy_deg([4.0, 0, 0.0], [180, 0, 0])
+    # X_PB = RigidTransform([0, 0, 0.15])
+    world_idx = plant.GetBodyFrameIdOrThrow(plant.world_body().index())
+    loc = plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("panda_hand").index())
     sensor = RgbdSensor(
-        plant.GetBodyFrameIdOrThrow(plant.world_body().index()),
-        utils.xyz_rpy_deg([1.0, 0, 0.1], [0, 0, 180]),
+        world_idx,
+        X_PB,
         depth_camera=depth_cam,
         show_window=False,
     )
