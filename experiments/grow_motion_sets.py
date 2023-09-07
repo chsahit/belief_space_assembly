@@ -60,5 +60,19 @@ def test_view_motion_set():
     visualize.render_motion_set(p_nom, U)
 
 
+def test_intersect_motion_set():
+    grasps = [
+        components.Grasp(x=-0.01, z=0.155, pitch=0),
+        components.Grasp(x=0.01, z=0.155, pitch=0),
+    ]
+    bin_poses = [components.ObjectPose(x=0.5, y=0, yaw=0)] * len(grasps)
+    X_GC = utils.xyz_rpy_deg([0, 0, 0.23], [0, 0, 0])
+    p_nom = init_state()
+    b = belief_state.Belief.make_particles(grasps, bin_poses, p_nom)
+    u_res = motion_sets.intersect_motion_sets(
+        X_GC, components.stiff, b, contact_defs.ground_align
+    )
+
+
 if __name__ == "__main__":
-    test_view_motion_set()
+    test_intersect_motion_set()

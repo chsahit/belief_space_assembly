@@ -26,7 +26,6 @@ def simulate(
     Returns:
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
-
     """
     diagram = p.make_plant(vis=vis)
     plant = diagram.GetSubsystemByName("plant")
