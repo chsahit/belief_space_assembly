@@ -3,19 +3,20 @@ from pydrake.all import RigidTransform
 
 import components
 import contact_defs
+import dynamics
+import state
 import utils
 import visualize
-from belief import belief_state, dynamics
 from planning import motion_sets, refine_motion
 from simulation import ik_solver, plant_builder
 
 
-def init_state() -> belief_state.Particle:
+def init_state() -> state.Particle:
     X_WG_0 = utils.xyz_rpy_deg([0.50, 0.0, 0.36], [180, 0, 0])
     X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.155], [0, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
-    p_0 = belief_state.Particle(
+    p_0 = state.Particle(
         q_r_0, X_GM, X_WO, "assets/chamfered_hole.sdf", "assets/peg.urdf"
     )
     return p_0
@@ -68,10 +69,12 @@ def test_intersect_motion_set():
     bin_poses = [components.ObjectPose(x=0.5, y=0, yaw=0)] * len(grasps)
     X_GC = utils.xyz_rpy_deg([0, 0, 0.23], [0, 0, 0])
     p_nom = init_state()
-    b = belief_state.Belief.make_particles(grasps, bin_poses, p_nom)
+    b = state.Belief.make_particles(grasps, bin_poses, p_nom)
     u_res = motion_sets.intersect_motion_sets(
         X_GC, components.stiff, b, contact_defs.ground_align
     )
+    b_next = dynamics.f_bel(b, u_res)
+    print([p.contacts for p in b_next.particles])
 
 
 if __name__ == "__main__":

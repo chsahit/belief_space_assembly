@@ -71,7 +71,7 @@ def gripper_to_joint_states(
 
 
 def project_manipuland_to_contacts(
-    p: belief_state.Particle, CF_d: components.ContactState
+    p: state.Particle, CF_d: components.ContactState
 ) -> RigidTransform:
     diagram = p.make_plant()
     plant = diagram.GetSubsystemByName("plant")

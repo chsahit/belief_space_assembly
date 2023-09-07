@@ -5,7 +5,8 @@ from PIL import Image
 from pydrake.all import Simulator
 
 import components
-from belief import belief_state, dynamics
+import dynamics
+import state
 from simulation import plant_builder
 
 
@@ -22,9 +23,7 @@ def _merge_images(images) -> Image:
     return Image.fromarray(base)
 
 
-def render_motion_set(
-    p_nominal: belief_state.Particle, U: List[components.CompliantMotion]
-):
+def render_motion_set(p_nominal: state.Particle, U: List[components.CompliantMotion]):
     p = p_nominal.deepcopy()
     p.env_geom = "assets/empty_world.sdf"
     U_stiff = [components.CompliantMotion(u.X_GC, u.X_WCd, components.stiff) for u in U]
@@ -35,7 +34,7 @@ def render_motion_set(
     composite.save("composite.png")
 
 
-def generate_particle_picture(p: belief_state.Particle, name="test.jpg") -> Image:
+def generate_particle_picture(p: state.Particle, name="test.jpg") -> Image:
     diagram = plant_builder.make_plant_with_cameras(
         p.q_r, p.X_GM, p.X_WO, p.env_geom, p.manip_geom
     )

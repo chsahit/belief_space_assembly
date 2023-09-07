@@ -5,14 +5,15 @@ from pydrake.all import HPolyhedron, RigidTransform, VPolytope
 from sklearn.decomposition import PCA
 
 import components
+import dynamics
 import mr
+import state
 import utils
-from belief import belief_state, dynamics
 from simulation import ik_solver
 
 
 def find_nearest_valid_target(
-    p: belief_state.Particle, CF_d: components.ContactState
+    p: state.Particle, CF_d: components.ContactState
 ) -> RigidTransform:
     return ik_solver.project_manipuland_to_contacts(p, CF_d)
 
@@ -39,7 +40,7 @@ def grow_motion_set(
     X_GC: RigidTransform,
     K: np.ndarray,
     CF_d: components.ContactState,
-    p: belief_state.Particle,
+    p: state.Particle,
     density: int = 5,
 ) -> List[components.CompliantMotion]:
 
@@ -93,7 +94,7 @@ def _project_down(vertices: List[List[np.ndarray]]):
 def intersect_motion_sets(
     X_GC: RigidTransform,
     K: np.ndarray,
-    b: belief_state.Belief,
+    b: state.Belief,
     CF_d: components.ContactState,
 ) -> components.CompliantMotion:
 

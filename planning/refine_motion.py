@@ -10,7 +10,7 @@ from pydrake.all import (
 )
 
 import components
-from belief import belief_state
+import state
 from planning import motion_sets
 
 
@@ -59,7 +59,7 @@ def compute_compliance_frame(
 
 
 def compliance_search(
-    X_GC: RigidTransform, CF_d: components.ContactState, p: belief_state.Particle
+    X_GC: RigidTransform, CF_d: components.ContactState, p: state.Particle
 ) -> np.ndarray:
     K_opt = components.stiff
     U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p)

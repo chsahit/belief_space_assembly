@@ -6,12 +6,12 @@ from typing import List, Tuple
 from pydrake.all import Simulator
 
 import components
-from belief import belief_state
+import state
 
 
 def simulate(
-    p: belief_state.Particle, motion: components.CompliantMotion, vis: bool = False
-) -> belief_state.Particle:
+    p: state.Particle, motion: components.CompliantMotion, vis: bool = False
+) -> state.Particle:
     """Simulates a compliant motion on a particle.
 
     Initializes a multibodyplant with state corresponding to the given particle and
@@ -19,7 +19,7 @@ def simulate(
     motion timeout and returns a particle corresponding to the final state of the plant.
 
     Args:
-        p: The initial world configuration of type belief_state.Particle.
+        p: The initial world configuration of type state.Particle.
         motion: A CompliantMotion to be rendered by the controller.
         vis: If True, render the sim in Meshcat and wait for keyboard input before returning
 
@@ -49,8 +49,8 @@ def simulate(
 
 
 def _parallel_simulate(
-    simulation_args: List[Tuple[belief_state.Particle, components.CompliantMotion]]
-) -> List[belief_state.Particle]:
+    simulation_args: List[Tuple[state.Particle, components.CompliantMotion]]
+) -> List[state.Particle]:
     num_workers = min(multiprocessing.cpu_count(), len(simulation_args))
     # throw in a bunch of signal flags so the dump when I hit ctr+C is less messy
     p = multiprocessing.Pool(
@@ -67,8 +67,8 @@ def _parallel_simulate(
 
 
 def f_cspace(
-    p: belief_state.Particle, U: List[components.CompliantMotion], multi: bool = True
-) -> List[belief_state.Particle]:
+    p: state.Particle, U: List[components.CompliantMotion], multi: bool = True
+) -> List[state.Particle]:
     """Wraps dynamics.py:simulate to sim many different motions on a particle in parallel.
 
     This function is meant for trying many candidate motions on the same initial state.
@@ -83,8 +83,8 @@ def f_cspace(
 
 
 def f_bel(
-    b: belief_state.Belief, u: components.CompliantMotion, multi: bool = True
-) -> belief_state.Belief:
+    b: state.Belief, u: components.CompliantMotion, multi: bool = True
+) -> state.Belief:
     """Wraps dynamics.py:simulate to simulate a motion on many particles in parallel.
 
     This function computes a posterior belief distribution conditioned on
@@ -95,4 +95,4 @@ def f_bel(
 
     args = [(p, u) for p in b.particles]
     posterior_particles = _parallel_simulate(args)
-    return belief_state.Belief(posterior_particles)
+    return state.Belief(posterior_particles)

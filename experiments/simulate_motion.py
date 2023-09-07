@@ -2,9 +2,10 @@ import numpy as np
 from pydrake.all import RigidTransform
 
 import components
+import dynamics
+import state
 import utils
 import visualize
-from belief import belief_state, dynamics
 from simulation import ik_solver
 
 
@@ -13,7 +14,7 @@ def init():
     X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.155], [0, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
-    p_0 = belief_state.Particle(
+    p_0 = state.Particle(
         q_r_0, X_GM, X_WO, "assets/chamfered_hole.sdf", "assets/peg.urdf"
     )
     return p_0
@@ -52,7 +53,7 @@ def test_belief_dynamics():
         components.ObjectPose(x=0.5, y=0, yaw=0),
     ]
 
-    b0 = belief_state.Belief.make_particles(grasps, bin_poses, p0)
+    b0 = state.Belief.make_particles(grasps, bin_poses, p0)
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.2], [180, 0, 0])
     u0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     b1 = dynamics.f_bel(b0, u0)
