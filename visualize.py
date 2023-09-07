@@ -9,14 +9,30 @@ from belief import belief_state, dynamics
 from simulation import plant_builder
 
 
+def _merge_images(images) -> Image:
+    base = np.full((1080, 1080, 3), (204, 230, 255), dtype=np.uint8)
+    for im in images:
+        i = np.array(im)
+        bg_color = i[0, 0]
+        bg_full = np.full((1080, 1080, 3), bg_color, dtype=np.uint8)
+        bg_diff = np.abs(i - bg_full)
+        fg_mask = (bg_diff > [1, 1, 1]).any(-1)
+        foreground = (i != bg_color).all(-1)
+        base[fg_mask] = i[fg_mask]
+    return Image.fromarray(base)
+
+
 def render_motion_set(
     p_nominal: belief_state.Particle, U: List[components.CompliantMotion]
 ):
     p = p_nominal.deepcopy()
     p.env_geom = "assets/empty_world.sdf"
     U_stiff = [components.CompliantMotion(u.X_GC, u.X_WCd, components.stiff) for u in U]
-    P_out = f_cspace(p, U_stiff)
+    P_out = dynamics.f_cspace(p, U_stiff)
     images = [generate_particle_picture(p_i) for p_i in P_out]
+
+    composite = _merge_images(images)
+    composite.save("composite.png")
 
 
 def generate_particle_picture(p: belief_state.Particle, name="test.jpg") -> Image:

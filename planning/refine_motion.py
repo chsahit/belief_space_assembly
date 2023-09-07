@@ -10,6 +10,7 @@ from pydrake.all import (
 )
 
 import components
+from belief import belief_state
 from planning import motion_sets
 
 
@@ -38,6 +39,7 @@ def compute_compliance_frame(
     def e3(i):
         v = np.zeros((3,))
         v[i] = 1
+        return v
 
     prog = MathematicalProgram()
     p_MC = prog.NewContinuousVariables(3, "p_MC")

@@ -61,7 +61,22 @@ def test_belief_dynamics():
 
 def test_vis():
     p0 = init()
-    visualize.save_particle_picture(p0)
+    p0.q_r = np.array(
+        [
+            0.19045906,
+            1.53978349,
+            -0.14104434,
+            -0.0698,
+            -0.20832431,
+            0.66944977,
+            0.3623883,
+            0.0,
+            0.0,
+        ]
+    )
+    p0.env_geom = "assets/empty_world.sdf"
+    im = visualize.generate_particle_picture(p0)
+    im.save("test.jpg")
 
 
 if __name__ == "__main__":

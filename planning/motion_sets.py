@@ -18,6 +18,7 @@ def find_nearest_valid_target(
 def e(i):
     v = np.zeros((6,))
     v[i] = 1
+    return v
 
 
 def _compute_displacements(density: int) -> List[np.ndarray]:
@@ -41,8 +42,8 @@ def grow_motion_set(
 ) -> List[components.CompliantMotion]:
 
     U = []
-    X_WMd_0 = find_nearest_valid_target(p, CF_d)
-    X_WCd_0 = X_WMd_0.multiply(p.X_GM.inverse()).multiply(X_GC)
+    X_WGd_0 = find_nearest_valid_target(p, CF_d).multiply(X_GC)
+    X_WCd_0 = X_WGd_0.multiply(X_GC)
     U_candidates = []
     for displacement in _compute_displacements(density):
         X_WCd_i = X_WCd_0.multiply(
@@ -56,3 +57,12 @@ def grow_motion_set(
         if p.satisfies_contact(CF_d):
             U.append(U_candidates[idx])
     return U
+
+
+def intersect_motion_set(
+    X_GC: RigidTransform,
+    K: np.ndarray,
+    b: belief_state.Belief,
+    CF_d: components.ContactState,
+) -> components.CompliantMotion:
+    pass

@@ -79,7 +79,10 @@ class Particle:
             except:
                 continue
             for sgn in product([1, -1], [1, -1], [1, -1]):
-                vertices.append([0.5 * sgn[i] * shape[i] for i in range(3)])
+                X_OF = inspector.GetPoseInFrame(g_id)
+                X_FC = RigidTransform([0.5 * sgn[i] * shape[i] for i in range(3)])
+                X_WC = self.X_WO.multiply(X_OF).multiply(X_FC)
+                vertices.append(X_WC.translation())
             vertices = np.array(vertices)
             polyhedron = HPolyhedron(VPolytope(vertices.T))
             self._constraints[name] = (polyhedron.A(), polyhedron.b())

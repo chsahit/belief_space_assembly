@@ -14,6 +14,7 @@ from pydrake.all import (
 
 import components
 import utils
+from simulation import plant_builder
 
 
 def gripper_to_joint_states(
@@ -81,6 +82,7 @@ def project_manipuland_to_contacts(
 
     W = plant.world_frame()
     M = plant.GetBodyByName("base_link").body_frame()
+    G = plant.GetBodyByName("panda_hand").body_frame()
     for env_poly, object_corner in CF_d:
         p_MP = corner_map[object_corner].translation()
         A, b = constraints[env_poly]
@@ -89,11 +91,15 @@ def project_manipuland_to_contacts(
     q = ik.q()
     prog = ik.get_mutable_prog()
     prog.SetInitialGuess(q, p.q_r)
-    prog.AddQuadraticCost(np.identity(len(q)), p.q_r, q)
+
+    p_WM = [0.5, 0.0, 0.225]
+    ik.AddPositionCost(W, p_WM, M, np.zeros((3,)), np.identity(3))
 
     try:
         result = Solve(ik.prog())
+        if not result.is_success():
+            print("warning, ik solve failed")
     except:
         return None
 
-    return plant.CalcRelativeTransform(plant_context, W, M)
+    return plant.CalcRelativeTransform(plant_context, W, G)
