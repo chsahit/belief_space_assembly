@@ -1,7 +1,7 @@
 from typing import List
 
 import numpy as np
-from pydrake.all import HPolyhedron, RigidTransform, VPolytope
+from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
 from sklearn.decomposition import PCA
 
 import components
@@ -65,6 +65,10 @@ def grow_motion_set(
 def _project_down(vertices: List[List[np.ndarray]]):
     """Generates polyhedra with positive measure from collections of vectors in R7.
 
+    This algorithm starts with 7 dimensional vectors and tries to project them into lower
+    dimensions until a dimensionality is found where each convex hull (generated
+    from vertices[i]) has positive volume.
+
     Args:
         vertices: A list of lists of r7 vectors. Each "inner" list of vectors corresponds to
         edge vertices of a single polyhedron.
@@ -78,17 +82,38 @@ def _project_down(vertices: List[List[np.ndarray]]):
     for poly in vertices:
         vertices_all.extend(poly)
     vertices_all = np.array(vertices_all)
-    n_components = 2
-    pca = PCA(n_components=n_components)
-    low_dim_vertices = pca.fit_transform(vertices_all)
-    curr_idx = 0
-    polys = []
-    for poly_idx in range(len(vertices)):
-        poly_corners = low_dim_vertices[curr_idx : curr_idx + n_verts[poly_idx]]
-        curr_idx += n_verts[poly_idx]
-        polys.append(HPolyhedron(VPolytope(poly_corners.T)))
-
+    for n_components in range(6, 1, -1):
+        pca = PCA(n_components=n_components)
+        low_dim_vertices = pca.fit_transform(vertices_all)
+        curr_idx = 0
+        polys = []
+        successfully_projected = True
+        for poly_idx in range(len(vertices)):
+            poly_corners = low_dim_vertices[curr_idx : curr_idx + n_verts[poly_idx]]
+            curr_idx += n_verts[poly_idx]
+            try:
+                polys.append(HPolyhedron(VPolytope(poly_corners.T)))
+                vol = polys[-1].MaximumVolumeInscribedEllipsoid().Volume()
+                if vol < 1e-4 and n_components > 2:
+                    successfully_projected = False
+            except:
+                successfully_projected = False
+        if successfully_projected:
+            break
+    print(f"dimensionality of low dimensional manifold = {n_components}")
     return pca, polys
+
+
+def _sample_from_polyhedron(poly: HPolyhedron, n_samples: int = 10) -> List[np.ndarray]:
+    samples = []
+    rng = RandomGenerator()
+    sample_i = poly.UniformSample(rng)
+    for i in range(400):  # allow hit and run sampling time to converge/mix?
+        sample_i = poly.UniformSample(rng, sample_i)
+    for i in range(n_samples):
+        samples.append(poly.UniformSample(rng, sample_i))
+        sample_i = samples[-1]
+    return samples
 
 
 def intersect_motion_sets(
@@ -96,7 +121,7 @@ def intersect_motion_sets(
     K: np.ndarray,
     b: state.Belief,
     CF_d: components.ContactState,
-) -> components.CompliantMotion:
+) -> List[components.CompliantMotion]:
 
     # grow motion set for each particle
     motion_sets = [grow_motion_set(X_GC, K, CF_d, p) for p in b.particles]
@@ -116,10 +141,19 @@ def intersect_motion_sets(
     if intersection.IsEmpty():
         print("merge failed, no intersection found")
         return None
-    # draw a point from the hull intersection, use it to populate CompliantMotion
+    # draw points from the hull intersection, use it to populate CompliantMotion objects
+    u_nom = motion_sets[0][0]
     X_WCd_center_low_dim = intersection.MaximumVolumeInscribedEllipsoid().center()
     X_WCd_center = utils.VecToRigidTF(
         mapping.inverse_transform([X_WCd_center_low_dim][0])
     )
-    u_nom = motion_sets[0][0]
-    return components.CompliantMotion(u_nom.X_GC, X_WCd_center, u_nom.K)
+    center_motion = [components.CompliantMotion(u_nom.X_GC, X_WCd_center, u_nom.K)]
+    samples = _sample_from_polyhedron(intersection)
+    samples_rt = [
+        utils.VecToRigidTF(mapping.inverse_transform([sample])[0]) for sample in samples
+    ]
+    sampled_motions = [
+        components.CompliantMotion(u_nom.X_GC, sample_rt, u_nom.K)
+        for sample_rt in samples_rt
+    ]
+    return center_motion + sampled_motions

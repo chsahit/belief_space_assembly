@@ -10,8 +10,10 @@ from pydrake.all import (
 )
 
 import components
+import dynamics
 import state
 from planning import motion_sets
+from simulation import plant_builder
 
 
 def compute_compliance_frame(
@@ -63,11 +65,30 @@ def compliance_search(
 ) -> np.ndarray:
     K_opt = components.stiff
     U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p)
+    print(f"{K_opt=} ,{len(U_opt)=}")
     for i in range(6):
         K_curr = K_opt.copy()
         K_curr[i] = components.soft[i]
         U_curr = motion_sets.grow_motion_set(X_GC, K_curr, CF_d, p)
+        print(f"{K_curr=} ,{len(U_curr)=}")
         if len(U_curr) > len(U_opt):
             K_opt = K_curr
             U_opt = U_curr
     return K_opt
+
+
+def refine(
+    b0: state.Belief, CF_d: components.ContactState
+) -> components.CompliantMotion:
+    p_nom = b0.sample()
+    spheres = plant_builder.generate_collision_spheres()
+    X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
+    print(f"{X_GC.translation()=}")
+    K_star = compliance_search(X_GC, CF_d, p_nom)
+    print(f"{K_star=}")
+    U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
+    for u in U_candidates:
+        posterior = dynamics.f_bel(b0, u)
+        if posterior.satisfies_contact(CF_d):
+            return u
+    return u[0]

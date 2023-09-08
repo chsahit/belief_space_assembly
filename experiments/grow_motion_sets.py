@@ -73,8 +73,9 @@ def test_intersect_motion_set():
     u_res = motion_sets.intersect_motion_sets(
         X_GC, components.stiff, b, contact_defs.ground_align
     )
-    b_next = dynamics.f_bel(b, u_res)
-    print([p.contacts for p in b_next.particles])
+    b_next = dynamics.f_bel(b, u_res[0])
+    print(b_next.satisfies_contact(contact_defs.ground_align))
+    # print([p.contacts for p in b_next.particles])
 
 
 if __name__ == "__main__":
