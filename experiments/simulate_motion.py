@@ -81,5 +81,5 @@ def test_vis():
 
 
 if __name__ == "__main__":
-    test_vis()
-    # test_simulate()
+    test_simulate()
+    # test_vis()

@@ -92,7 +92,7 @@ def project_manipuland_to_contacts(
     prog = ik.get_mutable_prog()
     prog.SetInitialGuess(q, p.q_r)
 
-    p_WM = [0.5, 0.0, 0.225]
+    p_WM = p.X_WG.multiply(p.X_GM).translation()
     ik.AddPositionCost(W, p_WM, M, np.zeros((3,)), np.identity(3))
 
     try:

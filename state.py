@@ -28,6 +28,7 @@ class Particle:
         self._contacts = None
         self._sdf = None
         self._constraints = None
+        self._X_WG = None
 
     def make_plant(self, vis: bool = False, collision: bool = False) -> System:
         return plant_builder.make_plant(
@@ -87,6 +88,22 @@ class Particle:
             polyhedron = HPolyhedron(VPolytope(vertices.T))
             self._constraints[name] = (polyhedron.A(), polyhedron.b())
         return self._constraints
+
+    @property
+    def X_WG(self):
+        if self._X_WG is None:
+            diagram = self.make_plant()
+            plant = diagram.GetSubsystemByName("plant")
+            plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
+            plant.SetPositions(
+                plant_context, plant.GetModelInstanceByName("panda"), self.q_r
+            )
+            self._X_WG = plant.CalcRelativeTransform(
+                plant_context,
+                plant.world_frame(),
+                plant.GetBodyByName("panda_hand").body_frame(),
+            )
+        return self._X_WG
 
     def deepcopy(self) -> Particle:
         new_p = Particle(
