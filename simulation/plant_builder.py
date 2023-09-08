@@ -7,6 +7,7 @@ from pydrake.all import (
     CameraInfo,
     ClippingRange,
     ContactModel,
+    ContactVisualizer,
     CoulombFriction,
     DepthRange,
     DepthRenderCamera,
@@ -185,4 +186,5 @@ def _construct_diagram(
         meshcat_vis = MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )
+        ContactVisualizer.AddToBuilder(builder, plant, meshcat)
     return builder, plant, scene_graph
