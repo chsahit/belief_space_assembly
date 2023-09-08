@@ -40,7 +40,9 @@ def simulate(
         simulator.AdvanceTo(motion.timeout)
         meshcat_vis.PublishRecording()
         input()
-        print(meshcat.StaticHtml())
+        s_html = meshcat.StaticHtml()
+        with open("meshcat.html", "w") as text_file:
+            text_file.write(s_html)
     else:
         simulator.AdvanceTo(motion.timeout)
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))

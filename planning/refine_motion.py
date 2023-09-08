@@ -91,4 +91,4 @@ def refine(
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):
             return u
-    return u[0]
+    0return u[0]

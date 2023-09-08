@@ -43,6 +43,7 @@ class ControllerSystem(LeafSystem):
     def tau(
         self,
         tau_g: np.ndarray,
+        coriolis: np.ndarray,
         J: np.ndarray,
         block_vel: np.ndarray,
         X_WG: RigidTransform,
@@ -53,7 +54,7 @@ class ControllerSystem(LeafSystem):
         err = self.compute_error(X_WC, self.motion.X_WCd)
         spring_force = np.multiply(self.motion.K, err)
         damping_force = np.multiply(self.motion.B, block_vel)
-        tau_controller = -tau_g + J.T @ (spring_force - damping_force)
+        tau_controller = -tau_g + coriolis - coriolis + J.T @ (spring_force - damping_force)
         return tau_controller
 
     def get_collision_set(
@@ -99,6 +100,7 @@ class ControllerSystem(LeafSystem):
         J_g = J_g[:, self.panda_start_pos : self.panda_end_pos + 1]
         assert J_g.shape == (6, 7)
         tau_g = self.plant.CalcGravityGeneralizedForces(self.plant_context)[:7]
+        coriolis = self.plant.CalcBiasTerm(self.plant_context)[:7]
         block_velocity = self.plant.EvalBodySpatialVelocityInWorld(
             self.plant_context, self.plant.GetBodyByName("base_link")
         )
@@ -106,6 +108,6 @@ class ControllerSystem(LeafSystem):
             (block_velocity.rotational(), block_velocity.translational())
         )
 
-        tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
+        tau_controller = self.tau(tau_g, coriolis, J_g, block_velocity, X_WG)
         tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))
         output.SetFromVector(tau_controller)
