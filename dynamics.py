@@ -27,7 +27,7 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
-    diagram = p.make_plant(vis=vis)
+    diagram, meshcat = p.make_plant(vis=vis, ret_meshcat=vis)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
     plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
@@ -40,6 +40,7 @@ def simulate(
         simulator.AdvanceTo(motion.timeout)
         meshcat_vis.PublishRecording()
         input()
+        print(meshcat.StaticHtml())
     else:
         simulator.AdvanceTo(motion.timeout)
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))

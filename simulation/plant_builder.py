@@ -76,11 +76,14 @@ def make_plant(
     manip_geom: str,
     collision_check: bool = False,
     vis: bool = False,
+    ret_meshcat: bool = False,
 ) -> Diagram:
-    builder, _, _ = _construct_diagram(
+    builder, _, _, meshcat = _construct_diagram(
         q_r, X_GM, X_WO, env_geom, manip_geom, collision_check=collision_check, vis=vis
     )
     diagram = builder.Build()
+    if ret_meshcat:
+        return diagram, meshcat
     return diagram
 
 
@@ -140,7 +143,7 @@ def _construct_diagram(
     manip_geom: str,
     collision_check: bool = False,
     vis: bool = False,
-) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph]:
+) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
 
     # Plant hyperparameters
     builder = DiagramBuilder()
@@ -185,4 +188,4 @@ def _construct_diagram(
         meshcat_vis = MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )
-    return builder, plant, scene_graph
+    return builder, plant, scene_graph, meshcat

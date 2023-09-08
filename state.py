@@ -29,7 +29,9 @@ class Particle:
         self._sdf = None
         self._constraints = None
 
-    def make_plant(self, vis: bool = False, collision: bool = False) -> System:
+    def make_plant(
+        self, vis: bool = False, collision: bool = False, ret_meshcat: bool = False
+    ) -> System:
         return plant_builder.make_plant(
             self.q_r,
             self.X_GM,
@@ -38,6 +40,7 @@ class Particle:
             self.manip_geom,
             vis=vis,
             collision_check=collision,
+            ret_meshcat=ret_meshcat,
         )
 
     def _update_contact_data(self):
