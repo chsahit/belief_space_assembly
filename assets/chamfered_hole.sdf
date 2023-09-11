@@ -36,8 +36,8 @@
           </box>
         </geometry>
         <drake:proximity_properties>
-            <drake:mu_dynamic>0.0</drake:mu_dynamic>
-            <drake:mu_static>0.0</drake:mu_static>
+            <drake:mu_dynamic>1</drake:mu_dynamic>
+            <drake:mu_static>1</drake:mu_static>
             <drake:rigid_hydroelastic/>
             <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
@@ -61,8 +61,8 @@
           </box>
         </geometry>
         <drake:proximity_properties>
-            <drake:mu_dynamic>0.0</drake:mu_dynamic>
-            <drake:mu_static>0.0</drake:mu_static>
+            <drake:mu_dynamic>1</drake:mu_dynamic>
+            <drake:mu_static>1</drake:mu_static>
             <drake:rigid_hydroelastic/>
             <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
@@ -84,8 +84,8 @@
           </box>
         </geometry>
         <drake:proximity_properties>
-            <drake:mu_dynamic>0.0</drake:mu_dynamic>
-            <drake:mu_static>0.0</drake:mu_static>
+            <drake:mu_dynamic>1</drake:mu_dynamic>
+            <drake:mu_static>1</drake:mu_static>
             <drake:rigid_hydroelastic/>
             <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
@@ -103,8 +103,8 @@
             <mesh><drake:declare_convex/><uri>chamfer_only.obj</uri></mesh>
         </geometry>
        <drake:proximity_properties>
-            <drake:mu_dynamic>0.0</drake:mu_dynamic>
-            <drake:mu_static>0.0</drake:mu_static>
+            <drake:mu_dynamic>1</drake:mu_dynamic>
+            <drake:mu_static>1</drake:mu_static>
             <drake:rigid_hydroelastic/>
             <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
@@ -211,8 +211,8 @@
             <mesh><drake:declare_convex/><uri>chamfer_only.obj</uri></mesh>
         </geometry>
        <drake:proximity_properties>
-            <drake:mu_dynamic>0.0</drake:mu_dynamic>
-            <drake:mu_static>0.0</drake:mu_static>
+            <drake:mu_dynamic>1</drake:mu_dynamic>
+            <drake:mu_static>1</drake:mu_static>
             <drake:rigid_hydroelastic/>
             <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>

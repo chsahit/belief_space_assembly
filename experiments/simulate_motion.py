@@ -25,7 +25,7 @@ def test_simulate():
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.2], [180, 0, 0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
-    print(f"{p_1.sdf=}")
+    print(f"{p_1.contacts=}")
 
 
 def test_motion_set():

@@ -20,8 +20,8 @@
         <box size="0.06 0.06 0.15"/>
     </geometry>
     <drake:proximity_properties>
-        <drake:mu_dynamic value="0.4"/>
-        <drake:mu_static value="0.4"/>
+        <drake:mu_dynamic value="0.05"/>
+        <drake:mu_static value="0.05"/>
         <drake:compliant_hydroelastic/>
         <drake:mesh_resolution_hint value="0.0001"/>
         <drake:hunt_crossley_dissipation value="0.50"/>

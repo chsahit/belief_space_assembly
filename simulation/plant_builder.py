@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from pydrake.all import (
@@ -19,6 +19,7 @@ from pydrake.all import (
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
+    ModelInstanceIndex,
     MultibodyPlant,
     Parser,
     ProximityProperties,
@@ -28,6 +29,8 @@ from pydrake.all import (
     RgbdSensor,
     RgbdSensorDiscrete,
     RigidTransform,
+    Role,
+    RoleAssign,
     SceneGraph,
     Sphere,
 )
@@ -77,9 +80,17 @@ def make_plant(
     manip_geom: str,
     collision_check: bool = False,
     vis: bool = False,
+    mu: float = 0.0,
 ) -> Diagram:
     builder, _, _ = _construct_diagram(
-        q_r, X_GM, X_WO, env_geom, manip_geom, collision_check=collision_check, vis=vis
+        q_r,
+        X_GM,
+        X_WO,
+        env_geom,
+        manip_geom,
+        collision_check=collision_check,
+        vis=vis,
+        mu=mu,
     )
     diagram = builder.Build()
     return diagram
@@ -133,6 +144,33 @@ def make_plant_with_cameras(
     return diagram
 
 
+def _set_frictions(
+    plant: MultibodyPlant,
+    scene_graph: SceneGraph,
+    model_instances: List[ModelInstanceIndex],
+    mu_d: float,
+):
+    inspector = (
+        scene_graph.get_query_output_port()
+        .Eval(scene_graph.CreateDefaultContext())
+        .inspector()
+    )
+    for model in model_instances:
+        for body_id in plant.GetBodyIndices(model):
+            frame_id = plant.GetBodyFrameIdOrThrow(body_id)
+            geometry_ids = inspector.GetGeometries(frame_id, Role.kProximity)
+            for g_id in geometry_ids:
+                prop = inspector.GetProximityProperties(g_id)
+                new_props = ProximityProperties(prop)
+                friction_property = CoulombFriction(mu_d, mu_d)
+                new_props.UpdateProperty(
+                    "material", "coulomb_friction", friction_property
+                )
+                scene_graph.AssignRole(
+                    plant.get_source_id(), g_id, new_props, RoleAssign.kReplace
+                )
+
+
 def _construct_diagram(
     q_r: np.ndarray,
     X_GM: RigidTransform,
@@ -141,6 +179,7 @@ def _construct_diagram(
     manip_geom: str,
     collision_check: bool = False,
     vis: bool = False,
+    mu: float = 0.0,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph]:
 
     # Plant hyperparameters
@@ -164,6 +203,8 @@ def _construct_diagram(
                 manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
             )
     _weld_geometries(plant, X_GM, X_WO)
+    _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
+
     plant.Finalize()
     plant.SetDefaultPositions(panda, q_r)
 

@@ -19,12 +19,14 @@ class Particle:
         X_WO: RigidTransform,
         env_geom: str,
         manip_geom: str,
+        mu: float = 0.0,
     ):
         self.q_r = q_r
         self.X_GM = X_GM
         self.X_WO = X_WO
         self.env_geom = env_geom
         self.manip_geom = manip_geom
+        self.mu = mu
         self._contacts = None
         self._sdf = None
         self._constraints = None
@@ -39,6 +41,7 @@ class Particle:
             self.manip_geom,
             vis=vis,
             collision_check=collision,
+            mu=self.mu,
         )
 
     def _update_contact_data(self):
@@ -107,7 +110,12 @@ class Particle:
 
     def deepcopy(self) -> Particle:
         new_p = Particle(
-            self.q_r.copy(), self.X_GM, self.X_WO, self.env_geom, self.manip_geom
+            self.q_r.copy(),
+            self.X_GM,
+            self.X_WO,
+            self.env_geom,
+            self.manip_geom,
+            mu=self.mu,
         )
         new_p._constraints = self._constraints
         return new_p
@@ -145,6 +153,13 @@ class Belief:
             X_GM = grasps[i].get_tf()
             X_WO = O_poses[i].get_tf()
             particles.append(
-                Particle(nominal.q_r, X_GM, X_WO, nominal.env_geom, nominal.manip_geom)
+                Particle(
+                    nominal.q_r,
+                    X_GM,
+                    X_WO,
+                    nominal.env_geom,
+                    nominal.manip_geom,
+                    mu=nominal.mu,
+                )
             )
         return Belief(particles)
