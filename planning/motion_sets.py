@@ -45,7 +45,7 @@ def grow_motion_set(
 ) -> List[components.CompliantMotion]:
 
     U = []
-    X_WGd_0 = find_nearest_valid_target(p, CF_d).multiply(X_GC)
+    X_WGd_0 = find_nearest_valid_target(p, CF_d)
     X_WCd_0 = X_WGd_0.multiply(X_GC)
     U_candidates = []
     for displacement in _compute_displacements(density):
@@ -133,7 +133,7 @@ def intersect_motion_sets(
         for target_set in target_sets
     ]
     for vset in vertices:
-        if len(vset) < 2:
+        if len(vset) < 2:  # can't have a positive-volume polytope from 0 or 1 points
             print("merge failed, 0 measure set detected")
             return None
     # project vertex set to shared subspace where their convex hulls have positive measure

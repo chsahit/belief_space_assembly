@@ -6,6 +6,7 @@ import contact_defs
 import dynamics
 import state
 import utils
+import visualize
 from planning import refine_motion
 from simulation import ik_solver
 
@@ -67,6 +68,17 @@ def test_searches():
         print(b_result.satisfies_contact(contact_defs.ff_only_align))
     else:
         print("search failed")
+
+
+def ik_debug():
+    p = init()
+    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.ff_only_align)
+    print(f"{X_WG=}")
+    q_r_solved = ik_solver.gripper_to_joint_states(X_WG)
+    p_solved = p.deepcopy()
+    p_solved.q_r = q_r_solved
+    im = visualize.generate_particle_picture(p_solved)
+    im.save("ff_align.jpg")
 
 
 if __name__ == "__main__":
