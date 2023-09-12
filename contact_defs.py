@@ -38,3 +38,7 @@ ff_align = set(
         ("bin_model::back", "block::102"),
     )
 )
+
+ff_only_align = set(
+    (("bin_model::back", "block::111"), ("bin_model::back", "block::101"))
+)

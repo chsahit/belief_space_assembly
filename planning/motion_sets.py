@@ -132,6 +132,10 @@ def intersect_motion_sets(
         [utils.RigidTfToVec(X_WCd) for X_WCd in target_set]
         for target_set in target_sets
     ]
+    for vset in vertices:
+        if len(vset) < 2:
+            print("merge failed, 0 measure set detected")
+            return None
     # project vertex set to shared subspace where their convex hulls have positive measure
     mapping, hulls = _project_down(vertices)
     # intersect hulls

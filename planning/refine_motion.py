@@ -74,6 +74,9 @@ def compliance_search(
         if len(U_curr) > len(U_opt):
             K_opt = K_curr
             U_opt = U_curr
+    if len(U_opt) == 0:
+        print("no compliance found")
+        return None
     return K_opt
 
 
@@ -85,8 +88,12 @@ def refine(
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
     print(f"{X_GC.translation()=}")
     K_star = compliance_search(X_GC, CF_d, p_nom)
+    if K_star is None:
+        return None
     print(f"{K_star=}")
     U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
+    if U_candidates is None:
+        return None
     for u in U_candidates:
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):
