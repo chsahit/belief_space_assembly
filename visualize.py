@@ -34,25 +34,26 @@ def render_motion_set(p_nominal: state.Particle, U: List[components.CompliantMot
     composite.save("composite.png")
 
 
-def generate_particle_picture(
-    p: state.Particle, name="test.jpg", vis: bool = False
-) -> Image:
+def generate_particle_picture(p: state.Particle, name="test.jpg") -> Image:
     diagram = plant_builder.make_plant_with_cameras(
-        p.q_r, p.X_GM, p.X_WO, p.env_geom, p.manip_geom, vis=vis
+        p.q_r, p.X_GM, p.X_WO, p.env_geom, p.manip_geom
     )
     simulator = Simulator(diagram)
     simulator.Initialize()
-    if vis:
-        meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
-        meshcat_vis.StartRecording()
-        simulator.AdvanceTo(0.1)
-        meshcat_vis.PublishRecording()
-        input()
-    else:
-        simulator.AdvanceTo(0.1)
+    simulator.AdvanceTo(0.1)
     logger = diagram.GetSubsystemByName("camera_logger")
     im = Image.fromarray(logger.last_image)
     return im
+
+
+def show_particle(p: state.Particle):
+    diagram = p.make_plant(vis=True)
+    simulator = Simulator(diagram)
+    meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
+    meshcat_vis.StartRecording()
+    simulator.AdvanceTo(0.1)
+    meshcat_vis.PublishRecording()
+    input()
 
 
 def plot_motion_sets(sets: List[HPolyhedron]):

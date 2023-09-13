@@ -139,7 +139,9 @@ def intersect_motion_sets(
         print(f"{len(vset)=}")
         if len(vset) < 2:  # can't have a positive-volume polytope from 0 or 1 points
             print("merge failed, 0 measure set detected")
-            return random.sample(motion_sets_unpacked, 8)
+            return random.sample(
+                motion_sets_unpacked, min(8, len(motion_sets_unpacked))
+            )
     # project vertex set to shared subspace where their convex hulls have positive measure
     mapping, hulls = _project_down(vertices)
     # visualize.plot_motion_sets(hulls)

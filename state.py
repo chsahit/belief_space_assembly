@@ -48,10 +48,12 @@ class Particle:
         diagram = self.make_plant(collision=True)
         controller = diagram.GetSubsystemByName("controller")
         simulator = Simulator(diagram)
+        simulator.set_publish_at_initialization(True)
         simulator.Initialize()
-        simulator.AdvanceTo(0.01)
+        # simulator.AdvanceTo(0.01)
         self._contacts = controller.contacts
         self._sdf = controller.sdf
+        self._constraints = controller.constraints
 
     @property
     def contacts(self) -> components.ContactState:
@@ -67,29 +69,10 @@ class Particle:
 
     @property
     def constraints(self):
-        if self._constraints is not None:
-            return self._constraints
-        self._constraints = dict()
-        diagram = self.make_plant()
-        scene_graph = diagram.GetSubsystemByName("scene_graph")
-        sg_query_port = scene_graph.get_query_output_port()
-        query_obj = sg_query_port.Eval(scene_graph.CreateDefaultContext())
-        inspector = query_obj.inspector()
-        for g_id in inspector.GetAllGeometryIds():
-            name = inspector.GetName(g_id)
-            m = inspector.maybe_get_hydroelastic_mesh(g_id)
-            if (m is None) or ("panda" in name):
-                continue
-            vertices = []
-            X_OF = inspector.GetPoseInFrame(g_id)
-            for v in m.vertices():
-                X_FC = RigidTransform(v)
-                X_WC = self.X_WO.multiply(X_OF).multiply(X_FC)
-                vertices.append(X_WC.translation())
-            vertices = np.array(vertices)
-            polyhedron = HPolyhedron(VPolytope(vertices.T))
-            self._constraints[name] = (polyhedron.A(), polyhedron.b())
+        if self._constraints is None:
+            self._update_contact_data()
         return self._constraints
+
 
     @property
     def X_WG(self):

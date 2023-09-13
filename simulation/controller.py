@@ -4,10 +4,12 @@ import numpy as np
 from pydrake.all import (
     AbstractValue,
     BasicVector,
+    HPolyhedron,
     JacobianWrtVariable,
     LeafSystem,
     QueryObject,
     RigidTransform,
+    VPolytope
 )
 
 import components
@@ -28,6 +30,7 @@ class ControllerSystem(LeafSystem):
         )
         self.DeclareVectorOutputPort("joint_torques", BasicVector(9), self.CalcOutput)
         self.contacts = frozenset()
+        self.constraints = None
         self.sdf = dict()
         self.motion = None
 
@@ -55,6 +58,14 @@ class ControllerSystem(LeafSystem):
         damping_force = np.multiply(self.motion.B, block_vel)
         tau_controller = -tau_g + J.T @ (spring_force - damping_force)
         return tau_controller
+
+    def _set_constraints(self, query_obj, inspector):
+        self.constraints = dict()
+        for g_id in inspector.GetAllGeometryIds():
+            name = inspector.GetName(g_id)
+            if "bin_model" in name:
+                polyhedron = HPolyhedron(VPolytope(query_obj, g_id))
+                self.constraints[name] = (polyhedron.A(), polyhedron.b())
 
     def get_collision_set(
         self, query_object, sg_inspector
@@ -84,6 +95,8 @@ class ControllerSystem(LeafSystem):
         q = self._state_port.Eval(context)
         self.plant.SetPositionsAndVelocities(self.plant_context, self.panda, q)
         query_object = self.geom_port.Eval(context)
+        if self.constraints is None:
+            self._set_constraints(query_object, query_object.inspector())
         self.contacts, self.sdf = self.get_collision_set(
             query_object, query_object.inspector()
         )
