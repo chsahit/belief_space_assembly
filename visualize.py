@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 from PIL import Image
-from pydrake.all import Simulator
+from pydrake.all import HPolyhedron, Simulator, VPolytope
 
 import components
 import dynamics
@@ -44,3 +44,30 @@ def generate_particle_picture(p: state.Particle, name="test.jpg") -> Image:
     logger = diagram.GetSubsystemByName("camera_logger")
     im = Image.fromarray(logger.last_image)
     return im
+
+
+def plot_motion_sets(sets: List[HPolyhedron]):
+    print("constructing list of scatter points")
+    if len(sets) > 3:
+        raise NotImplementedError(
+            f"only supports 3 or fewer sets, called with {len(sets)} sets"
+        )
+    verts = []
+    for mset in sets:
+        verts.append(VPolytope(mset).vertices())
+    xs = []
+    ys = []
+    for v_array in verts:
+        if v_array.shape[0] != 2:
+            raise NotImplementedError(
+                "only supports ambient dimension of 2, not {v_array.shape[0]}"
+            )
+        xs.append([v_array[0, i] for i in range(v_array.shape[1])])
+        ys.append([v_array[1, i] for i in range(v_array.shape[1])])
+    print("drawing")
+    cmap = ["r", "g", "b"]
+    import matplotlib.pyplot as plt
+
+    for i in range(2):
+        plt.scatter(xs[i], ys[i], c=cmap[i])
+    plt.show()

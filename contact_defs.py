@@ -42,3 +42,17 @@ ff_align = set(
 ff_only_align = set(
     (("bin_model::back", "block::111"), ("bin_model::back", "block::101"))
 )
+
+
+bf_only_align = set(
+    (("bin_model::front", "block::011"), ("bin_model::front", "block::001"))
+)
+
+bc_only_align = set((("bin_model::front", "block::001"),))
+
+lc_align = set((("bin_model::left", "block::101"),))
+fc_align = set((("bin_model::back", "block::101"),))
+f_align = set((("bin_model::left", "block::101"), ("bin_model::back", "block::101")))
+lf_align = set((("bin_model::left", "block::101"), ("bin_model::left", "block::001")))
+
+f_align_c = set((("bin_model::left", "block::101"), ("bin_model::right", "block::111")))

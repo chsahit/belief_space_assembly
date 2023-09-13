@@ -77,14 +77,13 @@ class Particle:
         inspector = query_obj.inspector()
         for g_id in inspector.GetAllGeometryIds():
             name = inspector.GetName(g_id)
-            vertices = []
-            try:
-                shape = inspector.GetShape(g_id).size()
-            except:
+            m = inspector.maybe_get_hydroelastic_mesh(g_id)
+            if (m is None) or ("panda" in name):
                 continue
-            for sgn in product([1, -1], [1, -1], [1, -1]):
-                X_OF = inspector.GetPoseInFrame(g_id)
-                X_FC = RigidTransform([0.5 * sgn[i] * shape[i] for i in range(3)])
+            vertices = []
+            X_OF = inspector.GetPoseInFrame(g_id)
+            for v in m.vertices():
+                X_FC = RigidTransform(v)
                 X_WC = self.X_WO.multiply(X_OF).multiply(X_FC)
                 vertices.append(X_WC.translation())
             vertices = np.array(vertices)

@@ -9,6 +9,7 @@ import dynamics
 import mr
 import state
 import utils
+import visualize
 from simulation import ik_solver
 
 
@@ -28,9 +29,9 @@ def _compute_displacements(density: int) -> List[np.ndarray]:
     displacements = [np.zeros((6,))]
     for i in range(6):
         if i < 3:
-            Delta = np.linspace(-0.2, 0.2, density).tolist()
+            Delta = np.linspace(-0.25, 0.25, density).tolist()
         else:
-            Delta = np.linspace(-0.02, 0.02, density).tolist()
+            Delta = np.linspace(-0.03, 0.03, density).tolist()
         displacement_i = [delta * e(i) for delta in Delta]
         displacements.extend(displacement_i)
     return displacements
@@ -133,11 +134,13 @@ def intersect_motion_sets(
         for target_set in target_sets
     ]
     for vset in vertices:
+        print(f"{len(vset)=}")
         if len(vset) < 2:  # can't have a positive-volume polytope from 0 or 1 points
             print("merge failed, 0 measure set detected")
             return None
     # project vertex set to shared subspace where their convex hulls have positive measure
     mapping, hulls = _project_down(vertices)
+    # visualize.plot_motion_sets(hulls)
     # intersect hulls
     intersection = hulls[0].Intersection(hulls[1])
     for i in range(2, len(hulls)):

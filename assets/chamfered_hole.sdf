@@ -94,7 +94,7 @@
     <visual name="front_chamfer">
         <pose>-0.034 -0.0 0.03 0 1.570796 0</pose>
         <geometry>
-            <mesh><uri>chamfer_only.obj</uri></mesh>
+            <mesh><drake:declare_convex/><uri>chamfer_only.obj</uri></mesh>
         </geometry>
       </visual>
       <collision name="front_chamfer">

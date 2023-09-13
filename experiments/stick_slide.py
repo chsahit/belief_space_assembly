@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 from pydrake.all import RigidTransform
 
@@ -58,22 +60,39 @@ def test_with_tp():
     p2 = dynamics.simulate(p1, u1, vis=True)
 
 
-def test_searches():
+# test_searches(contact_defs.lc_align)
+def test_single_refine(CF_d: components.ContactState):
     p_a = init()
     p_b = init(X_GM_x=0.01, X_GM_p=-10.0)
     b = state.Belief([p_a, p_b])
-    u = refine_motion.refine(b, contact_defs.ff_only_align)
+    u = refine_motion.refine(b, CF_d)
     if u is not None:
         b_result = dynamics.f_bel(b, u)
-        print(b_result.satisfies_contact(contact_defs.ff_only_align))
+        print(b_result.satisfies_contact(CF_d))
     else:
         print("search failed")
 
 
+def please_assemble():  # ...please?
+    p_a = init()
+    p_b = init(X_GM_x=0.01, X_GM_p=-10.0)
+    b = state.Belief([p_a, p_b])
+    modes = [contact_defs.fc_align, contact_defs.f_align]
+    for mode in modes:
+        u = refine_motion.refine(b, mode)
+        if u is not None:
+            b_next = dynamics.f_bel(b, u)
+            for p in b.particles:
+                dynamics.simulate(p, u, vis=True)
+            b = b_next
+        else:
+            print("search failed")
+            sys.exit()
+
+
 def ik_debug():
     p = init()
-    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.ff_only_align)
-    print(f"{X_WG=}")
+    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.lc_align)
     q_r_solved = ik_solver.gripper_to_joint_states(X_WG)
     p_solved = p.deepcopy()
     p_solved.q_r = q_r_solved
@@ -82,4 +101,4 @@ def ik_debug():
 
 
 if __name__ == "__main__":
-    test_searches()
+    please_assemble()

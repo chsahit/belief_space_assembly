@@ -98,4 +98,5 @@ def refine(
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):
             return u
-    return u[0]
+    print("returning partial soln")
+    return U_candidates[0]
