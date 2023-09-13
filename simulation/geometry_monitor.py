@@ -1,6 +1,5 @@
 from pydrake.all import (
     AbstractValue,
-    BasicVector,
     EventStatus,
     HPolyhedron,
     LeafSystem,
