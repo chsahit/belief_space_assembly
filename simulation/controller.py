@@ -1,16 +1,7 @@
 from typing import Dict, Tuple
 
 import numpy as np
-from pydrake.all import (
-    AbstractValue,
-    BasicVector,
-    HPolyhedron,
-    JacobianWrtVariable,
-    LeafSystem,
-    QueryObject,
-    RigidTransform,
-    VPolytope
-)
+from pydrake.all import BasicVector, JacobianWrtVariable, LeafSystem, RigidTransform
 
 import components
 
@@ -25,9 +16,6 @@ class ControllerSystem(LeafSystem):
         self.panda_end_pos = plant.GetJointByName("panda_joint7").position_start()
 
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
-        self.geom_port = self.DeclareAbstractInputPort(
-            "geom_query", AbstractValue.Make(QueryObject())
-        )
         self.DeclareVectorOutputPort("joint_torques", BasicVector(9), self.CalcOutput)
         self.contacts = frozenset()
         self.constraints = None
@@ -59,47 +47,9 @@ class ControllerSystem(LeafSystem):
         tau_controller = -tau_g + J.T @ (spring_force - damping_force)
         return tau_controller
 
-    def _set_constraints(self, query_obj, inspector):
-        self.constraints = dict()
-        for g_id in inspector.GetAllGeometryIds():
-            name = inspector.GetName(g_id)
-            if "bin_model" in name:
-                polyhedron = HPolyhedron(VPolytope(query_obj, g_id))
-                self.constraints[name] = (polyhedron.A(), polyhedron.b())
-
-    def get_collision_set(
-        self, query_object, sg_inspector
-    ) -> Tuple[components.ContactState, Dict[components.Contact, float]]:
-        contact_state = []
-        penetrations = query_object.ComputePointPairPenetration()
-        for penetration in penetrations:
-            name_A = sg_inspector.GetName(penetration.id_A)
-            name_B = sg_inspector.GetName(penetration.id_B)
-            if "panda" in (name_A + name_B) or "Box" in (name_A + name_B):
-                continue
-            contact_state.append((name_A, name_B))
-
-        try:
-            sdf_data = query_object.ComputeSignedDistancePairwiseClosestPoints(0.05)
-        except Exception as e:
-            sdf_data = []  # GJK crashes sometimes :(
-        sdf = dict()
-        for dist in sdf_data:
-            name_A = sg_inspector.GetName(dist.id_A)
-            name_B = sg_inspector.GetName(dist.id_B)
-            if ("bin_model" in name_A) and ("block" in name_B):
-                sdf[(name_A, name_B)] = dist.distance
-        return frozenset(contact_state), sdf
-
     def CalcOutput(self, context, output):
         q = self._state_port.Eval(context)
         self.plant.SetPositionsAndVelocities(self.plant_context, self.panda, q)
-        query_object = self.geom_port.Eval(context)
-        if self.constraints is None:
-            self._set_constraints(query_object, query_object.inspector())
-        self.contacts, self.sdf = self.get_collision_set(
-            query_object, query_object.inspector()
-        )
 
         W = self.plant.world_frame()
         G = self.plant.GetBodyByName("panda_hand").body_frame()

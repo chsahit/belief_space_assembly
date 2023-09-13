@@ -46,14 +46,13 @@ class Particle:
 
     def _update_contact_data(self):
         diagram = self.make_plant(collision=True)
-        controller = diagram.GetSubsystemByName("controller")
-        simulator = Simulator(diagram)
-        simulator.set_publish_at_initialization(True)
-        simulator.Initialize()
-        # simulator.AdvanceTo(0.01)
-        self._contacts = controller.contacts
-        self._sdf = controller.sdf
-        self._constraints = controller.constraints
+        geom_monitor = diagram.GetSubsystemByName("geom_monitor")
+        geom_monitor.ForcedPublish(
+            geom_monitor.GetMyContextFromRoot(diagram.CreateDefaultContext())
+        )
+        self._contacts = geom_monitor.contacts
+        self._sdf = geom_monitor.sdf
+        self._constraints = geom_monitor.constraints
 
     @property
     def contacts(self) -> components.ContactState:
@@ -72,7 +71,6 @@ class Particle:
         if self._constraints is None:
             self._update_contact_data()
         return self._constraints
-
 
     @property
     def X_WG(self):

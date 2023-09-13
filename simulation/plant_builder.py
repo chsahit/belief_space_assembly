@@ -36,7 +36,7 @@ from pydrake.all import (
 )
 
 import utils
-from simulation import controller, image_logger
+from simulation import controller, geometry_monitor, image_logger
 
 timestep = 0.005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
@@ -209,6 +209,15 @@ def _construct_diagram(
     plant.Finalize()
     plant.SetDefaultPositions(panda, q_r)
 
+    if collision_check:
+        geom_monitor = builder.AddNamedSystem(
+            "geom_monitor", geometry_monitor.GeometryMonitor(plant)
+        )
+        builder.Connect(
+            scene_graph.get_query_output_port(),
+            geom_monitor.GetInputPort("geom_query"),
+        )
+
     # connect controller
     compliant_controller = builder.AddNamedSystem(
         "controller", controller.ControllerSystem(plant)
@@ -218,10 +227,6 @@ def _construct_diagram(
     )
     builder.Connect(
         compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
-    )
-    builder.Connect(
-        scene_graph.get_query_output_port(),
-        compliant_controller.GetInputPort("geom_query"),
     )
     if vis:
         meshcat = Meshcat()
