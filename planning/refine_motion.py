@@ -92,8 +92,6 @@ def refine(
         return None
     print(f"{K_star=}")
     U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
-    if U_candidates is None:
-        return None
     for u in U_candidates:
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):

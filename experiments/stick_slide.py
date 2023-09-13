@@ -77,7 +77,12 @@ def please_assemble():  # ...please?
     p_a = init()
     p_b = init(X_GM_x=0.01, X_GM_p=-10.0)
     b = state.Belief([p_a, p_b])
-    modes = [contact_defs.fc_align, contact_defs.f_align]
+    # modes = [contact_defs.fc_align, contact_defs.f_align]
+    modes = [
+        contact_defs.f_full_chamfer_touch,
+        contact_defs.corner_align_3,
+        contact_defs.ground_align,
+    ]
     for mode in modes:
         u = refine_motion.refine(b, mode)
         if u is not None:
@@ -92,11 +97,11 @@ def please_assemble():  # ...please?
 
 def ik_debug():
     p = init()
-    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.lc_align)
+    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.corner_align_3)
     q_r_solved = ik_solver.gripper_to_joint_states(X_WG)
     p_solved = p.deepcopy()
     p_solved.q_r = q_r_solved
-    im = visualize.generate_particle_picture(p_solved)
+    im = visualize.generate_particle_picture(p_solved, vis=True)
     im.save("ff_align.jpg")
 
 

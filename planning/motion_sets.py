@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 import numpy as np
@@ -126,6 +127,7 @@ def intersect_motion_sets(
 
     # grow motion set for each particle
     motion_sets = [grow_motion_set(X_GC, K, CF_d, p) for p in b.particles]
+    motion_sets_unpacked = [cm for mset in motion_sets for cm in mset]
     # extract the setpoint from each CompliantMotion object in each motion set
     target_sets = [[u.X_WCd for u in motion_set] for motion_set in motion_sets]
     # convert setpoints from 4x4 matrix repr to 7-dimensional (quat, xyz) vectors
@@ -137,7 +139,7 @@ def intersect_motion_sets(
         print(f"{len(vset)=}")
         if len(vset) < 2:  # can't have a positive-volume polytope from 0 or 1 points
             print("merge failed, 0 measure set detected")
-            return None
+            return random.sample(motion_sets_unpacked, 8)
     # project vertex set to shared subspace where their convex hulls have positive measure
     mapping, hulls = _project_down(vertices)
     # visualize.plot_motion_sets(hulls)
@@ -147,7 +149,7 @@ def intersect_motion_sets(
         intersection = intersection.Intersection(hulls[i])
     if intersection.IsEmpty():
         print("merge failed, no intersection found")
-        return None
+        return random.sample(motion_sets_unpacked, 8)
     # draw points from the hull intersection, use it to populate CompliantMotion objects
     u_nom = motion_sets[0][0]
     X_WCd_center_low_dim = intersection.MaximumVolumeInscribedEllipsoid().center()

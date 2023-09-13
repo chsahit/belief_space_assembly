@@ -102,9 +102,10 @@ def make_plant_with_cameras(
     X_WO: RigidTransform,
     env_geom: str,
     manip_geom: str,
+    vis: bool = False,
 ) -> Diagram:
     builder, plant, scene_graph = _construct_diagram(
-        q_r, X_GM, X_WO, env_geom, manip_geom
+        q_r, X_GM, X_WO, env_geom, manip_geom, vis=vis
     )
     from pyvirtualdisplay import Display
 
