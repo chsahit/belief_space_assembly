@@ -48,6 +48,9 @@ def grow_motion_set(
 
     U = []
     X_WGd_0 = find_nearest_valid_target(p, CF_d)
+    if X_WGd_0 is None:
+        print("IK solve failed, returning none")
+        return U
     X_WCd_0 = X_WGd_0.multiply(X_GC)
     U_candidates = []
     for displacement in _compute_displacements(density):

@@ -12,17 +12,16 @@ from pydrake.all import (
 class GeometryMonitor(LeafSystem):
     """Perform geometric queries on a plant without having to step a simulator.
 
-    This class has forcedpublishevents that allow it to pull contactstate and geometric constraints
-    from the plant it is connected to.
+    This class has a forcedpublishevent that allows it to pull contactstate
+    and geometric constraints from the plant it is connected to.
     """
 
-    def __init__(self, plant):
+    def __init__(self):
         LeafSystem.__init__(self)
-        self.plant = plant
         self.constraints = None
         self.contacts = frozenset()
         self.sdf = dict()
-        self.geom_port = self.DeclareAbstractInputPort(
+        self._geom_port = self.DeclareAbstractInputPort(
             "geom_query", AbstractValue.Make(QueryObject())
         )
         self.DeclareForcedPublishEvent(self.inspect_geometry)
@@ -40,7 +39,7 @@ class GeometryMonitor(LeafSystem):
         contact_state = []
         try:
             sdf_data = query_obj.ComputeSignedDistancePairwiseClosestPoints(0.05)
-        except Exception as e:
+        except Exception as e:  # sometimes GJK likes to crash :(
             sdf_data = []
         for dist in sdf_data:
             name_A = inspector.GetName(dist.id_A)
@@ -54,7 +53,7 @@ class GeometryMonitor(LeafSystem):
         self.sdf = sdf
 
     def inspect_geometry(self, context):
-        query_obj = self.geom_port.Eval(context)
+        query_obj = self._geom_port.Eval(context)
         inspector = query_obj.inspector()
         self._set_constraints(query_obj, inspector)
         self._set_contacts(query_obj, inspector)

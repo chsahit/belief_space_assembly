@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+from typing import Dict, Tuple
+
 import numpy as np
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
+    Diagram,
     DiagramBuilder,
+    GeometryId,
     InverseKinematics,
     MultibodyPlant,
     Parser,
     RigidTransform,
+    Role,
     RotationMatrix,
     Solve,
 )
@@ -70,6 +75,29 @@ def gripper_to_joint_states(
     return soln
 
 
+def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId]]:
+    plant = diagram.GetSubsystemByName("plant")
+    scene_graph = diagram.GetSubsystemByName("scene_graph")
+    inspector = (
+        scene_graph.get_query_output_port()
+        .Eval(scene_graph.CreateDefaultContext())
+        .inspector()
+    )
+    manipuland_body_frame = plant.GetBodyFrameIdOrThrow(
+        plant.GetBodyByName("base_link").index()
+    )
+    manipuland_id = inspector.GetGeometries(manipuland_body_frame, Role.kProximity)[0]
+    env_body_frame = plant.GetBodyFrameIdOrThrow(
+        plant.GetBodyByName("bin_base").index()
+    )
+    env_g_ids = inspector.GetGeometries(env_body_frame, Role.kProximity)
+    g_id_map = dict()
+    for g_id in env_g_ids:
+        name = inspector.GetName(g_id)
+        g_id_map[name] = g_id
+    return manipuland_id, g_id_map
+
+
 def project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState
 ) -> RigidTransform:
@@ -95,14 +123,17 @@ def project_manipuland_to_contacts(
     p_WM = p.X_WG.multiply(p.X_GM).translation()
     R_WM = p.X_WG.multiply(p.X_GM).rotation()
     ik.AddPositionCost(W, p_WM, M, np.zeros((3,)), np.identity(3))
-    ik.AddMinimumDistanceConstraint(-0.01)
-    # ik.AddOrientationCost(W, R_WM, M, RotationMatrix(), 0.1)
+
+    g_manipuland, g_ids = get_geometry_ids(diagram)
+    for k in g_ids.keys():
+        if k not in str(CF_d):
+            ik.AddDistanceConstraint((g_ids[k], g_manipuland), -1e-5, np.inf)
 
     try:
         result = Solve(ik.prog())
         if not result.is_success():
             print("warning, ik solve failed")
-    except:
+    except Exception as e:
         return None
 
     return plant.CalcRelativeTransform(plant_context, W, G)

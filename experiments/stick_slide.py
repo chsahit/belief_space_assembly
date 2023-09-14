@@ -21,7 +21,7 @@ def init(X_GM_x: float = 0.0, X_GM_p: float = 0.0) -> RigidTransform:
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/chamfered_hole.sdf", "assets/peg.urdf", mu=0.4
+        q_r_0, X_GM, X_WO, "assets/chamfered_hole.sdf", "assets/peg.urdf", mu=0.6
     )
     return p_0
 
@@ -80,7 +80,7 @@ def please_assemble():  # ...please?
     # modes = [contact_defs.fc_align, contact_defs.f_align]
     modes = [
         contact_defs.f_full_chamfer_touch,
-        contact_defs.corner_align_3,
+        contact_defs.corner_align_2,
         contact_defs.ground_align,
     ]
     for mode in modes:
@@ -97,12 +97,13 @@ def please_assemble():  # ...please?
 
 def ik_debug():
     p = init()
-    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.corner_align_3)
+    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.corner_align_2)
     q_r_solved = ik_solver.gripper_to_joint_states(X_WG)
     p_solved = p.deepcopy()
     p_solved.q_r = q_r_solved
-    im = visualize.generate_particle_picture(p_solved, vis=True)
+    im = visualize.generate_particle_picture(p_solved)
     im.save("ff_align.jpg")
+    visualize.show_particle(p_solved)
 
 
 if __name__ == "__main__":
