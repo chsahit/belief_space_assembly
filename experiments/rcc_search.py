@@ -1,5 +1,6 @@
 from typing import List, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from pydrake.all import RigidTransform
@@ -93,37 +94,33 @@ def visualize_experiment_result(
     z_bound: Tuple[float, float],
     density: int,
 ):
-    im_size = 1024
+    block_width = 100
+    im_size = (density + 1) * block_width
     im = np.zeros((im_size, im_size))
-    block_width = int(np.floor((im_size / density)))
-    # breakpoint()
 
     for (x, z, score) in result:
         x_idx = ((x - x_bound[0]) / (x_bound[1] - x_bound[0])) * density
-        start_x = int(np.floor(x_idx) * block_width)
+        start_x = int(x_idx * block_width)
         z_idx = ((z - z_bound[0]) / (z_bound[1] - z_bound[0])) * density
-        start_z = int(np.floor(z_idx) * block_width)
+        start_z = int(z_idx * block_width)
         px_val = float(score / num_particles) * 255
         print(f"real: {x=}, {z=}")
         print(
-            f"draw: ({start_x}, {start_x + block_width}), ({start_z}, {start_z + block_width})"
+            f"draw: ({start_x}, {start_x + block_width}), ({start_z}, {start_z + block_width}) {px_val}"
         )
         im[start_x : start_x + block_width, start_z : start_z + block_width].fill(
             px_val
         )
 
-    import matplotlib.pyplot as plt
-
+    im = im.T  # whoops
     plt.imshow(im)
     plt.show()
-    # img = Image.fromarray(im)
-    # img.show()
 
 
 def GC_experiment():
     b0 = b()
-    x_bound = [-0.16, 0.16]
-    z_bound = [-0.01, 0.31]
+    x_bound = [-0.15, 0.15]
+    z_bound = [-0.00, 0.30]
     density = 10
     simulation_output = simulate_GC_frames(b0, x_bound, z_bound, density)
     visualize_experiment_result(simulation_output, x_bound, z_bound, density)
