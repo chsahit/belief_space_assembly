@@ -27,7 +27,10 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
-    diagram = p.make_plant(vis=vis)
+    if vis:
+        diagram, meshcat = p.make_plant(vis=vis)
+    else:
+        diagram = p.make_plant(vis=vis)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
     plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
@@ -39,7 +42,10 @@ def simulate(
         meshcat_vis.StartRecording()
         simulator.AdvanceTo(motion.timeout)
         meshcat_vis.PublishRecording()
-        input()
+        # input()
+        s_html = meshcat.StaticHtml()
+        with open("meshcat_html.html", "w") as text_file:
+            text_file.write(s_html)
     else:
         simulator.AdvanceTo(motion.timeout)
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))

@@ -14,6 +14,7 @@ from pydrake.all import (
     Diagram,
     DiagramBuilder,
     DiscreteContactSolver,
+    InverseDynamics,
     MakeRenderEngineGl,
     MakeRenderEngineVtk,
     Meshcat,
@@ -33,12 +34,13 @@ from pydrake.all import (
     RoleAssign,
     SceneGraph,
     Sphere,
+    ZeroOrderHold,
 )
 
 import utils
 from simulation import controller, geometry_monitor, image_logger
 
-timestep = 0.005
+timestep = 0.001
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
@@ -60,6 +62,7 @@ def _weld_geometries(plant: MultibodyPlant, X_GM: RigidTransform, X_WO: RigidTra
         frame_on_child_M=plant.GetFrameByName("panda_link0"),
         X_FM=utils.xyz_rpy_deg([0, 0, 0], [0, 0, 0]),
     )
+    """
     plant.WeldFrames(
         frame_on_parent_F=plant.world_frame(),
         frame_on_child_M=plant.GetFrameByName("bin_base"),
@@ -70,6 +73,7 @@ def _weld_geometries(plant: MultibodyPlant, X_GM: RigidTransform, X_WO: RigidTra
         frame_on_child_M=plant.GetFrameByName("base_link"),
         X_FM=X_GM,
     )
+    """
 
 
 def make_plant(
@@ -82,7 +86,7 @@ def make_plant(
     vis: bool = False,
     mu: float = 0.0,
 ) -> Diagram:
-    builder, _, _ = _construct_diagram(
+    builder, _, _, meshcat = _construct_diagram(
         q_r,
         X_GM,
         X_WO,
@@ -93,6 +97,8 @@ def make_plant(
         mu=mu,
     )
     diagram = builder.Build()
+    if vis:
+        return diagram, meshcat
     return diagram
 
 
@@ -104,7 +110,7 @@ def make_plant_with_cameras(
     manip_geom: str,
     vis: bool = False,
 ) -> Diagram:
-    builder, plant, scene_graph = _construct_diagram(
+    builder, plant, scene_graph, _ = _construct_diagram(
         q_r, X_GM, X_WO, env_geom, manip_geom, vis=vis
     )
     from pyvirtualdisplay import Display
@@ -181,7 +187,7 @@ def _construct_diagram(
     collision_check: bool = False,
     vis: bool = False,
     mu: float = 0.0,
-) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph]:
+) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
 
     # Plant hyperparameters
     builder = DiagramBuilder()
@@ -194,6 +200,7 @@ def _construct_diagram(
     parser = Parser(plant)
     parser.package_map().Add("assets", "assets/")
     panda = parser.AddModelFromFile("assets/panda_arm_hand.urdf", model_name="panda")
+    """
     env_geometry = parser.AddAllModelsFromFile(env_geom)[0]
     manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
     if collision_check:
@@ -203,9 +210,9 @@ def _construct_diagram(
             plant.RegisterCollisionGeometry(
                 manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
             )
-    _weld_geometries(plant, X_GM, X_WO)
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
-
+    """
+    _weld_geometries(plant, X_GM, X_WO)
     plant.Finalize()
     plant.SetDefaultPositions(panda, q_r)
 
@@ -220,18 +227,35 @@ def _construct_diagram(
 
     # connect controller
     compliant_controller = builder.AddNamedSystem(
-        "controller", controller.ControllerSystem(plant)
+        "controller", controller.VirtualSpringDamper(plant)
     )
+    inv_dynamics = builder.AddSystem(InverseDynamics(plant))
+    hold = builder.AddSystem(ZeroOrderHold(0.001, 9))
     builder.Connect(
         plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
     )
     builder.Connect(
-        compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
+        plant.get_generalized_acceleration_output_port(),
+        hold.get_input_port()
     )
+    builder.Connect(
+        hold.get_output_port(),
+        compliant_controller.GetInputPort("acceleration")
+    )
+    builder.Connect(
+        compliant_controller.get_output_port(), inv_dynamics.get_input_port_desired_acceleration()# plant.get_actuation_input_port(panda)
+    )
+    builder.Connect(
+        plant.get_state_output_port(), inv_dynamics.get_input_port_estimated_state()
+    )
+    builder.Connect(
+        inv_dynamics.get_output_port_force(), plant.get_actuation_input_port(panda)
+    )
+    meshcat = None
     if vis:
         meshcat = Meshcat()
         meshcat_vis = MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )
         ContactVisualizer.AddToBuilder(builder, plant, meshcat)
-    return builder, plant, scene_graph
+    return builder, plant, scene_graph, meshcat

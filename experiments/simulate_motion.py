@@ -2,6 +2,7 @@ import numpy as np
 from pydrake.all import RigidTransform
 
 import components
+import contact_defs
 import dynamics
 import state
 import utils
@@ -10,10 +11,11 @@ from simulation import ik_solver
 
 
 def init():
-    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0])
+    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
     X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.155], [0, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
-    q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
+    # q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
+    q_r_0 = np.array([0.0, -0.7853981633974483, 0.0,  -2.356194490192345, 0.0, 1.5707963267948966, 0.7853981633974483, 0.1, 0.1])
     p_0 = state.Particle(
         q_r_0, X_GM, X_WO, "assets/chamfered_hole.sdf", "assets/peg.urdf"
     )
@@ -80,6 +82,25 @@ def test_vis():
     im.save("test.jpg")
 
 
+def funny_rcc():
+    p0 = init()
+    p0.mu = 0.6
+    # X_GC = RigidTransform([-0.05, 0, 0])
+    # X_WCd = utils.xyz_rpy_deg([0.45, 0.0, 0.22], [180, 0, 0])
+    X_GC = RigidTransform([0.00, 0, 0.0])
+    X_WCd = utils.xyz_rpy_deg([0.5, 0.0, -0.01], [180, 0, 0])
+    K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
+    u_nom = components.CompliantMotion(X_GC, X_WCd, K_nom)
+    u_nom.timeout = 5.0
+    p1 = dynamics.simulate(p0, u_nom, vis=True)
+    print(p1.satisfies_contact(contact_defs.ground_align))
+
+
+def find_ik_align():
+    p = init()
+    X_WG = ik_solver.project_manipuland_to_contacts(p, contact_defs.ground_align)
+    print(f"{X_WG=}")
+
+
 if __name__ == "__main__":
-    test_simulate()
-    # test_vis()
+    funny_rcc()
