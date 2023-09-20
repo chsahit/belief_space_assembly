@@ -25,7 +25,7 @@ def b() -> state.Belief:
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/chamfered_hole.sdf", "assets/peg.urdf", mu=0.6
+        q_r_0, X_GM, X_WO, "assets/big_chamfered_hole.sdf", "assets/peg.urdf", mu=0.6
     )
 
     grasps = [
@@ -70,10 +70,10 @@ def simulate_GC_frames(
     density: int,
 ) -> ExperimentResult:
 
-    X_WG_nom = utils.xyz_rpy_deg([0.5, 0.0, 0.23], [180, 0, 0])
+    X_WG_nom = utils.xyz_rpy_deg([0.5, 0.0, 0.22], [180, 0, 0])
     K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
     u_nom = components.CompliantMotion(RigidTransform(), X_WG_nom, K_nom)
-    X_GC_all = generate_GC_frames(x_bound, z_bound)
+    X_GC_all = generate_GC_frames(x_bound, z_bound, density=density)
     motions_all = [map_motion_to_GC_frame(u_nom, X_GC) for X_GC in X_GC_all]
     scores = []
     for motion in tqdm(motions_all):
@@ -113,6 +113,9 @@ def visualize_experiment_result(
         )
 
     im = im.T  # whoops
+    plt.scatter(y=[0], x=[int(im_size / 2)], c="r", s=60)  # gripper
+    block_z = (0.23 / 0.3) * im_size
+    plt.scatter(y=[int(block_z)], x=[int(im_size / 2)], c="w", s=60)
     plt.imshow(im)
     plt.show()
 
@@ -121,7 +124,7 @@ def GC_experiment():
     b0 = b()
     x_bound = [-0.15, 0.15]
     z_bound = [-0.00, 0.30]
-    density = 10
+    density = 20
     simulation_output = simulate_GC_frames(b0, x_bound, z_bound, density)
     visualize_experiment_result(simulation_output, x_bound, z_bound, density)
 

@@ -57,7 +57,12 @@ class ControllerSystem(LeafSystem):
             self.plant_context, self.plant.world_frame(), G
         )
         J_g = self.plant.CalcJacobianSpatialVelocity(
-            self.plant_context, JacobianWrtVariable.kQDot, G, [0, 0, 0], W, W
+            self.plant_context,
+            JacobianWrtVariable.kQDot,
+            G,
+            self.motion.X_GC.translation(),
+            W,
+            W,
         )
         J_g = J_g[:, self.panda_start_pos : self.panda_end_pos + 1]
         assert J_g.shape == (6, 7)
