@@ -82,11 +82,14 @@ def test_vis():
 
 def funny_rcc():
     p0 = init()
-    X_GC = RigidTransform([-0.05, 0.0, 0.0])
-    X_WCd = utils.xyz_rpy_deg([0.45, 0.0, 0.22], [180, 0, 0])
+    # X_GC = RigidTransform([-0.05, 0.0, 0.0])
+    # X_WCd = utils.xyz_rpy_deg([0.45, 0.0, 0.22], [180, 0, 0])
+    X_GC = RigidTransform([0.5, 0.0, 0.1])
+    X_WCd = utils.xyz_rpy_deg([0.5, 0.0, 0.22], [180, 0, 0])
     K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
     u_nom = components.CompliantMotion(X_GC, X_WCd, K_nom)
     p1 = dynamics.simulate(p0, u_nom, vis=True)
+
 
 if __name__ == "__main__":
     funny_rcc()

@@ -13,8 +13,8 @@ soft = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 100.0])
 
 @dataclass
 class CompliantMotion:
-    X_GC: RigidTransform
-    X_WCd: RigidTransform
+    X_GC: RigidTransform  # actually X_WC
+    X_WCd: RigidTransform  # actually X_WGd
     K: np.ndarray
     _B: np.ndarray = None
     timeout: float = 5.0

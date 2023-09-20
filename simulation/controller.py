@@ -40,8 +40,14 @@ class ControllerSystem(LeafSystem):
     ) -> np.ndarray:
         if self.motion is None:
             return -tau_g
-        X_WC = X_WG.multiply(self.motion.X_GC)
-        err = self.compute_error(X_WC, self.motion.X_WCd)
+        # compute curr X_GC = X_GW @ X_WC
+        # compute curr X_WCd = X_WGd @ X_GC
+        curr_X_GC = X_WG.InvertAndCompose(self.motion.X_GC)
+        curr_X_WCd = self.motion.X_WCd @ curr_X_GC
+
+        # X_WC = X_WG.multiply(self.motion.X_GC)
+        # err = self.compute_error(X_WC, self.motion.X_WCd)
+        err = self.compute_error(self.motion.X_GC, curr_X_WCd)
         spring_force = np.multiply(self.motion.K, err)
         damping_force = np.multiply(self.motion.B, block_vel)
         tau_controller = -tau_g + J.T @ (spring_force - damping_force)
@@ -60,7 +66,7 @@ class ControllerSystem(LeafSystem):
             self.plant_context,
             JacobianWrtVariable.kQDot,
             G,
-            self.motion.X_GC.translation(),
+            [0, 0, 0],
             W,
             W,
         )
