@@ -10,7 +10,7 @@ from simulation import ik_solver
 
 
 def init():
-    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0])
+    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
     X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.155], [0, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
@@ -80,6 +80,14 @@ def test_vis():
     im.save("test.jpg")
 
 
+def funny_rcc():
+    p0 = init()
+    X_GC = RigidTransform([-0.05, 0.0, 0.0])
+    X_WCd = utils.xyz_rpy_deg([0.45, 0.0, 0.22], [180, 0, 0])
+    K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
+    u_nom = components.CompliantMotion(X_GC, X_WCd, K_nom)
+    p1 = dynamics.simulate(p0, u_nom, vis=True)
+
 if __name__ == "__main__":
-    test_simulate()
+    funny_rcc()
     # test_vis()
