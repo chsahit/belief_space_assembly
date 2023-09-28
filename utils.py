@@ -19,3 +19,9 @@ def RigidTfToVec(X: RigidTransform) -> np.ndarray:
 def VecToRigidTF(v: np.ndarray) -> RigidTransform:
     quat = Quaternion(v[:4] / np.linalg.norm(v[:4]))
     return RigidTransform(RotationMatrix(quat), v[4:])
+
+
+def rt_to_str(X: RigidTransform) -> str:
+    t_str = f"translation: {np.round(X.translation(), 5)}"
+    r_str = f"rotation: {np.round(X.rotation().ToRollPitchYaw().vector(), 5)}"
+    return t_str + "\n" + r_str

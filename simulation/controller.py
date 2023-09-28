@@ -44,7 +44,10 @@ class ControllerSystem(LeafSystem):
         err = self.compute_error(X_WC, self.motion.X_WCd)
         spring_force = np.multiply(self.motion.K, err)
         damping_force = np.multiply(self.motion.B, block_vel)
-        tau_controller = -tau_g + J.T @ (spring_force - damping_force)
+        # damping_force = 0 * np.multiply(self.motion.B, block_vel[:-1])
+        # df_b = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0])
+        # df = np.multiply(df_b, block_vel)
+        tau_controller = -tau_g + J.T @ (spring_force - damping_force)  # - df
         return tau_controller
 
     def CalcOutput(self, context, output):
@@ -73,6 +76,8 @@ class ControllerSystem(LeafSystem):
         block_velocity = np.concatenate(
             (block_velocity.rotational(), block_velocity.translational())
         )
+        # block_velocity = J_g @ q[9:16]
+        # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
         tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))

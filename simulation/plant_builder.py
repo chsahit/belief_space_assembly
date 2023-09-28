@@ -81,8 +81,8 @@ def make_plant(
     collision_check: bool = False,
     vis: bool = False,
     mu: float = 0.0,
-) -> Diagram:
-    builder, _, _ = _construct_diagram(
+) -> Tuple[Diagram, Meshcat]:
+    builder, _, _, meshcat = _construct_diagram(
         q_r,
         X_GM,
         X_WO,
@@ -93,7 +93,7 @@ def make_plant(
         mu=mu,
     )
     diagram = builder.Build()
-    return diagram
+    return diagram, meshcat
 
 
 def make_plant_with_cameras(
@@ -104,7 +104,7 @@ def make_plant_with_cameras(
     manip_geom: str,
     vis: bool = False,
 ) -> Diagram:
-    builder, plant, scene_graph = _construct_diagram(
+    builder, plant, scene_graph, meshcat = _construct_diagram(
         q_r, X_GM, X_WO, env_geom, manip_geom, vis=vis
     )
     from pyvirtualdisplay import Display
@@ -181,7 +181,7 @@ def _construct_diagram(
     collision_check: bool = False,
     vis: bool = False,
     mu: float = 0.0,
-) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph]:
+) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
 
     # Plant hyperparameters
     builder = DiagramBuilder()
@@ -228,10 +228,11 @@ def _construct_diagram(
     builder.Connect(
         compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
     )
+    meshcat = None
     if vis:
         meshcat = Meshcat()
         meshcat_vis = MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )
         ContactVisualizer.AddToBuilder(builder, plant, meshcat)
-    return builder, plant, scene_graph
+    return builder, plant, scene_graph, meshcat

@@ -12,6 +12,7 @@ from pydrake.all import (
 import components
 import dynamics
 import state
+import utils
 from planning import motion_sets
 from simulation import plant_builder
 
@@ -95,6 +96,7 @@ def refine(
     for u in U_candidates:
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):
+            print(f"{sp = {utils.rt_to_str(u.X_WCd)}")
             return u
     print("returning partial soln")
     return U_candidates[0]

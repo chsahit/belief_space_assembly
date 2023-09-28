@@ -88,6 +88,7 @@ def funny_rcc():
     u_nom = components.CompliantMotion(X_GC, X_WCd, K_nom)
     p1 = dynamics.simulate(p0, u_nom, vis=True)
 
+
 if __name__ == "__main__":
     funny_rcc()
     # test_vis()
