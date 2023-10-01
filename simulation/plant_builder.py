@@ -38,7 +38,7 @@ from pydrake.all import (
 import utils
 from simulation import controller, geometry_monitor, image_logger
 
-timestep = 0.005
+timestep = 0  # .005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
@@ -207,6 +207,14 @@ def _construct_diagram(
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
 
     plant.Finalize()
+    ja_indices = plant.GetJointActuatorIndices(panda)
+    for ja_idx in ja_indices:
+        ja = plant.get_joint_actuator(ja_idx)
+        print("init inertia: ", ja.default_reflected_inertia())
+        ja.set_default_rotor_inertia(0.0)
+        ja.set_default_gear_ratio(0.0)
+        print("final inertia: ", ja.default_reflected_inertia())
+
     plant.SetDefaultPositions(panda, q_r)
 
     if collision_check:

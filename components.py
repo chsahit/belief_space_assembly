@@ -24,7 +24,7 @@ class CompliantMotion:
         if self._B is not None:
             return self._B
         else:
-            return 4 * np.sqrt(self.K)
+            return 10 * np.sqrt(self.K)
 
 
 class Grasp(NamedTuple):

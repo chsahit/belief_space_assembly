@@ -84,10 +84,11 @@ def compliance_search(
 def refine(
     b0: state.Belief, CF_d: components.ContactState
 ) -> components.CompliantMotion:
-    p_nom = b0.sample()
+    p_nom = b0.particles[0]  # b0.sample()
     spheres = plant_builder.generate_collision_spheres()
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
-    print(f"{X_GC.translation()=}")
+    print(f"NON-RANDOM {X_GC.translation()=}")
+    print(f"{p_nom.X_GM=}")
     K_star = compliance_search(X_GC, CF_d, p_nom)
     if K_star is None:
         return None
@@ -96,7 +97,7 @@ def refine(
     for u in U_candidates:
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):
-            print(f"{sp = {utils.rt_to_str(u.X_WCd)}")
+            print(f"sp = {utils.rt_to_str(u.X_WCd)}")
             return u
     print("returning partial soln")
     return U_candidates[0]

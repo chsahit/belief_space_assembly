@@ -45,7 +45,7 @@ class Particle:
         )
 
     def _update_contact_data(self):
-        diagram = self.make_plant(collision=True)
+        diagram, _ = self.make_plant(collision=True)
         geom_monitor = diagram.GetSubsystemByName("geom_monitor")
         geom_monitor.ForcedPublish(
             geom_monitor.GetMyContextFromRoot(diagram.CreateDefaultContext())
@@ -75,7 +75,7 @@ class Particle:
     @property
     def X_WG(self):
         if self._X_WG is None:
-            diagram = self.make_plant()
+            diagram, _ = self.make_plant()
             plant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
             plant.SetPositions(

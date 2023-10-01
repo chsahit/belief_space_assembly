@@ -101,7 +101,7 @@ def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId
 def project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState
 ) -> RigidTransform:
-    diagram = p.make_plant()
+    diagram, _ = p.make_plant()
     plant = diagram.GetSubsystemByName("plant")
     plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
     constraints = p.constraints
