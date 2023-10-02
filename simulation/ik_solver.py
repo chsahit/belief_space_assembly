@@ -13,6 +13,7 @@ from pydrake.all import (
     Parser,
     RigidTransform,
     Role,
+    RollPitchYaw,
     RotationMatrix,
     Solve,
 )
@@ -99,7 +100,7 @@ def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId
 
 
 def project_manipuland_to_contacts(
-    p: state.Particle, CF_d: components.ContactState
+    p: state.Particle, CF_d: components.ContactState, fallback: bool = False
 ) -> RigidTransform:
     diagram, _ = p.make_plant()
     plant = diagram.GetSubsystemByName("plant")
@@ -131,9 +132,27 @@ def project_manipuland_to_contacts(
 
     try:
         result = Solve(ik.prog())
+        X_WG_out = plant.CalcRelativeTransform(plant_context, W, G)
         if not result.is_success():
-            print("warning, ik solve failed")
+            if not fallback:
+                p_aligned = axis_align_particle(p)
+                return project_manipuland_to_contacts(p_aligned, CF_d, fallback=True)
+            else:
+                print(f"warning, ik solve failed. returning {X_WG_out}")
     except Exception as e:
+        print("e: ", e)
         return None
 
-    return plant.CalcRelativeTransform(plant_context, W, G)
+    return X_WG_out
+
+
+def axis_align_particle(p: state.Particle) -> state.Particle:
+    X_WM = p.X_WG.multiply(p.X_GM)
+    X_WM_aa = RigidTransform(X_WM.GetAsMatrix4())
+    nominal_manipuland_orientation = RollPitchYaw(np.array([np.pi, 0, 0]))
+    X_WM_aa.set_rotation(nominal_manipuland_orientation)
+    X_WG_aa = X_WM_aa.multiply(p.X_GM.inverse())
+    q_r_aa = gripper_to_joint_states(X_WG_aa)
+    new_p = p.deepcopy()
+    new_p.q_r = q_r_aa
+    return new_p

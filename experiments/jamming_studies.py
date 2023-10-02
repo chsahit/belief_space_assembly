@@ -31,19 +31,23 @@ def init_motion(i: int, K: np.ndarray = components.stiff) -> components.Complian
         X_WC_d = utils.xyz_rpy_deg([0.51, 0.000, 0.00], [180, -0, 0])
     elif i == 2:
         K = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 600.0])
-        X_WC_d = utils.xyz_rpy_deg([0.5, 0.0, -0.01], [180, -5, 0])
+        X_WC_d = utils.xyz_rpy_deg([0.5, 0.0, -0.00], [180, -10, 0])
     else:
         raise NotImplementedError
     X_GC = utils.xyz_rpy_deg([0.0, 0.0, 0.23], [0, 0, 0])
-    return components.CompliantMotion(X_GC, X_WC_d, K, timeout=20.0)
+    return components.CompliantMotion(X_GC, X_WC_d, K, timeout=10.0)
 
 
 def jamming():
     p1 = init(X_GM_x=0.0, X_GM_p=-10.0)
-    # p1 = init(X_GM_x=0.0, X_GM_p=-0.0)
     u0 = init_motion(2)
     p11 = dynamics.simulate(p1, u0, vis=True)
     print(p11.contacts)
+
+
+def planned_jamming():
+    b0 = state.Belief([init(X_GM_p=-10.0)])
+    u = refine_motion.refine(b0, contact_defs.ground_align)
 
 
 def drift():
@@ -72,6 +76,4 @@ def jacobian_analysis():
 
 
 if __name__ == "__main__":
-    # drift()
-    # jacobian_analysis()
-    jamming()
+    planned_jamming()
