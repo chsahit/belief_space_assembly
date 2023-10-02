@@ -72,6 +72,6 @@ def jacobian_analysis():
 
 
 if __name__ == "__main__":
-    drift()
+    # drift()
     # jacobian_analysis()
-    # jamming()
+    jamming()

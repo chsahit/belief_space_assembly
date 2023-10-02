@@ -210,10 +210,8 @@ def _construct_diagram(
     ja_indices = plant.GetJointActuatorIndices(panda)
     for ja_idx in ja_indices:
         ja = plant.get_joint_actuator(ja_idx)
-        print("init inertia: ", ja.default_reflected_inertia())
         ja.set_default_rotor_inertia(0.0)
         ja.set_default_gear_ratio(0.0)
-        print("final inertia: ", ja.default_reflected_inertia())
 
     plant.SetDefaultPositions(panda, q_r)
 

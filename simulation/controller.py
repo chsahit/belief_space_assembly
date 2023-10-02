@@ -23,6 +23,7 @@ class ControllerSystem(LeafSystem):
         self.sdf = dict()
         self.motion = None
         self.i = 0
+        self.history = []
 
     def compute_error(self, X_WC: RigidTransform, X_WCd: RigidTransform) -> np.ndarray:
         R_CCd = X_WC.InvertAndCompose(X_WCd).rotation()
@@ -82,6 +83,7 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
+        self.history.append((context.get_time(), X_WG.translation()))
         if self.i == 0:
             from pydrake.all import MultibodyForces
 

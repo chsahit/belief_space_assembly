@@ -31,6 +31,7 @@ class Particle:
         self._sdf = None
         self._constraints = None
         self._X_WG = None
+        self.trajectory = []
 
     def make_plant(self, vis: bool = False, collision: bool = False) -> System:
         return plant_builder.make_plant(
