@@ -46,7 +46,7 @@ def jamming():
 
 
 def planned_jamming():
-    b0 = state.Belief([init(X_GM_p=-10.0)])
+    b0 = state.Belief([init(), init(X_GM_p=-10.0)])
     u = refine_motion.refine(b0, contact_defs.ground_align)
 
 

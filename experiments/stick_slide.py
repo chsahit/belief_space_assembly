@@ -85,7 +85,7 @@ def please_assemble():  # ...please?
         contact_defs.ground_align,
     ]
     """
-    modes = [contact_defs.f_full_chamfer_touch, contact_defs.bf_only_align]
+    modes = [contact_defs.b_full_chamfer_touch, contact_defs.ground_align]
 
     for mode in modes:
         u = refine_motion.refine(b, mode)

@@ -51,6 +51,7 @@ def grow_motion_set(
     if X_WGd_0 is None:
         print("IK solve failed, returning none")
         return U
+    print("X_WGd_0: ", utils.rt_to_str(X_WGd_0))
     X_WCd_0 = X_WGd_0.multiply(X_GC)
     U_candidates = []
     for displacement in _compute_displacements(density):

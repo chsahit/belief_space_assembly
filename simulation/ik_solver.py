@@ -135,10 +135,11 @@ def project_manipuland_to_contacts(
         X_WG_out = plant.CalcRelativeTransform(plant_context, W, G)
         if not result.is_success():
             if not fallback:
+                print("doing fallback")
                 p_aligned = axis_align_particle(p)
                 return project_manipuland_to_contacts(p_aligned, CF_d, fallback=True)
             else:
-                print(f"warning, ik solve failed. returning {X_WG_out}")
+                print(f"warning, ik solve failed. {X_WG_out}")
     except Exception as e:
         print("e: ", e)
         return None
@@ -151,6 +152,10 @@ def axis_align_particle(p: state.Particle) -> state.Particle:
     X_WM_aa = RigidTransform(X_WM.GetAsMatrix4())
     nominal_manipuland_orientation = RollPitchYaw(np.array([np.pi, 0, 0]))
     X_WM_aa.set_rotation(nominal_manipuland_orientation)
+    X_WM_aa_translation = X_WM_aa.translation().copy()
+    X_WM_aa_translation[0] = 0.5
+    X_WM_aa_translation[2] = 0.15
+    X_WM_aa.set_translation(X_WM_aa_translation)
     X_WG_aa = X_WM_aa.multiply(p.X_GM.inverse())
     q_r_aa = gripper_to_joint_states(X_WG_aa)
     new_p = p.deepcopy()

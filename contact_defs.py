@@ -73,6 +73,13 @@ f_full_chamfer_touch = set(
     )
 )
 
+b_full_chamfer_touch = set(
+    (
+        ("bin_model::front_chamfer", "block::001"),
+        ("bin_model::front_chamfer", "block::011"),
+    )
+)
+
 corner_touch = set(
     (
         ("bin_model::back", "block::101"),
