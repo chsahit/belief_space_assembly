@@ -44,7 +44,9 @@ def b() -> state.Belief:
 def map_motion_to_GC_frame(
     u_nom: components.CompliantMotion, X_GC: RigidTransform
 ) -> components.CompliantMotion:
-    return components.CompliantMotion(X_GC, u_nom.X_WCd.multiply(X_GC), u_nom.K)
+    return components.CompliantMotion(
+        X_GC, u_nom.X_WCd.multiply(X_GC), u_nom.K, timeout=10.0
+    )
 
 
 def generate_GC_frames(
@@ -117,16 +119,27 @@ def visualize_experiment_result(
     block_z = (0.23 / 0.3) * im_size
     plt.scatter(y=[int(block_z)], x=[int(im_size / 2)], c="w", s=60)
     plt.imshow(im)
-    plt.show()
+    # plt.show()
+    plt.savefig("rcc.png")
 
 
 def GC_experiment():
     b0 = b()
     x_bound = [-0.15, 0.15]
     z_bound = [-0.00, 0.30]
-    density = 20
+    density = 10
     simulation_output = simulate_GC_frames(b0, x_bound, z_bound, density)
     visualize_experiment_result(simulation_output, x_bound, z_bound, density)
+
+
+def opt_rcc():
+    b0 = b()
+    X_GC_nom = RigidTransform([0.0, 0.0, 0.22])
+    X_WC_nom = utils.xyz_rpy_deg([0.5, 0.0, 0.0], [180, 0, 0])
+    K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
+    u_nom = components.CompliantMotion(X_GC_nom, X_WC_nom, K_nom, timeout=10.0)
+    p_out = dynamics.simulate(b0.particles[3], u_nom, vis=True)
+    print(f"{p_out.contacts=}")
 
 
 if __name__ == "__main__":

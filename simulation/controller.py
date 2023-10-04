@@ -5,6 +5,7 @@ import numpy as np
 from pydrake.all import BasicVector, JacobianWrtVariable, LeafSystem, RigidTransform
 
 import components
+import mr
 
 
 class ControllerSystem(LeafSystem):
@@ -47,10 +48,10 @@ class ControllerSystem(LeafSystem):
         err = self.compute_error(X_WC, self.motion.X_WCd)
         spring_force = np.multiply(self.motion.K, err)
         damping_force = np.multiply(self.motion.B, block_vel)
-        # damping_force = 0 * np.multiply(self.motion.B, block_vel[:-1])
-        # df_b = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0])
-        # df = np.multiply(df_b, block_vel)
-        tau_controller = -tau_g + J.T @ (spring_force - damping_force)  # - df
+        F_C = spring_force - damping_force
+        Adj_X_CG = mr.Adjoint(self.motion.X_GC.inverse().GetAsMatrix4())
+        F_G = Adj_X_CG.T @ F_C
+        tau_controller = -tau_g + J.T @ F_G
         return tau_controller
 
     def CalcOutput(self, context, output):

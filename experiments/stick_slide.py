@@ -85,14 +85,18 @@ def please_assemble():  # ...please?
         contact_defs.ground_align,
     ]
     """
-    modes = [contact_defs.b_full_chamfer_touch, contact_defs.ground_align]
+    modes = [
+        contact_defs.b_full_chamfer_touch,
+        contact_defs.bf_only_align,
+        contact_defs.ground_align,
+    ]
 
     for mode in modes:
         u = refine_motion.refine(b, mode)
         if u is not None:
             b_next = dynamics.f_bel(b, u)
             for p in b.particles:
-                dynamics.simulate(p, u, vis=True)
+                dynamics.simulate(p, u, vis=False)
             b = b_next
         else:
             print("search failed")

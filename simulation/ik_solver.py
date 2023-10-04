@@ -122,8 +122,9 @@ def project_manipuland_to_contacts(
     prog.SetInitialGuess(q, p.q_r)
 
     p_WM = p.X_WG.multiply(p.X_GM).translation()
-    R_WM = p.X_WG.multiply(p.X_GM).rotation()
     ik.AddPositionCost(W, p_WM, M, np.zeros((3,)), np.identity(3))
+    # R_WM = p.X_WG.multiply(p.X_GM).rotation()
+    # ik.AddOrientationCost(W, R_WM, M, RotationMatrix(np.eye(3)), 0.01)
 
     g_manipuland, g_ids = get_geometry_ids(diagram)
     for k in g_ids.keys():
