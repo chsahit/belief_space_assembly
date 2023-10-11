@@ -8,6 +8,7 @@ from pydrake.all import (
     RigidTransform_,
     Solve,
 )
+from tqdm import tqdm
 
 import components
 import dynamics
@@ -94,7 +95,8 @@ def refine(
         return None
     print(f"{K_star=}")
     U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
-    for u in U_candidates:
+    print("testing candidates")
+    for u in tqdm(U_candidates):
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):
             print(f"sp = {utils.rt_to_str(u.X_WCd)}")

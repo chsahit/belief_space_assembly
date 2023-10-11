@@ -102,7 +102,8 @@ def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId
 def project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, fallback: bool = False
 ) -> RigidTransform:
-    diagram, _ = p.make_plant()
+    p_aligned = axis_align_particle(p)
+    diagram, _ = p_aligned.make_plant()
     plant = diagram.GetSubsystemByName("plant")
     plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
     constraints = p.constraints
@@ -119,17 +120,21 @@ def project_manipuland_to_contacts(
 
     q = ik.q()
     prog = ik.get_mutable_prog()
-    prog.SetInitialGuess(q, p.q_r)
+    prog.SetInitialGuess(q, p_aligned.q_r)
 
-    p_WM = p.X_WG.multiply(p.X_GM).translation()
+    p_WM = p.X_WG.multiply(p_aligned.X_GM).translation()
     ik.AddPositionCost(W, p_WM, M, np.zeros((3,)), np.identity(3))
     # R_WM = p.X_WG.multiply(p.X_GM).rotation()
     # ik.AddOrientationCost(W, R_WM, M, RotationMatrix(np.eye(3)), 0.01)
 
     g_manipuland, g_ids = get_geometry_ids(diagram)
+    if fallback:
+        ap = -1e-5
+    else:
+        ap = -1e-10
     for k in g_ids.keys():
         if k not in str(CF_d):
-            ik.AddDistanceConstraint((g_ids[k], g_manipuland), -1e-5, np.inf)
+            ik.AddDistanceConstraint((g_ids[k], g_manipuland), ap, np.inf)
 
     try:
         result = Solve(ik.prog())

@@ -70,8 +70,10 @@ def plot_trajectories():
                 plt.scatter(pt[1][0], pt[1][2], c=cmap[i], label=str(DRs[i]))
             else:
                 plt.scatter(pt[1][0], pt[1][2], c=cmap[i])
+    plt.axvline(x=0.5, color="gray")
     plt.legend()
-    plt.show()
+    plt.savefig("drift.png")
+    # plt.show()
 
 
 if __name__ == "__main__":

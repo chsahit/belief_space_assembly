@@ -2,7 +2,13 @@ import random
 from typing import List
 
 import numpy as np
-from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
+from pydrake.all import (
+    HPolyhedron,
+    RandomGenerator,
+    RigidTransform,
+    RotationMatrix,
+    VPolytope,
+)
 from sklearn.decomposition import PCA
 
 import components
@@ -36,6 +42,29 @@ def _compute_displacements(density: int) -> List[np.ndarray]:
         displacement_i = [delta * e(i) for delta in Delta]
         displacements.extend(displacement_i)
     return displacements
+
+
+def logmap_setpoints(X_WCs_batch: List[List[RigidTransform]]) -> List[List[np.ndarray]]:
+    assert len(X_WCs_batch) > 1
+    nominal = X_WCs_batch[0][0].rotation()
+    logmap_batch = []
+    for X_WCs in X_WCs_batch:
+        logmapped = []
+        for X_WC in X_WCs:
+            t = X_WC.translation()
+            R_WC = X_WC.rotation()
+            R_WC = nominal
+            delta = nominal.multiply(R_WC.inverse()).matrix()
+            r = mr.so3ToVec(mr.MatrixLog3(delta))
+            logmapped.append(np.concatenate((r, t)))
+        logmap_batch.append(logmapped)
+    return logmap_batch
+
+
+def expmap_intersection(sp: np.ndarray, origin: RigidTransform) -> RigidTransform:
+    R_bar = mr.MatrixExp3(mr.VecToso3(sp[:3]))
+    R = RotationMatrix(R_bar).multiply(origin.rotation())
+    return RigidTransform(R, sp[3:])
 
 
 def grow_motion_set(
@@ -122,6 +151,14 @@ def _sample_from_polyhedron(poly: HPolyhedron, n_samples: int = 10) -> List[np.n
     return samples
 
 
+def naive_center(hulls: List[HPolyhedron]) -> np.ndarray:
+    scale = 1.0 / len(hulls)
+    components = [
+        scale * hull.MaximumVolumeInscribedEllipsoid().center() for hull in hulls
+    ]
+    return sum(components)
+
+
 def intersect_motion_sets(
     X_GC: RigidTransform,
     K: np.ndarray,
@@ -135,10 +172,13 @@ def intersect_motion_sets(
     # extract the setpoint from each CompliantMotion object in each motion set
     target_sets = [[u.X_WCd for u in motion_set] for motion_set in motion_sets]
     # convert setpoints from 4x4 matrix repr to 7-dimensional (quat, xyz) vectors
+    """
     vertices = [
         [utils.RigidTfToVec(X_WCd) for X_WCd in target_set]
         for target_set in target_sets
     ]
+    """
+    vertices = logmap_setpoints(target_sets)
     for vset in vertices:
         print(f"{len(vset)=}")
         if len(vset) < 2:  # can't have a positive-volume polytope from 0 or 1 points
@@ -155,20 +195,76 @@ def intersect_motion_sets(
         intersection = intersection.Intersection(hulls[i])
     if intersection.IsEmpty():
         print("merge failed, no intersection found")
+        # c0 = hulls[0].MaximumVolumeInscribedEllipsoid().center()
+        # c1 = hulls[1].MaximumVolumeInscribedEllipsoid().center()
+        # c = 0.5 * c0 + 0.5 * c1
+        c = naive_center(hulls)
+        X_WCd = expmap_intersection(
+            mapping.inverse_transform([c][0]), target_sets[0][0]
+        )
+        u_nom = motion_sets[0][0]
+        u = components.CompliantMotion(u_nom.X_GC, X_WCd, u_nom.K)
+        return [u]
         return random.sample(motion_sets_unpacked, 8)
     # draw points from the hull intersection, use it to populate CompliantMotion objects
     u_nom = motion_sets[0][0]
     X_WCd_center_low_dim = intersection.MaximumVolumeInscribedEllipsoid().center()
+    """
     X_WCd_center = utils.VecToRigidTF(
         mapping.inverse_transform([X_WCd_center_low_dim][0])
     )
+    """
+    X_WCd_naive = expmap_intersection(
+        mapping.inverse_transform([naive_center(hulls)][0]), target_sets[0][0]
+    )
+    naive_motion = [components.CompliantMotion(u_nom.X_GC, X_WCd_naive, u_nom.K)]
+    X_WCd_center = expmap_intersection(
+        mapping.inverse_transform([X_WCd_center_low_dim][0]), target_sets[0][0]
+    )
     center_motion = [components.CompliantMotion(u_nom.X_GC, X_WCd_center, u_nom.K)]
     samples = _sample_from_polyhedron(intersection)
+    """
     samples_rt = [
         utils.VecToRigidTF(mapping.inverse_transform([sample])[0]) for sample in samples
+    ]"""
+    samples_rt = [
+        expmap_intersection(mapping.inverse_transform([sample][0]), target_sets[0][0])
+        for sample in samples
     ]
     sampled_motions = [
         components.CompliantMotion(u_nom.X_GC, sample_rt, u_nom.K)
         for sample_rt in samples_rt
     ]
-    return center_motion + sampled_motions
+    return naive_motion + center_motion + sampled_motions
+
+
+def principled_intersect(
+    X_GC: RigidTransform,
+    K: np.ndarray,
+    b: state.Belief,
+    CF_d: components.ContactState,
+) -> List[components.CompliantMotion]:
+    # grow motion set for each particle
+    motion_sets = [grow_motion_set(X_GC, K, CF_d, p) for p in b.particles]
+    motion_sets_unpacked = [cm for mset in motion_sets for cm in mset]
+    # extract the setpoint from each CompliantMotion object in each motion set
+    target_sets = [[u.X_WCd for u in motion_set] for motion_set in motion_sets]
+    breakpoint()
+    vertices = logmap_setpoints(target_sets)
+    hulls = []
+    for poly in vertices:
+        poly_mat = np.array(poly)
+        v = VPolytope(poly_mat.T)
+        hulls.append(HPolyhedron(v))
+    intersection = hulls[0].Intersection(hulls[1])
+    for i in range(2, len(hulls)):
+        intersection = intersection.Intersection(hulls[i])
+    if intersection.IsEmpty():
+        raise Exception("merge failed: no intersection found")
+    X_WCd_log = intersection.MaximumVolumeInscribedEllipsoid().center()
+    R_bar = mr.MatrixExp3(mr.VecToso3(X_WCd_log[:3]))
+    R = RotationMatrix(R_bar).multiply(target_sets[0][0].rotation())
+    X_WCd = RigidTransform(R, X_WCd_log[3:])
+    u_nom = motion_sets[0][0]
+    center_motion = [components.CompliantMotion(u_nom.X_GC, X_WCd, u_nom.K)]
+    return center_motion

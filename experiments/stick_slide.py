@@ -88,6 +88,7 @@ def please_assemble():  # ...please?
     modes = [
         contact_defs.b_full_chamfer_touch,
         contact_defs.bf_only_align,
+        contact_defs.ff_only_align,
         contact_defs.ground_align,
     ]
 
@@ -96,11 +97,12 @@ def please_assemble():  # ...please?
         if u is not None:
             b_next = dynamics.f_bel(b, u)
             for p in b.particles:
-                dynamics.simulate(p, u, vis=False)
+                dynamics.simulate(p, u, vis=True)
             b = b_next
         else:
             print("search failed")
             sys.exit()
+    input()
 
 
 def ik_debug():

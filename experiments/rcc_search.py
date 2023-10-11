@@ -1,6 +1,12 @@
+from dataclasses import dataclass
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
+
+plt.switch_backend("agg")
+import multiprocessing
+import signal
+
 import numpy as np
 from PIL import Image
 from pydrake.all import RigidTransform
@@ -52,8 +58,14 @@ def map_motion_to_GC_frame(
 def generate_GC_frames(
     x_bound: Tuple[float, float], z_bound: Tuple[float, float], density=10
 ) -> List[RigidTransform]:
+
+    xl = x_bound[1] / (density / 2.0)
+
     x_range = np.linspace(x_bound[0], x_bound[1], num=density)
     z_range = np.linspace(z_bound[0], z_bound[1], num=density)
+    n = int((0.22 / 0.3) * density - 1)
+    z_range[n] = 0.22
+
     X_GC_all = []
     for i in range(density):
         for j in range(density):
@@ -127,7 +139,7 @@ def GC_experiment():
     b0 = b()
     x_bound = [-0.15, 0.15]
     z_bound = [-0.00, 0.30]
-    density = 10
+    density = 20
     simulation_output = simulate_GC_frames(b0, x_bound, z_bound, density)
     visualize_experiment_result(simulation_output, x_bound, z_bound, density)
 
@@ -138,9 +150,66 @@ def opt_rcc():
     X_WC_nom = utils.xyz_rpy_deg([0.5, 0.0, 0.0], [180, 0, 0])
     K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
     u_nom = components.CompliantMotion(X_GC_nom, X_WC_nom, K_nom, timeout=10.0)
-    p_out = dynamics.simulate(b0.particles[3], u_nom, vis=True)
-    print(f"{p_out.contacts=}")
+    bnext = dynamics.f_bel(b0, u_nom)
+    for p in bnext.particles:
+        print(f"{p.contacts=}")
+    print(f"{bnext.satisfies_contact(contact_defs.ground_align)=}")
+    # p_out = dynamics.simulate(b0.particles[3], u_nom, vis=True)
+    # print(f"{p_out.contacts=}")
+
+
+@dataclass(frozen=True)
+class Task:
+    p: state.Particle
+    u: components.CompliantMotion
+    CF_d: components.ContactState
+
+
+FAILED = (500, 500)
+
+
+def process_task(t: Task) -> Tuple[float, float]:
+    p_out = dynamics.simulate(t.p, t.u, vis=False)
+    if p_out.satisfies_contact(t.CF_d):
+        p_GC = t.u.X_GC.translation()
+        return (p_GC[0], p_GC[2])
+    else:
+        return FAILED
+
+
+def check_RCCs_parallel():
+    X_WG_nom = utils.xyz_rpy_deg([0.5, 0.0, 0.22], [180, 0, 0])
+    K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
+    u_nom = components.CompliantMotion(RigidTransform(), X_WG_nom, K_nom)
+    p = multiprocessing.Pool(
+        multiprocessing.cpu_count(),
+        initializer=signal.signal,
+        initargs=(signal.SIGINT, signal.SIG_IGN),
+    )
+    tasks = []
+    particles = b().particles
+    d = 11
+    offset = 0.3 / (d - 1)
+    xbins = np.linspace(-0.075, 0.075 + offset, num=d + 1)
+    zbins = np.linspace(0.0, 0.3 + offset, num=d + 1)
+    X_GC_all = generate_GC_frames([-0.075, 0.075], [0.0, 0.3], density=d)
+    motions_all = [map_motion_to_GC_frame(u_nom, X_GC) for X_GC in X_GC_all]
+    for motion in motions_all:
+        for particle in particles:
+            tasks.append(Task(particle, motion, contact_defs.ground_align))
+    r = list(tqdm(p.imap_unordered(process_task, tasks), total=len(tasks)))
+    xs = []
+    ys = []
+    for pt in r:
+        if pt == FAILED:
+            continue
+        xs.append(pt[0])
+        ys.append(pt[1])
+    h = plt.hist2d(xs, ys, bins=[xbins, zbins])
+    print(f"{np.max(h[0])=}")
+    plt.colorbar(h[3])
+    plt.savefig("rcc2.png")
 
 
 if __name__ == "__main__":
-    GC_experiment()
+    check_RCCs_parallel()
