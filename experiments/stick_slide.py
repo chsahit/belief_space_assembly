@@ -77,18 +77,17 @@ def please_assemble():  # ...please?
     p_a = init()
     p_b = init(X_GM_x=0.01, X_GM_p=-10.0)
     b = state.Belief([p_a, p_b])
-    # modes = [contact_defs.fc_align, contact_defs.f_align]
     """
     modes = [
-        contact_defs.f_full_chamfer_touch,
-        contact_defs.corner_align_2,
+        contact_defs.b_full_chamfer_touch,
+        contact_defs.bf_only_align,
+        contact_defs.b_l_align,
         contact_defs.ground_align,
     ]
     """
     modes = [
         contact_defs.b_full_chamfer_touch,
-        contact_defs.bf_only_align,
-        contact_defs.ff_only_align,
+        contact_defs.b_l_align,
         contact_defs.ground_align,
     ]
 

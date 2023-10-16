@@ -115,3 +115,12 @@ corner_align_3 = set(
         ("bin_model::left", "block::102"),
     )
 )
+
+b_l_align = set(
+    (
+        ("bin_model::front", "block::011"),
+        ("bin_model::front", "block::001"),
+        ("bin_model::front", "block::012"),
+        ("bin_model::front", "block::002"),
+    )
+)

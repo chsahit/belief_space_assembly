@@ -67,6 +67,14 @@ def expmap_intersection(sp: np.ndarray, origin: RigidTransform) -> RigidTransfor
     return RigidTransform(R, sp[3:])
 
 
+def sample_to_motion(
+    sp: np.ndarray, origin: RigidTransform, mapping, u_nom
+) -> components.CompliantMotion:
+    X_WCd = expmap_intersection(mapping.inverse_transform([sp][0]), origin)
+    u = components.CompliantMotion(u_nom.X_GC, X_WCd, u_nom.K)
+    return u
+
+
 def grow_motion_set(
     X_GC: RigidTransform,
     K: np.ndarray,
@@ -91,8 +99,8 @@ def grow_motion_set(
         U_candidates.append(u_i)
 
     P_results = dynamics.f_cspace(p, U_candidates)
-    for idx, p in enumerate(P_results):
-        if p.satisfies_contact(CF_d):
+    for idx, p_r in enumerate(P_results):
+        if p_r.satisfies_contact(CF_d):
             U.append(U_candidates[idx])
     return U
 
@@ -139,7 +147,7 @@ def _project_down(vertices: List[List[np.ndarray]]):
     return pca, polys
 
 
-def _sample_from_polyhedron(poly: HPolyhedron, n_samples: int = 10) -> List[np.ndarray]:
+def _sample_from_polyhedron(poly: HPolyhedron, n_samples: int = 8) -> List[np.ndarray]:
     samples = []
     rng = RandomGenerator()
     sample_i = poly.UniformSample(rng)
@@ -159,6 +167,17 @@ def naive_center(hulls: List[HPolyhedron]) -> np.ndarray:
     return sum(components)
 
 
+def naive_center2(hulls: List[HPolyhedron]) -> np.ndarray:
+    scale = 1.0 / len(hulls)
+    components = [scale * hull.ChebyshevCenter() for hull in hulls]
+    return sum(components)
+
+
+def naive_center3(hulls: List[HPolyhedron], i: int = 1) -> np.ndarray:
+    assert i < len(hulls)
+    return hulls[i].MaximumVolumeInscribedEllipsoid().center()
+
+
 def intersect_motion_sets(
     X_GC: RigidTransform,
     K: np.ndarray,
@@ -168,16 +187,11 @@ def intersect_motion_sets(
 
     # grow motion set for each particle
     motion_sets = [grow_motion_set(X_GC, K, CF_d, p) for p in b.particles]
+    u_nom = motion_sets[0][0]
     motion_sets_unpacked = [cm for mset in motion_sets for cm in mset]
     # extract the setpoint from each CompliantMotion object in each motion set
     target_sets = [[u.X_WCd for u in motion_set] for motion_set in motion_sets]
-    # convert setpoints from 4x4 matrix repr to 7-dimensional (quat, xyz) vectors
-    """
-    vertices = [
-        [utils.RigidTfToVec(X_WCd) for X_WCd in target_set]
-        for target_set in target_sets
-    ]
-    """
+    # convert setpoints from 4x4 matrix repr to 6-dimensional (se(3), xyz) vectors
     vertices = logmap_setpoints(target_sets)
     for vset in vertices:
         print(f"{len(vset)=}")
@@ -195,47 +209,28 @@ def intersect_motion_sets(
         intersection = intersection.Intersection(hulls[i])
     if intersection.IsEmpty():
         print("merge failed, no intersection found")
-        # c0 = hulls[0].MaximumVolumeInscribedEllipsoid().center()
-        # c1 = hulls[1].MaximumVolumeInscribedEllipsoid().center()
-        # c = 0.5 * c0 + 0.5 * c1
-        c = naive_center(hulls)
-        X_WCd = expmap_intersection(
-            mapping.inverse_transform([c][0]), target_sets[0][0]
-        )
-        u_nom = motion_sets[0][0]
-        u = components.CompliantMotion(u_nom.X_GC, X_WCd, u_nom.K)
-        return [u]
+        u_c1 = sample_to_motion(naive_center(hulls), target_sets[0][0], mapping, u_nom)
+        u_c2 = sample_to_motion(naive_center2(hulls), target_sets[0][0], mapping, u_nom)
+        return [u_c1, u_c2]
         return random.sample(motion_sets_unpacked, 8)
     # draw points from the hull intersection, use it to populate CompliantMotion objects
-    u_nom = motion_sets[0][0]
+    naive_motion = sample_to_motion(
+        naive_center(hulls), target_sets[0][0], mapping, u_nom
+    )
+    naive_motion2 = sample_to_motion(
+        naive_center2(hulls), target_sets[0][0], mapping, u_nom
+    )
+    nm3 = sample_to_motion(naive_center3(hulls), target_sets[0][0], mapping, u_nom)
     X_WCd_center_low_dim = intersection.MaximumVolumeInscribedEllipsoid().center()
-    """
-    X_WCd_center = utils.VecToRigidTF(
-        mapping.inverse_transform([X_WCd_center_low_dim][0])
+    center_motion = sample_to_motion(
+        X_WCd_center_low_dim, target_sets[0][0], mapping, u_nom
     )
-    """
-    X_WCd_naive = expmap_intersection(
-        mapping.inverse_transform([naive_center(hulls)][0]), target_sets[0][0]
-    )
-    naive_motion = [components.CompliantMotion(u_nom.X_GC, X_WCd_naive, u_nom.K)]
-    X_WCd_center = expmap_intersection(
-        mapping.inverse_transform([X_WCd_center_low_dim][0]), target_sets[0][0]
-    )
-    center_motion = [components.CompliantMotion(u_nom.X_GC, X_WCd_center, u_nom.K)]
     samples = _sample_from_polyhedron(intersection)
-    """
-    samples_rt = [
-        utils.VecToRigidTF(mapping.inverse_transform([sample])[0]) for sample in samples
-    ]"""
-    samples_rt = [
-        expmap_intersection(mapping.inverse_transform([sample][0]), target_sets[0][0])
+    sampled_motions = [
+        sample_to_motion(sample, target_sets[0][0], mapping, u_nom)
         for sample in samples
     ]
-    sampled_motions = [
-        components.CompliantMotion(u_nom.X_GC, sample_rt, u_nom.K)
-        for sample_rt in samples_rt
-    ]
-    return naive_motion + center_motion + sampled_motions
+    return [nm3, naive_motion, naive_motion2, center_motion] + sampled_motions
 
 
 def principled_intersect(

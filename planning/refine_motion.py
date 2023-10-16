@@ -65,7 +65,10 @@ def compute_compliance_frame(
 def compliance_search(
     X_GC: RigidTransform, CF_d: components.ContactState, p: state.Particle
 ) -> np.ndarray:
-    K_opt = components.stiff
+    if "bottom" in str(CF_d) or "2" in str(CF_d):
+        K_opt = np.array([10.0, 100.0, 10.0, 600.0, 600.0, 600.0])
+    else:
+        K_opt = components.stiff
     U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p)
     print(f"{K_opt=} ,{len(U_opt)=}")
     for i in range(6):
@@ -85,7 +88,7 @@ def compliance_search(
 def refine(
     b0: state.Belief, CF_d: components.ContactState
 ) -> components.CompliantMotion:
-    p_nom = b0.particles[0]  # b0.sample()
+    p_nom = b0.particles[1]  # b0.sample()
     spheres = plant_builder.generate_collision_spheres()
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
     print(f"NON-RANDOM {X_GC.translation()=}")
