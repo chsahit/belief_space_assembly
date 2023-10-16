@@ -53,8 +53,10 @@ def logmap_setpoints(X_WCs_batch: List[List[RigidTransform]]) -> List[List[np.nd
         for X_WC in X_WCs:
             t = X_WC.translation()
             R_WC = X_WC.rotation()
-            R_WC = nominal
-            delta = nominal.multiply(R_WC.inverse()).matrix()
+            # R_WC = nominal
+            # delta = nominal.multiply(R_WC.inverse()).matrix()
+            delta = R_WC.multiply(nominal.inverse()).matrix()
+            print("delta: ", utils.rt_to_str(RigidTransform(RotationMatrix(delta), t)))
             r = mr.so3ToVec(mr.MatrixLog3(delta))
             logmapped.append(np.concatenate((r, t)))
         logmap_batch.append(logmapped)
@@ -80,7 +82,8 @@ def grow_motion_set(
     K: np.ndarray,
     CF_d: components.ContactState,
     p: state.Particle,
-    density: int = 5,
+    density: int = 3,
+    vis=False,
 ) -> List[components.CompliantMotion]:
 
     U = []
@@ -101,6 +104,8 @@ def grow_motion_set(
     P_results = dynamics.f_cspace(p, U_candidates)
     for idx, p_r in enumerate(P_results):
         if p_r.satisfies_contact(CF_d):
+            if vis:
+                dynamics.simulate(p, U_candidates[idx], vis=True)
             U.append(U_candidates[idx])
     return U
 
@@ -175,7 +180,10 @@ def naive_center2(hulls: List[HPolyhedron]) -> np.ndarray:
 
 def naive_center3(hulls: List[HPolyhedron], i: int = 1) -> np.ndarray:
     assert i < len(hulls)
-    return hulls[i].MaximumVolumeInscribedEllipsoid().center()
+    v = VPolytope(hulls[i])
+    vtx = v.vertices()[:, 0]
+    print(f"{vtx.shape=}")
+    return vtx
 
 
 def intersect_motion_sets(
@@ -186,7 +194,7 @@ def intersect_motion_sets(
 ) -> List[components.CompliantMotion]:
 
     # grow motion set for each particle
-    motion_sets = [grow_motion_set(X_GC, K, CF_d, p) for p in b.particles]
+    motion_sets = [grow_motion_set(X_GC, K, CF_d, p, vis=True) for p in b.particles]
     u_nom = motion_sets[0][0]
     motion_sets_unpacked = [cm for mset in motion_sets for cm in mset]
     # extract the setpoint from each CompliantMotion object in each motion set
@@ -220,7 +228,10 @@ def intersect_motion_sets(
     naive_motion2 = sample_to_motion(
         naive_center2(hulls), target_sets[0][0], mapping, u_nom
     )
-    nm3 = sample_to_motion(naive_center3(hulls), target_sets[0][0], mapping, u_nom)
+    nm3_0 = sample_to_motion(
+        naive_center3(hulls, i=0), target_sets[0][0], mapping, u_nom
+    )
+    nm3_1 = sample_to_motion(naive_center3(hulls), target_sets[0][0], mapping, u_nom)
     X_WCd_center_low_dim = intersection.MaximumVolumeInscribedEllipsoid().center()
     center_motion = sample_to_motion(
         X_WCd_center_low_dim, target_sets[0][0], mapping, u_nom
@@ -230,7 +241,10 @@ def intersect_motion_sets(
         sample_to_motion(sample, target_sets[0][0], mapping, u_nom)
         for sample in samples
     ]
-    return [nm3, naive_motion, naive_motion2, center_motion] + sampled_motions
+    print("returning naive motions")
+    return [motion_sets[1][0]]
+    return [nm3_0, nm3_1]
+    return [naive_motion, naive_motion2, center_motion] + sampled_motions
 
 
 def principled_intersect(

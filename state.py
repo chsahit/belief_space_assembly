@@ -116,6 +116,16 @@ class Belief:
     def sample(self) -> Particle:
         return random.choice(self.particles)
 
+    def _contact_sat_dbg(self, CF_d: components.ContactState, epsilon=0.001):
+        satisfies = True
+        for p in self.particles:
+            if not p.satisfies_contact(CF_d, epsilon=epsilon):
+                print("csat failed")
+                satisfies = False
+            else:
+                print("csat succ")
+        return satisfies
+
     def satisfies_contact(self, CF_d: components.ContactState, epsilon=0.001) -> bool:
         for p in self.particles:
             if not p.satisfies_contact(CF_d, epsilon=epsilon):

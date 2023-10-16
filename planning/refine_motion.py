@@ -69,6 +69,7 @@ def compliance_search(
         K_opt = np.array([10.0, 100.0, 10.0, 600.0, 600.0, 600.0])
     else:
         K_opt = components.stiff
+    return np.array([10.0, 100.0, 10.0, 100.0, 100.0, 600.0])
     U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p)
     print(f"{K_opt=} ,{len(U_opt)=}")
     for i in range(6):
@@ -101,7 +102,7 @@ def refine(
     print("testing candidates")
     for u in tqdm(U_candidates):
         posterior = dynamics.f_bel(b0, u)
-        if posterior.satisfies_contact(CF_d):
+        if posterior._contact_sat_dbg(CF_d):
             print(f"sp = {utils.rt_to_str(u.X_WCd)}")
             return u
     print("returning partial soln")
