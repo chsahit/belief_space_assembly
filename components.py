@@ -20,11 +20,19 @@ class CompliantMotion:
     timeout: float = 5.0
 
     @property
-    def B(self):
+    def B(self) -> np.ndarray:
         if self._B is not None:
             return self._B
         else:
             return 6 * np.sqrt(self.K)
+
+    def has_nan(self) -> bool:
+        r1 = np.isnan(self.X_GC.rotation().matrix()).any()
+        r2 = np.isnan(self.X_WCd.rotation().matrix()).any()
+        t1 = np.isnan(self.X_GC.translation()).any()
+        t2 = np.isnan(self.X_WCd.translation()).any()
+        k = np.isnan(self.K).any()
+        return (r1 or r2 or t1 or t2 or k)
 
 
 class Grasp(NamedTuple):

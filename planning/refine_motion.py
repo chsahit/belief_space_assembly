@@ -89,7 +89,7 @@ def compliance_search(
 def refine(
     b0: state.Belief, CF_d: components.ContactState
 ) -> components.CompliantMotion:
-    p_nom = b0.particles[1]  # b0.sample()
+    p_nom = b0.particles[0]  # b0.sample()
     spheres = plant_builder.generate_collision_spheres()
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
     print(f"NON-RANDOM {X_GC.translation()=}")

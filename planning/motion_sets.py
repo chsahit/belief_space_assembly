@@ -35,10 +35,15 @@ def e(i):
 def _compute_displacements(density: int) -> List[np.ndarray]:
     displacements = [np.zeros((6,))]
     for i in range(6):
+        if i == 0:
+            continue
         if i < 3:
             Delta = np.linspace(-0.25, 0.25, density).tolist()
         else:
             Delta = np.linspace(-0.03, 0.03, density).tolist()
+        if density % 2 != 0:
+            middle = int((density - 1) / 2)
+            Delta = np.concatenate((Delta[:middle], Delta[middle + 1 :]))
         displacement_i = [delta * e(i) for delta in Delta]
         displacements.extend(displacement_i)
     return displacements
@@ -53,10 +58,8 @@ def logmap_setpoints(X_WCs_batch: List[List[RigidTransform]]) -> List[List[np.nd
         for X_WC in X_WCs:
             t = X_WC.translation()
             R_WC = X_WC.rotation()
-            # R_WC = nominal
-            # delta = nominal.multiply(R_WC.inverse()).matrix()
             delta = R_WC.multiply(nominal.inverse()).matrix()
-            print("delta: ", utils.rt_to_str(RigidTransform(RotationMatrix(delta), t)))
+            # print("delta:", utils.rt_to_str(RigidTransform(RotationMatrix(delta), t)))
             r = mr.so3ToVec(mr.MatrixLog3(delta))
             logmapped.append(np.concatenate((r, t)))
         logmap_batch.append(logmapped)
@@ -82,7 +85,7 @@ def grow_motion_set(
     K: np.ndarray,
     CF_d: components.ContactState,
     p: state.Particle,
-    density: int = 3,
+    density: int = 9,
     vis=False,
 ) -> List[components.CompliantMotion]:
 
@@ -106,6 +109,7 @@ def grow_motion_set(
         if p_r.satisfies_contact(CF_d):
             if vis:
                 dynamics.simulate(p, U_candidates[idx], vis=True)
+            print("good displacement: ", _compute_displacements(density)[idx])
             U.append(U_candidates[idx])
     return U
 
@@ -129,8 +133,9 @@ def _project_down(vertices: List[List[np.ndarray]]):
     vertices_all = []
     for poly in vertices:
         vertices_all.extend(poly)
+    ub = min(6, len(vertices_all))
     vertices_all = np.array(vertices_all)
-    for n_components in range(6, 1, -1):
+    for n_components in range(ub, 1, -1):
         pca = PCA(n_components=n_components)
         low_dim_vertices = pca.fit_transform(vertices_all)
         curr_idx = 0
@@ -182,7 +187,6 @@ def naive_center3(hulls: List[HPolyhedron], i: int = 1) -> np.ndarray:
     assert i < len(hulls)
     v = VPolytope(hulls[i])
     vtx = v.vertices()[:, 0]
-    print(f"{vtx.shape=}")
     return vtx
 
 
@@ -194,7 +198,7 @@ def intersect_motion_sets(
 ) -> List[components.CompliantMotion]:
 
     # grow motion set for each particle
-    motion_sets = [grow_motion_set(X_GC, K, CF_d, p, vis=True) for p in b.particles]
+    motion_sets = [grow_motion_set(X_GC, K, CF_d, p, vis=False) for p in b.particles]
     u_nom = motion_sets[0][0]
     motion_sets_unpacked = [cm for mset in motion_sets for cm in mset]
     # extract the setpoint from each CompliantMotion object in each motion set
@@ -219,6 +223,7 @@ def intersect_motion_sets(
         print("merge failed, no intersection found")
         u_c1 = sample_to_motion(naive_center(hulls), target_sets[0][0], mapping, u_nom)
         u_c2 = sample_to_motion(naive_center2(hulls), target_sets[0][0], mapping, u_nom)
+        print("u_c1 = ", utils.rt_to_str(u_c1.X_WCd))
         return [u_c1, u_c2]
         return random.sample(motion_sets_unpacked, 8)
     # draw points from the hull intersection, use it to populate CompliantMotion objects
@@ -236,15 +241,18 @@ def intersect_motion_sets(
     center_motion = sample_to_motion(
         X_WCd_center_low_dim, target_sets[0][0], mapping, u_nom
     )
-    samples = _sample_from_polyhedron(intersection)
+    samples = _sample_from_polyhedron(intersection, n_samples=3)
     sampled_motions = [
         sample_to_motion(sample, target_sets[0][0], mapping, u_nom)
         for sample in samples
     ]
-    print("returning naive motions")
-    return [motion_sets[1][0]]
-    return [nm3_0, nm3_1]
-    return [naive_motion, naive_motion2, center_motion] + sampled_motions
+    candidates = [nm3_1, nm3_0, center_motion] + sampled_motions
+    candidates_clean = []
+    for candidate in candidates:
+        if candidate.has_nan():
+            continue
+        candidates_clean.append(candidate)
+    return candidates_clean
 
 
 def principled_intersect(
