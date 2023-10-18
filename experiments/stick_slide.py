@@ -75,7 +75,7 @@ def test_single_refine(CF_d: components.ContactState):
 
 def please_assemble():  # ...please?
     p_a = init()
-    p_b = init(X_GM_x=0.01, X_GM_p=-2.0)
+    p_b = init(X_GM_x=0.01, X_GM_p=-10.0)
     b = state.Belief([p_a, p_b])
     """
     modes = [
@@ -87,7 +87,8 @@ def please_assemble():  # ...please?
     """
     modes = [
         contact_defs.b_full_chamfer_touch,
-        contact_defs.b_l_align,
+        contact_defs.corner_touch,
+        contact_defs.corner_align_2,
         contact_defs.ground_align,
     ]
 

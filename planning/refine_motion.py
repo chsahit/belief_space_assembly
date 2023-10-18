@@ -69,7 +69,7 @@ def compliance_search(
         K_opt = np.array([10.0, 100.0, 10.0, 600.0, 600.0, 600.0])
     else:
         K_opt = components.stiff
-    return np.array([10.0, 100.0, 10.0, 100.0, 100.0, 600.0])
+    # return np.array([10.0, 100.0, 10.0, 100.0, 100.0, 600.0])
     U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p)
     print(f"{K_opt=} ,{len(U_opt)=}")
     for i in range(6):

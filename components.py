@@ -32,7 +32,7 @@ class CompliantMotion:
         t1 = np.isnan(self.X_GC.translation()).any()
         t2 = np.isnan(self.X_WCd.translation()).any()
         k = np.isnan(self.K).any()
-        return (r1 or r2 or t1 or t2 or k)
+        return r1 or r2 or t1 or t2 or k
 
 
 class Grasp(NamedTuple):

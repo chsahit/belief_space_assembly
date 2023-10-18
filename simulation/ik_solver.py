@@ -31,9 +31,7 @@ def gripper_to_joint_states(
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.1)
         parser = Parser(plant)
         parser.package_map().Add("assets", "assets/")
-        panda = parser.AddModelFromFile(
-            "assets/panda_arm_hand.urdf", model_name="panda"
-        )
+        panda = parser.AddModels("assets/panda_arm_hand.urdf")
         plant.WeldFrames(
             frame_on_parent_F=plant.world_frame(),
             frame_on_child_M=plant.GetFrameByName("panda_link0"),

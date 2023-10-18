@@ -37,7 +37,12 @@ def simulate(
     if vis:
         meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
         meshcat_vis.StartRecording()
-        simulator.AdvanceTo(motion.timeout)
+        try:
+            simulator.AdvanceTo(motion.timeout)
+        except Exception as e:
+            print(f"EXCEPTION: {e}")
+            print(f"{motion.X_WCd=}, {motion.X_GC}")
+            return None
         meshcat_vis.PublishRecording()
         with open("meshcat_html.html", "w") as f:
             f.write(meshcat.StaticHtml())
@@ -98,4 +103,8 @@ def f_bel(
 
     args = [(p, u) for p in b.particles]
     posterior_particles = _parallel_simulate(args)
+    for p in posterior_particles:
+        if p is None:
+            print("forward pass failed, returning noop")
+            return b
     return state.Belief(posterior_particles)

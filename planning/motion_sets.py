@@ -109,7 +109,7 @@ def grow_motion_set(
         if p_r.satisfies_contact(CF_d):
             if vis:
                 dynamics.simulate(p, U_candidates[idx], vis=True)
-            print("good displacement: ", _compute_displacements(density)[idx])
+            # print("good displacement: ", _compute_displacements(density)[idx])
             U.append(U_candidates[idx])
     return U
 
@@ -185,9 +185,13 @@ def naive_center2(hulls: List[HPolyhedron]) -> np.ndarray:
 
 def naive_center3(hulls: List[HPolyhedron], i: int = 1) -> np.ndarray:
     assert i < len(hulls)
-    v = VPolytope(hulls[i])
-    vtx = v.vertices()[:, 0]
-    return vtx
+    try:
+        v = VPolytope(hulls[i])
+        vtx = v.vertices()[:, 0]
+        return vtx
+    except Exception as e:
+        print(f"nc3 failed with {e}")
+        return naive_center(hulls)
 
 
 def intersect_motion_sets(
@@ -223,8 +227,13 @@ def intersect_motion_sets(
         print("merge failed, no intersection found")
         u_c1 = sample_to_motion(naive_center(hulls), target_sets[0][0], mapping, u_nom)
         u_c2 = sample_to_motion(naive_center2(hulls), target_sets[0][0], mapping, u_nom)
+        u_c3 = sample_to_motion(naive_center3(hulls), target_sets[0][0], mapping, u_nom)
+        u_c4 = sample_to_motion(
+            naive_center3(hulls, i=0), target_sets[0][0], mapping, u_nom
+        )
         print("u_c1 = ", utils.rt_to_str(u_c1.X_WCd))
-        return [u_c1, u_c2]
+        candidates = [u_c1, u_c2, u_c3, u_c4]
+        candidates_clean = [c for c in candidates if (not c.has_nan())]
         return random.sample(motion_sets_unpacked, 8)
     # draw points from the hull intersection, use it to populate CompliantMotion objects
     naive_motion = sample_to_motion(
@@ -247,11 +256,9 @@ def intersect_motion_sets(
         for sample in samples
     ]
     candidates = [nm3_1, nm3_0, center_motion] + sampled_motions
-    candidates_clean = []
-    for candidate in candidates:
-        if candidate.has_nan():
-            continue
-        candidates_clean.append(candidate)
+    candidates_clean = [c for c in candidates if (not c.has_nan())]
+    for c in candidates_clean:
+        print(f"{c.X_WCd=}")
     return candidates_clean
 
 

@@ -194,9 +194,11 @@ def _construct_diagram(
     # load and add rigidbodies to plant
     parser = Parser(plant)
     parser.package_map().Add("assets", "assets/")
-    panda = parser.AddModelFromFile("assets/panda_arm_hand.urdf", model_name="panda")
-    env_geometry = parser.AddAllModelsFromFile(env_geom)[0]
-    manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
+    panda = parser.AddModels("assets/panda_arm_hand.urdf")[0]
+    env_geometry = parser.AddModels(env_geom)[0]
+    # manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
+    manipuland = parser.AddModels(manip_geom)[0]
+    plant.RenameModelInstance(manipuland, "block")
     if collision_check:
         sphere_map = generate_collision_spheres()
         manipuland_body = plant.get_body(plant.GetBodyIndices(manipuland)[0])
