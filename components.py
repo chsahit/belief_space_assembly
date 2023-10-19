@@ -24,7 +24,7 @@ class CompliantMotion:
         if self._B is not None:
             return self._B
         else:
-            return 4 * np.sqrt(self.K)
+            return 6 * np.sqrt(self.K)
 
     def has_nan(self) -> bool:
         r1 = np.isnan(self.X_GC.rotation().matrix()).any()

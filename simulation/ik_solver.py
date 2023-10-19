@@ -139,7 +139,6 @@ def project_manipuland_to_contacts(
         X_WG_out = plant.CalcRelativeTransform(plant_context, W, G)
         if not result.is_success():
             if not fallback:
-                print("doing fallback")
                 p_aligned = axis_align_particle(p)
                 return project_manipuland_to_contacts(p_aligned, CF_d, fallback=True)
             else:
