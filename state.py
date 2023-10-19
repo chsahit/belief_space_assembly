@@ -108,6 +108,13 @@ class Particle:
                 return False
         return True
 
+    def epsilon_contacts(self, epsilon: float = 0.001) -> components.ContactState:
+        contacts = []
+        for cf, dist in self.sdf.items():
+            if dist < epsilon:
+                contacts.append(cf)
+        return frozenset(contacts)
+
 
 class Belief:
     def __init__(self, particles: List[Particle]):
@@ -131,6 +138,20 @@ class Belief:
             if not p.satisfies_contact(CF_d, epsilon=epsilon):
                 return False
         return True
+
+    def contact_state(self, epsilon=0.001) -> components.ContactState:
+        assert len(self.particles) > 0
+        cs = self.particles[0].epsilon_contacts(epsilon)
+        for i in range(1, len(self.particles)):
+            cs = cs.intersection(self.particles[i].epsilon_contacts(epsilon))
+        return cs
+
+    def score(self, CF_d: components.ContactState, epsilon: float = 0.001) -> float:
+        assert len(self.particles) > 0
+        num_sat = [
+            int(p.satisfies_contact(CF_d, epsilon=epsilon)) for p in self.particles
+        ]
+        return float(sum(num_sat)) / float(len(self.particles))
 
     @staticmethod
     def make_particles(

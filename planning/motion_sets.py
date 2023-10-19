@@ -210,7 +210,7 @@ def intersect_motion_sets(
     target_sets = [[u.X_WCd for u in motion_set] for motion_set in motion_sets]
     # convert setpoints from 4x4 matrix repr to 6-dimensional (se(3), xyz) vectors
     vertices = logmap_setpoints(target_sets)
-    print(f"num vertices per particle: {[(len(vset) for vset in vertices]}")
+    print(f"num vertices per particle: {[len(vset) for vset in vertices]}")
     for vset in vertices:
         print(f"{len(vset)=}")
         if len(vset) < 2:  # can't have a positive-volume polytope from 0 or 1 points

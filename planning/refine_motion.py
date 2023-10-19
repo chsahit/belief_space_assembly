@@ -98,10 +98,18 @@ def refine(
     print(f"{K_star=}")
     U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
     print("testing candidates")
-    for u in tqdm(U_candidates):
+    best_score = 0.0
+    best_candidate = 0
+    for u_idx, u in enumerate(tqdm(U_candidates)):
         posterior = dynamics.f_bel(b0, u)
         if posterior._contact_sat_dbg(CF_d):
             print(f"sp = {utils.rt_to_str(u.X_WCd)}")
             return u
+        else:
+            score = posterior.score(CF_d)
+            if score > best_score:
+                best_score = score
+                best_candidate = u_idx
+            print(f"{posterior.contact_state()=}")
     print("returning partial soln")
-    return U_candidates[0]
+    return U_candidates[u_idx]
