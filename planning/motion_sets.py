@@ -234,7 +234,7 @@ def intersect_motion_sets(
         print("u_c1 = ", utils.rt_to_str(u_c1.X_WCd))
         candidates = [u_c1, u_c2, u_c3, u_c4]
         candidates_clean = [c for c in candidates if (not c.has_nan())]
-        return candidates_clean # ?
+        return candidates_clean  # ?
         return random.sample(motion_sets_unpacked, 8)
     # draw points from the hull intersection, use it to populate CompliantMotion objects
     naive_motion = sample_to_motion(
