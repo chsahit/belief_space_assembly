@@ -9,7 +9,7 @@ import dynamics
 import state
 import utils
 import visualize
-from planning import refine_motion
+from planning import refine_motion, search
 from simulation import ik_solver
 
 
@@ -24,12 +24,6 @@ def init(X_GM_x: float = 0.0, X_GM_p: float = 0.0) -> RigidTransform:
     return p_0
 
 
-def init_motion(K: np.ndarray = components.stiff) -> components.CompliantMotion:
-    X_WC_d = utils.xyz_rpy_deg([0.5, 0.0, 0.0], [180, 0, 0])
-    X_GC = utils.xyz_rpy_deg([0.0, 0.0, 0.23], [0, 0, 0])
-    return components.CompliantMotion(X_GC, X_WC_d, K)
-
-
 def bilateral_noise():
     p_a = init(X_GM_x=0.00, X_GM_p=-10.0)
     p_b = init(X_GM_x=0.00, X_GM_p=10.0)
@@ -41,19 +35,26 @@ def bilateral_noise():
         contact_defs.ground_align,
         contact_defs.ground_align,
     ]
+    traj = search.refine_schedule(b, contact_defs.ground_align, modes)
+    visualize_trajectory(b.particles[0], traj)
+    visualize_trajectory(b.particles[1], traj)
+    input()
 
-    for mode in modes:
-        u = refine_motion.refine(b, mode)
-        if u is not None:
-            b_next = dynamics.f_bel(b, u)
-            for p in b.particles:
-                dynamics.simulate(p, u, vis=True)
-            b = b_next
-        else:
-            print("search failed")
-            sys.exit()
+
+def bilateral_noise_easy():
+    p_a = init(X_GM_x=0.00, X_GM_p=-3.0)
+    p_b = init(X_GM_x=0.00, X_GM_p=3.0)
+    b = state.Belief([p_a, p_b])
+    modes = [
+        contact_defs.b_full_chamfer_touch,
+        contact_defs.corner_touch,
+        # contact_defs.ground_align,
+    ]
+    traj = search.refine_schedule(b, contact_defs.ground_align, modes)
+    dynamics.visualize_trajectory(b.particles[0], traj, name="r0.html")
+    dynamics.visualize_trajectory(b.particles[1], traj, name="r1.html")
     input()
 
 
 if __name__ == "__main__":
-    bilateral_noise()
+    bilateral_noise_easy()

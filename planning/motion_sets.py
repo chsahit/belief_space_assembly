@@ -204,7 +204,6 @@ def intersect_motion_sets(
 
     # grow motion set for each particle
     motion_sets = [grow_motion_set(X_GC, K, CF_d, p, vis=False) for p in b.particles]
-    u_nom = motion_sets[0][0]
     motion_sets_unpacked = [cm for mset in motion_sets for cm in mset]
     # extract the setpoint from each CompliantMotion object in each motion set
     target_sets = [[u.X_WCd for u in motion_set] for motion_set in motion_sets]
@@ -212,12 +211,12 @@ def intersect_motion_sets(
     vertices = logmap_setpoints(target_sets)
     print(f"num vertices per particle: {[len(vset) for vset in vertices]}")
     for vset in vertices:
-        print(f"{len(vset)=}")
         if len(vset) < 2:  # can't have a positive-volume polytope from 0 or 1 points
             print("merge failed, 0 measure set detected")
             return random.sample(
                 motion_sets_unpacked, min(8, len(motion_sets_unpacked))
             )
+    u_nom = motion_sets[0][0]
     # project vertex set to shared subspace where their convex hulls have positive measure
     mapping, hulls = _project_down(vertices)
     # visualize.plot_motion_sets(hulls)
@@ -238,17 +237,6 @@ def intersect_motion_sets(
         candidates_clean = [c for c in candidates if (not c.has_nan())]
         return candidates_clean  # ?
         return random.sample(motion_sets_unpacked, 8)
-    # draw points from the hull intersection, use it to populate CompliantMotion objects
-    naive_motion = sample_to_motion(
-        naive_center(hulls), target_sets[0][0], mapping, u_nom
-    )
-    naive_motion2 = sample_to_motion(
-        naive_center2(hulls), target_sets[0][0], mapping, u_nom
-    )
-    nm3_0 = sample_to_motion(
-        naive_center3(hulls, i=0), target_sets[0][0], mapping, u_nom
-    )
-    nm3_1 = sample_to_motion(naive_center3(hulls), target_sets[0][0], mapping, u_nom)
     X_WCd_center_low_dim = intersection.MaximumVolumeInscribedEllipsoid().center()
     center_motion = sample_to_motion(
         X_WCd_center_low_dim, target_sets[0][0], mapping, u_nom
@@ -258,10 +246,10 @@ def intersect_motion_sets(
         sample_to_motion(sample, target_sets[0][0], mapping, u_nom)
         for sample in samples
     ]
-    candidates = [nm3_1, nm3_0, center_motion] + sampled_motions
+    candidates = [center_motion] + sampled_motions
     candidates_clean = [c for c in candidates if (not c.has_nan())]
-    for c in candidates_clean:
-        print(f"{c.X_WCd=}")
+    # for c in candidates_clean:
+    #     print(f"{c.X_WCd=}")
     return candidates_clean
 
 

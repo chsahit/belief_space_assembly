@@ -65,18 +65,16 @@ def compute_compliance_frame(
 def compliance_search(
     X_GC: RigidTransform, CF_d: components.ContactState, p: state.Particle
 ) -> np.ndarray:
-    if "bottom" in str(CF_d) or "2" in str(CF_d):
-        K_opt = np.array([10.0, 100.0, 10.0, 600.0, 600.0, 600.0])
-    else:
-        K_opt = components.stiff
+    print("searching for compliance")
+    K_opt = components.stiff
     # return np.array([10.0, 100.0, 10.0, 100.0, 100.0, 600.0])
     U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p)
-    print(f"{K_opt=} ,{len(U_opt)=}")
+    print(f"K_curr={K_opt}, len(U_curr)={len(U_opt)}")
     for i in range(6):
         K_curr = K_opt.copy()
         K_curr[i] = components.soft[i]
         U_curr = motion_sets.grow_motion_set(X_GC, K_curr, CF_d, p)
-        print(f"{K_curr=} ,{len(U_curr)=}")
+        print(f"{K_curr=}, {len(U_curr)=}")
         if len(U_curr) > len(U_opt):
             K_opt = K_curr
             U_opt = U_curr
@@ -102,7 +100,7 @@ def refine(
     best_candidate = 0
     for u_idx, u in enumerate(tqdm(U_candidates)):
         posterior = dynamics.f_bel(b0, u)
-        if posterior._contact_sat_dbg(CF_d):
+        if posterior.satisfies_contact(CF_d):
             print(f"sp = {utils.rt_to_str(u.X_WCd)}")
             return u
         else:
@@ -111,5 +109,5 @@ def refine(
                 best_score = score
                 best_candidate = u_idx
             print(f"{posterior.contact_state()=}")
-    print("returning partial soln")
-    return U_candidates[u_idx]
+    print(f"returning partial soln with score {best_score}")
+    return U_candidates[best_candidate]

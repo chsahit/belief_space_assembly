@@ -81,7 +81,7 @@ def f_cspace(
 
     This function is meant for trying many candidate motions on the same initial state.
     It does NOT implement running a trajectory of motions on an initial state. That
-    requires chaining multiple calls to f_cspace.
+    requires calling simulate_trajectory.
     """
     if not multi:  # might want this case later for debugging purposes
         raise NotImplementedError
@@ -108,3 +108,31 @@ def f_bel(
             print("forward pass failed, returning noop")
             return b
     return state.Belief(posterior_particles)
+
+
+def visualize_trajectory(
+    p: state.Particle,
+    U: List[components.CompliantMotion],
+    name: str = "meshcat_html.html",
+):
+    diagram, meshcat = p.make_plant(vis=True)
+    plant = diagram.GetSubsystemByName("plant")
+    simulator = Simulator(diagram)
+    plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
+    controller = diagram.GetSubsystemByName("controller")
+    simulator.Initialize()
+    meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
+    meshcat_vis.StartRecording()
+    t_boundary = 0.0
+    for i, u in enumerate(U):
+        controller.motion = u
+        t_boundary += u.timeout
+        try:
+            simulator.AdvanceTo(t_boundary)
+        except Exception as e:
+            print(f"EXCEPTION: {e}")
+            print(f"{motion.X_WCd=}, {motion.X_GC}")
+            return None
+    meshcat_vis.PublishRecording()
+    with open(name, "w") as f:
+        f.write(meshcat.StaticHtml())
