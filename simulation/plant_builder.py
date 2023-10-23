@@ -208,7 +208,9 @@ def _construct_diagram(
             )
     _weld_geometries(plant, X_GM, X_WO)
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
-
+    # assert False
+    # finger_l = plant.GetJointByName("")
+    # finger_r = plant.GetJointByName("")
     plant.Finalize()
     ja_indices = plant.GetJointActuatorIndices(panda)
     for ja_idx in ja_indices:

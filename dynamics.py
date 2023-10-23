@@ -46,13 +46,13 @@ def simulate(
         meshcat_vis.PublishRecording()
         with open("meshcat_html.html", "w") as f:
             f.write(meshcat.StaticHtml())
-        # input()
     else:
         simulator.AdvanceTo(motion.timeout)
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
     p_next.trajectory = controller.history
+    input()
     return p_next
 
 

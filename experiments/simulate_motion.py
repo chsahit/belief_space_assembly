@@ -90,5 +90,6 @@ def funny_rcc():
 
 
 if __name__ == "__main__":
-    funny_rcc()
+    test_simulate()
+    # funny_rcc()
     # test_vis()

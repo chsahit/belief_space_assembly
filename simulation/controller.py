@@ -92,5 +92,5 @@ class ControllerSystem(LeafSystem):
             with open("control_logs.pkl", "wb") as f:
                 pickle.dump(to_dump, f)
         self.i += 1
-        tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))
+        tau_controller = np.concatenate((tau_controller, np.array([0.0, 0.0])))
         output.SetFromVector(tau_controller)
