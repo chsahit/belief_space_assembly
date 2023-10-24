@@ -144,8 +144,14 @@ def project_manipuland_to_contacts(
             else:
                 print(f"warning, ik solve failed. {X_WG_out}")
     except Exception as e:
-        print("e: ", e)
-        return None
+        print("IK SOLVER EXCEPTION")
+        if not fallback:
+            p_aligned = axis_align_particle(p)
+            return project_manipuland_to_contacts(p_aligned, CF_d, fallback=True)
+        else:
+            print("info on p_aligned: \n", utils.rt_to_str(p_aligned.X_WG))
+            print(f"warning, ik solve failed.")
+            return None
 
     return X_WG_out
 

@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 from pydrake.all import (
@@ -85,29 +85,30 @@ def compliance_search(
 
 def refine(
     b0: state.Belief, CF_d: components.ContactState
-) -> components.CompliantMotion:
-    # TODO: also return successor!
+) -> Tuple[components.CompliantMotion, state.Belief]:
     p_nom = b0.sample()
     spheres = plant_builder.generate_collision_spheres()
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
     K_star = compliance_search(X_GC, CF_d, p_nom)
     if K_star is None:
-        return None
+        return None, None
     print(f"{K_star=}")
     U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
     print("testing candidates")
-    best_score = 0.0
+    best_score = -1.0
     best_candidate = 0
+    best_posterior = None
     for u_idx, u in enumerate(tqdm(U_candidates)):
         posterior = dynamics.f_bel(b0, u)
         if posterior.satisfies_contact(CF_d):
             print(f"sp = {utils.rt_to_str(u.X_WCd)}")
-            return u
+            return u, posterior
         else:
             score = posterior.score(CF_d)
             if score > best_score:
                 best_score = score
                 best_candidate = u_idx
+                best_posterior = posterior
             print(f"{posterior.contact_state()=}")
     print(f"returning partial soln with score {best_score}")
-    return U_candidates[best_candidate]
+    return U_candidates[best_candidate], best_posterior

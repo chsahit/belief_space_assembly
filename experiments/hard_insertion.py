@@ -49,6 +49,7 @@ def bilateral_noise_easy():
         contact_defs.b_full_chamfer_touch,
         contact_defs.corner_touch,
         contact_defs.ground_align,
+        contact_defs.ground_align,
     ]
     traj = search.refine_schedule(b, contact_defs.ground_align, modes)
     dynamics.visualize_trajectory(b.particles[0], traj, name="r0.html")
@@ -57,4 +58,4 @@ def bilateral_noise_easy():
 
 
 if __name__ == "__main__":
-    bilateral_noise_easy()
+    bilateral_noise()

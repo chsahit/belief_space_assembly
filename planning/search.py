@@ -15,8 +15,11 @@ def refine_schedule(
     soln = []
     b_curr = b0
     for mode in schedule:
-        u = refine_motion.refine(b_curr, mode)
+        u, succ = refine_motion.refine(b_curr, mode)
+        if u is None:
+            print("search failed. aborting")
+            break
         soln.append(u)
-        b_curr = dynamics.f_bel(b_curr, u)
+        b_curr = succ
 
     return soln
