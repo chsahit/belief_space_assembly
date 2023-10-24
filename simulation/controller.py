@@ -84,13 +84,15 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
-        self.history.append((context.get_time(), X_WG.translation()))
+        # self.history.append((context.get_time(), X_WG.translation()))
+        """
         if self.i == 0:
             from pydrake.all import MultibodyForces
 
             to_dump = (J_g, tau_controller + tau_g)
             with open("control_logs.pkl", "wb") as f:
                 pickle.dump(to_dump, f)
+        """
         self.i += 1
         tau_controller = np.concatenate((tau_controller, np.array([0.0, 0.0])))
         output.SetFromVector(tau_controller)

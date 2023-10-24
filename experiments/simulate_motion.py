@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from pydrake.all import RigidTransform
 
@@ -22,10 +24,14 @@ def init():
 
 def test_simulate():
     p_0 = init()
-    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.2], [180, 0, 0])
-    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
+    t0 = time.time()
+    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0])
+    mostly_stiff = np.array([10.0, 10.0, 10.0, 600.0, 600.0, 100.0])
+    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, mostly_stiff)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
+    tT = time.time()
     print(f"{p_1.contacts=}")
+    print(f"sim time={tT - t0}")
 
 
 def test_motion_set():
