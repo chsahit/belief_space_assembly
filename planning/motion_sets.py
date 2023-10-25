@@ -229,14 +229,23 @@ def intersect_motion_sets(
         intersection = intersection.Intersection(hulls[i])
     if intersection.IsEmpty():
         print("merge failed, no intersection found")
-        u_c1 = sample_to_motion(naive_center(hulls), target_sets[0][0], mapping, u_nom)
+        try:
+            u_c1 = sample_to_motion(
+                naive_center(hulls), target_sets[0][0], mapping, u_nom
+            )
+        except:
+            u_c1 = None
         u_c2 = sample_to_motion(naive_center2(hulls), target_sets[0][0], mapping, u_nom)
         u_c3 = sample_to_motion(naive_center3(hulls), target_sets[0][0], mapping, u_nom)
         u_c4 = sample_to_motion(
             naive_center3(hulls, i=0), target_sets[0][0], mapping, u_nom
         )
-        print("u_c1 = ", utils.rt_to_str(u_c1.X_WCd))
-        candidates = [u_c1, u_c2, u_c3, u_c4]
+        if u_c1 is not None:
+            print("u_c1 = ", utils.rt_to_str(u_c1.X_WCd))
+            candidates = [u_c1, u_c2, u_c3, u_c4]
+        else:
+            print("u_c2 = ", utils.rt_to_str(u_c2.X_WCd))
+            candidates = [u_c2, u_c3, u_c4]
         candidates_clean = [c for c in candidates if (not c.has_nan())]
         return candidates_clean  # ?
         return random.sample(motion_sets_unpacked, 8)
