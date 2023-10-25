@@ -63,11 +63,16 @@ class ControllerSystem(LeafSystem):
         X_WG = self.plant.CalcRelativeTransform(
             self.plant_context, self.plant.world_frame(), G
         )
+        if self.motion is None:
+            print("warning, X_GC is none")
+            X_GC = RigidTransform()
+        else:
+            X_GC = self.motion.X_GC
         J_g = self.plant.CalcJacobianSpatialVelocity(
             self.plant_context,
             JacobianWrtVariable.kQDot,
             G,
-            self.motion.X_GC.translation(),
+            X_GC.translation(),
             W,
             W,
         )

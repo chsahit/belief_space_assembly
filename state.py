@@ -144,9 +144,19 @@ class Belief:
         cs = self.particles[0].epsilon_contacts(epsilon)
         for i in range(1, len(self.particles)):
             cs = cs.intersection(self.particles[i].epsilon_contacts(epsilon))
-        return cs
+        filtered_cs = []
+        for c in cs:
+            if "Box" not in str(c):
+                filtered_cs.append(c)
+        filtered_cs = frozenset(filtered_cs)
+        return filtered_cs
 
-    def score(self, CF_d: components.ContactState, epsilon: float = 0.001, delta: float = 0.001) -> float:
+    def score(
+        self,
+        CF_d: components.ContactState,
+        epsilon: float = 0.001,
+        delta: float = 0.001,
+    ) -> float:
         assert len(self.particles) > 0
         num_sat = [
             int(p.satisfies_contact(CF_d, epsilon=epsilon)) for p in self.particles
