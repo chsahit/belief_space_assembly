@@ -36,8 +36,8 @@ def bilateral_noise():
         contact_defs.ground_align,
     ]
     traj = search.refine_schedule(b, contact_defs.ground_align, modes)
-    visualize_trajectory(b.particles[0], traj)
-    visualize_trajectory(b.particles[1], traj)
+    dynamics.visualize_trajectory(b.particles[0], traj)
+    dynamics.visualize_trajectory(b.particles[1], traj)
     input()
 
 

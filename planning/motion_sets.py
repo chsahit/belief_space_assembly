@@ -51,7 +51,10 @@ def _compute_displacements(density: int) -> List[np.ndarray]:
 
 def logmap_setpoints(X_WCs_batch: List[List[RigidTransform]]) -> List[List[np.ndarray]]:
     assert len(X_WCs_batch) > 1
-    nominal = X_WCs_batch[0][0].rotation()
+    if len(X_WCs_batch[0]) == 0:
+        nominal = X_WCs_batch[1][0].rotation()
+    else:
+        nominal = X_WCs_batch[0][0].rotation()
     logmap_batch = []
     for X_WCs in X_WCs_batch:
         logmapped = []

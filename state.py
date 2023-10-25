@@ -146,12 +146,14 @@ class Belief:
             cs = cs.intersection(self.particles[i].epsilon_contacts(epsilon))
         return cs
 
-    def score(self, CF_d: components.ContactState, epsilon: float = 0.001) -> float:
+    def score(self, CF_d: components.ContactState, epsilon: float = 0.001, delta: float = 0.001) -> float:
         assert len(self.particles) > 0
         num_sat = [
             int(p.satisfies_contact(CF_d, epsilon=epsilon)) for p in self.particles
         ]
-        return float(sum(num_sat)) / float(len(self.particles))
+        ratio_satisfiying = float(sum(num_sat)) / float(len(self.particles))
+        num_contacts = len(self.contact_state())
+        return ratio_satisfiying + (delta * num_contacts)
 
     @staticmethod
     def make_particles(
