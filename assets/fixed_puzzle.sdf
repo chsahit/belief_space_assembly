@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+<world name="w">
+<model name="fixed_puzzle">
+<link name="bin_base">
+	<inertial>
+		<mass>1.0</mass>
+		<inertia>
+			<ixx>1.0</ixx><ixy>0.0</ixy><ixz>0</ixz>
+			<iyy>1.0</iyy><iyz>0.0</iyz><izz>1.0</izz>
+		</inertia>
+	</inertial>
+	<visual name="b1">
+		<pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.028999999999999998 0.07 0.02</size></box>
+		</geometry>
+	</visual>
+	<collision name="b1">
+		<pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.028999999999999998 0.07 0.02</size></box>
+		</geometry>
+	</collision>
+	<visual name="b2">
+		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.07 0.019000000000000003 0.02</size></box>
+		</geometry>
+	</visual>
+	<collision name="b2">
+		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.07 0.019000000000000003 0.02</size></box>
+		</geometry>
+	</collision>
+	<visual name="b3">
+		<pose>0.030000000000000002 0.0 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.01 0.031 0.02</size></box>
+		</geometry>
+	</visual>
+	<collision name="b3">
+		<pose>0.030000000000000002 0.0 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.01 0.031 0.02</size></box>
+		</geometry>
+	</collision>
+	<visual name="b4">
+		<pose>-0.030000000000000002 0.0 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.01 0.031 0.02</size></box>
+		</geometry>
+	</visual>
+	<collision name="b4">
+		<pose>-0.030000000000000002 0.0 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.01 0.031 0.02</size></box>
+		</geometry>
+	</collision>
+	<visual name="b5">
+		<pose>0.0 -0.025 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.07 0.019000000000000003 0.02</size></box>
+		</geometry>
+	</visual>
+	<collision name="b5">
+		<pose>0.0 -0.025 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.07 0.019000000000000003 0.02</size></box>
+		</geometry>
+	</collision>
+</link>
+</model>
+</world>
+</sdf>
