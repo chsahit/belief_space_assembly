@@ -27,15 +27,20 @@ def test_simulate():
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.2], [180, 0, 0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
+    print(f"{p_1.epsilon_contacts()=}")
     X_WG_d1 = utils.xyz_rpy_deg([0.5, 0.03, 0.2], [180, 0, 0])
     K_l = np.array([100.0, 100.0, 100.0, 100.0, 600.0, 100.0])
     u_1 = components.CompliantMotion(RigidTransform(), X_WG_d1, K_l)
     p_2 = dynamics.simulate(p_1, u_1, vis=True)
     tT = time.time()
-    print(f"{p_2.contacts=}")
+    print(f"{p_2.epsilon_contacts()=}")
     print(f"sim time={tT - t0}")
     input()
 
 
+def test_ik():
+    bottom = set((("fixed_puzzle::b1", "block::000"),))
+    pose = ik_solver.project_manipuland_to_contacts(init(), bottom)
+
 if __name__ == "__main__":
-    test_simulate()
+    test_ik()

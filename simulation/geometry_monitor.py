@@ -30,7 +30,7 @@ class GeometryMonitor(LeafSystem):
         self.constraints = dict()
         for g_id in inspector.GetAllGeometryIds():
             name = inspector.GetName(g_id)
-            if "bin_model" in name:
+            if ("bin_model" in name) or ("fixed_puzzle" in name):
                 polyhedron = HPolyhedron(VPolytope(query_obj, g_id))
                 self.constraints[name] = (polyhedron.A(), polyhedron.b())
 
@@ -40,11 +40,13 @@ class GeometryMonitor(LeafSystem):
         try:
             sdf_data = query_obj.ComputeSignedDistancePairwiseClosestPoints(0.05)
         except Exception as e:  # sometimes GJK likes to crash :(
+            print("GJK crash :(")
             sdf_data = []
         for dist in sdf_data:
             name_A = inspector.GetName(dist.id_A)
             name_B = inspector.GetName(dist.id_B)
-            contact_relevant = ("bin_model" in name_A) and ("block" in name_B)
+            env_cr = ("bin_model" in name_A) or ("fixed_puzzle" in name_A)
+            contact_relevant = env_cr and ("block" in name_B)
             if (dist.distance < 0.0) and contact_relevant:
                 contact_state.append((name_A, name_B))
             if contact_relevant:

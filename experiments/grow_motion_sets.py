@@ -8,7 +8,7 @@ import state
 import utils
 import visualize
 from planning import motion_sets, refine_motion
-from simulation import ik_solver, plant_builder
+from simulation import ik_solver, annotate_geoms
 
 
 def init_state() -> state.Particle:
@@ -37,7 +37,7 @@ def test_goal_sat():
 
 def test_compute_compliance_frame():
     p_nom = init_state()
-    cspheres = plant_builder.generate_collision_spheres()
+    cspheres = annotate_geoms.annotate(p.manip_geom)
     X_GC = refine_motion.compute_compliance_frame(
         p_nom.X_GM, contact_defs.ground_align, cspheres
     )
