@@ -36,23 +36,11 @@ from pydrake.all import (
 )
 
 import utils
-from simulation import controller, geometry_monitor, image_logger
+from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 
 # timestep = 0
 timestep = 0.0005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
-
-
-def generate_collision_spheres() -> Dict[str, RigidTransform]:
-    epsilon = 1e-5
-    id_to_rt = dict()
-    for i, x in enumerate([-0.03, 0.03]):
-        for j, y in enumerate([-0.03, 0.03]):
-            for k, z in enumerate([-0.075, 0.075, 0.05]):
-                rt = RigidTransform([x, y, z])
-                name = str(i) + str(j) + str(k)
-                id_to_rt["block::" + name] = rt
-    return id_to_rt
 
 
 def _weld_geometries(plant: MultibodyPlant, X_GM: RigidTransform, X_WO: RigidTransform):
@@ -200,7 +188,7 @@ def _construct_diagram(
     manipuland = parser.AddModels(manip_geom)[0]
     plant.RenameModelInstance(manipuland, "block")
     if collision_check:
-        sphere_map = generate_collision_spheres()
+        sphere_map = annotate_geoms.annotate(manip_geom)
         manipuland_body = plant.get_body(plant.GetBodyIndices(manipuland)[0])
         for (name, rt) in sphere_map.items():
             plant.RegisterCollisionGeometry(

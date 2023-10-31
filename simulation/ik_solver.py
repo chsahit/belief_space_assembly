@@ -20,7 +20,7 @@ from pydrake.all import (
 
 import components
 import utils
-from simulation import plant_builder
+from simulation import annotate_geoms
 
 
 def gripper_to_joint_states(
@@ -106,7 +106,7 @@ def project_manipuland_to_contacts(
     plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
     constraints = p.constraints
     ik = InverseKinematics(plant, plant_context)
-    corner_map = plant_builder.generate_collision_spheres()
+    corner_map = annotate_geoms.annotate(p.manip_geom)
 
     W = plant.world_frame()
     M = plant.GetBodyByName("base_link").body_frame()

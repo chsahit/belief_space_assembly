@@ -15,7 +15,7 @@ import dynamics
 import state
 import utils
 from planning import motion_sets
-from simulation import plant_builder
+from simulation import annotate_geoms
 
 
 def compute_compliance_frame(
@@ -87,7 +87,7 @@ def refine(
     b0: state.Belief, CF_d: components.ContactState
 ) -> Tuple[components.CompliantMotion, state.Belief]:
     p_nom = b0.sample()
-    spheres = plant_builder.generate_collision_spheres()
+    spheres = annotate_geoms.annotate(b0.particles[0].manip_geom)
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
     K_star = compliance_search(X_GC, CF_d, p_nom)
     if K_star is None:
