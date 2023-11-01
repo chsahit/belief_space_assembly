@@ -21,13 +21,20 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
 
 
 bottom = set((("fixed_puzzle::b1", "block::000"),))
+side = set(
+    (
+        ("fixed_puzzle::b1", "block::000"),
+        ("fixed_puzzle::b2", "block::101"),
+        ("fixed_puzzle::b2", "block::100"),
+    )
+)
 
 
 def puzzle_search():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     b0 = state.Belief([p_a, p_b])
-    modes = [bottom]
+    modes = [bottom, side]
     traj = search.refine_schedule(b0, bottom, modes)
     dynamics.visualize_trajectory(b0.particles[0], traj, name="p0.html")
     input()

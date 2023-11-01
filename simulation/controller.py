@@ -25,6 +25,7 @@ class ControllerSystem(LeafSystem):
         self.motion = None
         self.i = 0
         self.history = []
+        self.printed = False
 
     def compute_error(self, X_WC: RigidTransform, X_WCd: RigidTransform) -> np.ndarray:
         R_CCd = X_WC.InvertAndCompose(X_WCd).rotation()
@@ -64,8 +65,10 @@ class ControllerSystem(LeafSystem):
             self.plant_context, self.plant.world_frame(), G
         )
         if self.motion is None:
-            print("warning, X_GC is none")
+            if not self.printed:
+                print("warning, X_GC is none")
             X_GC = RigidTransform()
+            self.printed = True
         else:
             X_GC = self.motion.X_GC
         J_g = self.plant.CalcJacobianSpatialVelocity(

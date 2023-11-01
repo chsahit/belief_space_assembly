@@ -10,8 +10,8 @@ import utils
 from simulation import ik_solver
 
 
-def init():
-    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0])
+def init(X_WG_0_z: float = 0.3):
+    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, X_WG_0_z], [180, 0, 0])
     X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.09], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
@@ -41,9 +41,17 @@ def test_simulate():
 
 def test_ik():
     bottom = set((("fixed_puzzle::b1", "block::000"),))
-    pose = ik_solver.project_manipuland_to_contacts(init(), bottom)
-    print(f"{pose=}")
+    side = set(
+        (
+            ("fixed_puzzle::b1", "block::000"),
+            ("fixed_puzzle::b2", "block::101"),
+            ("fixed_puzzle::b2", "block::100"),
+        )
+    )
+    pose = ik_solver.project_manipuland_to_contacts(init(X_WG_0_z=0.21), side)
+    print("pose=")
+    print(utils.rt_to_str(pose))
 
 
 if __name__ == "__main__":
-    test_simulate()
+    test_ik()

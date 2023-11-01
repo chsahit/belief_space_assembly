@@ -20,6 +20,7 @@ from pydrake.all import (
 
 import components
 import utils
+import visualize
 from simulation import annotate_geoms
 
 
@@ -133,7 +134,8 @@ def project_manipuland_to_contacts(
     for k in g_ids.keys():
         if k not in str(CF_d):
             ik.AddDistanceConstraint((g_ids[k], g_manipuland), ap, np.inf)
-
+        else:
+            ik.AddDistanceConstraint((g_ids[k], g_manipuland), -1e-4, np.inf)
     try:
         result = Solve(ik.prog())
         X_WG_out = plant.CalcRelativeTransform(plant_context, W, G)
@@ -152,7 +154,10 @@ def project_manipuland_to_contacts(
             print("info on p_aligned: \n", utils.rt_to_str(p_aligned.X_WG))
             print(f"warning, ik solve failed.")
             return None
-
+    # p_vis = p.deepcopy()
+    # p.env_geom = "assets/empty_world.sdf"
+    # p.q_r = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
+    # visualize.show_particle(p)
     return X_WG_out
 
 

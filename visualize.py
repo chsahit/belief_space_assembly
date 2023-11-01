@@ -47,7 +47,7 @@ def generate_particle_picture(p: state.Particle, name="test.jpg") -> Image:
 
 
 def show_particle(p: state.Particle):
-    diagram = p.make_plant(vis=True)
+    diagram, _ = p.make_plant(vis=True)
     simulator = Simulator(diagram)
     meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
     meshcat_vis.StartRecording()
