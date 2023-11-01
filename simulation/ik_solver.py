@@ -159,7 +159,13 @@ def project_manipuland_to_contacts(
 def axis_align_particle(p: state.Particle) -> state.Particle:
     X_WM = p.X_WG.multiply(p.X_GM)
     X_WM_aa = RigidTransform(X_WM.GetAsMatrix4())
-    nominal_manipuland_orientation = RollPitchYaw(np.array([np.pi, 0, 0]))
+    # TODO: make a manip_geom dataclass so i dont have these if/elifs everywhere
+    if p.manip_geom == "assets/peg.urdf":
+        nominal_manipuland_orientation = RollPitchYaw(np.array([np.pi, 0, 0]))
+    elif p.manip_geom == "assets/moving_puzzle.sdf":
+        nominal_manipuland_orientation = RollPitchYaw(np.array([0, 0, 0]))
+    else:
+        raise NotImplementedError("bad geometry instance")
     X_WM_aa.set_rotation(nominal_manipuland_orientation)
     X_WM_aa_translation = X_WM_aa.translation().copy()
     X_WM_aa_translation[0] = 0.5

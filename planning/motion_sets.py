@@ -109,6 +109,12 @@ def grow_motion_set(
         U_candidates.append(u_i)
 
     P_results = dynamics.f_cspace(p, U_candidates)
+    """
+    P_results = []
+    for u in U_candidates:
+        p_r = dynamics.simulate(p, u, vis=True)
+        P_results.append(p_r)
+    """
     for idx, p_r in enumerate(P_results):
         if p_r.satisfies_contact(CF_d):
             if vis:

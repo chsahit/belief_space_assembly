@@ -8,7 +8,7 @@ import state
 import utils
 import visualize
 from planning import motion_sets, refine_motion
-from simulation import ik_solver, annotate_geoms
+from simulation import annotate_geoms, ik_solver
 
 
 def init_state() -> state.Particle:

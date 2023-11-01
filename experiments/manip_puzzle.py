@@ -25,6 +25,7 @@ def test_simulate():
     p_0 = init()
     t0 = time.time()
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.2], [180, 0, 0])
+    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.21], [180, 0, 7.8e-4])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
     print(f"{p_1.epsilon_contacts()=}")
@@ -41,6 +42,8 @@ def test_simulate():
 def test_ik():
     bottom = set((("fixed_puzzle::b1", "block::000"),))
     pose = ik_solver.project_manipuland_to_contacts(init(), bottom)
+    print(f"{pose=}")
+
 
 if __name__ == "__main__":
-    test_ik()
+    test_simulate()

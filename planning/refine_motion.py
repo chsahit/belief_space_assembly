@@ -58,7 +58,10 @@ def compute_compliance_frame(
     result = Solve(prog)
     assert result.is_success()
     X_MC_star = RigidTransform(result.GetSolution(p_MC))
-    X_GC = X_GM.multiply(X_MC_star)
+    X_GM_rotated = RigidTransform(X_GM.translation())
+    X_GC = X_GM_rotated.multiply(X_MC_star)
+    print("(wrongish) compliance frame: ")
+    print(utils.rt_to_str(X_GC))
     return X_GC
 
 
