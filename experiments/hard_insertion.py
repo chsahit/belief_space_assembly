@@ -58,5 +58,18 @@ def bilateral_noise_easy():
     input()
 
 
+def bilateral_t_noise_easy():
+    p_a = init(X_GM_x=-0.005, X_GM_p=-0.0)
+    p_b = init(X_GM_x=0.005, X_GM_p=0.0)
+    b = state.Belief([p_a, p_b])
+    modes = [
+        contact_defs.b_full_chamfer_touch,
+        contact_defs.ground_align,
+        contact_defs.ground_align,
+    ]
+    traj = search.refine_schedule(b, contact_defs.ground_align, modes)
+    utils.dump_traj(traj)
+
+
 if __name__ == "__main__":
-    bilateral_noise()
+    bilateral_t_noise_easy()

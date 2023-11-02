@@ -37,6 +37,7 @@ def puzzle_search():
     modes = [bottom, side]
     traj = search.refine_schedule(b0, bottom, modes)
     dynamics.visualize_trajectory(b0.particles[0], traj, name="p0.html")
+    dynamics.visualize_trajectory(b0.particles[1], traj, name="p1.html")
     input()
 
 

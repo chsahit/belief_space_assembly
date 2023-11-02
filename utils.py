@@ -1,7 +1,10 @@
+import pickle
 from typing import List
 
 import numpy as np
 from pydrake.all import Quaternion, RigidTransform, RollPitchYaw, RotationMatrix
+
+import components
 
 
 def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
@@ -25,3 +28,13 @@ def rt_to_str(X: RigidTransform) -> str:
     t_str = f"translation: {np.round(X.translation(), 5)}"
     r_str = f"rotation: {np.round(X.rotation().ToRollPitchYaw().vector(), 5)}"
     return t_str + "\n" + r_str
+
+
+def dump_traj(traj: List[components.CompliantMotion], fname: str = "traj_out.pkl"):
+    tau = []
+    for u in traj:
+        X_WGd = u.X_WCd.multiply(u.X_GC.inverse())
+        u_pkl = (X_WGd.GetAsMatrix4(), u.K)
+        tau.append(u_pkl)
+    with open(fname, "wb") as f:
+        pickle.dump(tau, f)
