@@ -1,15 +1,10 @@
-import sys
-
-import numpy as np
 from pydrake.all import RigidTransform
 
-import components
 import contact_defs
 import dynamics
 import state
 import utils
-import visualize
-from planning import refine_motion, search
+from planning import search
 from simulation import ik_solver
 
 
