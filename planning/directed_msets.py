@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import numpy as np
-from dataclasses import dataclass
 from pydrake.all import RigidTransform
 
 import components
@@ -32,10 +32,11 @@ class Tree:
 
 
 def alpha(nominal: RigidTransform) -> RigidTransform:
-    r_vel = (gen.random_sample(3) * 0.2) - 0.1
-    t_vel = (gen.random_sample(3) * 0.1) - 0.05
-    tf = mr.MatrixExp6(np.concatenate((r_vel, t_vel)))
-    sample = RigidTransform(nominal.matrix() @ tf)
+    r_vel = gen.uniform(low=-0.1, high=0.1, size=3)
+    t_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    random_vel = np.concatenate((r_vel, t_vel))
+    tf = mr.MatrixExp6(mr.VecTose3(random_vel))
+    sample = RigidTransform(nominal.GetAsMatrix4() @ tf)
     return sample
 
 
@@ -62,7 +63,7 @@ def stopping_configuration(
     diff = q_n.u.X_WCd.InvertAndCompose(sample)
     S = 0.25 * np.eye(4)
     S[3, 3] = 1
-    diff = RigidTransform(S @ diff.matrix())
+    diff = RigidTransform(S @ diff.GetAsMatrix4())
     stopping_X_WCd = q_n.u.X_WCd.multiply(diff)
     stopping = components.CompliantMotion(q_n.u.X_GC, stopping_X_WCd, q_n.u.K)
     if dynamics.simulate(p, stopping).satisfies_contact(CF_d):
@@ -90,6 +91,7 @@ def init_trees(
         root_u_X_WC = root_u_X_WG.multiply(X_GC)
         root_u = components.CompliantMotion(X_GC, root_u_X_WC, K_star)
         root_score = score_motion(b, root_u, CF_d)
+        print(f"init tree with {root_score=}")
         if root_score == len(b.particles):
             soln = root_u
         root = TreeNode(root_u, None, root_score)
@@ -99,12 +101,13 @@ def init_trees(
 
 
 def grow_tree_to_sample(
-    b: state.Belief, T: Tree, sample: np.ndarray, CF_d: components.ContactState
+    b: state.Belief, T: Tree, sample: RigidTransform, CF_d: components.ContactState
 ) -> Tuple[TreeNode, Optional[components.CompliantMotion]]:
     q_near = nearest(T, sample)
     u_new = stopping_configuration(q_near, sample, CF_d, T.p)
     if u_new is not None:
         u_new_score = score_motion(b, u_new, CF_d)
+        print(f"adding node with score: {u_new_score}")
         if u_new_score == len(b.particles):
             return q_near, u_new
         q_new = TreeNode(u_new, q_near, u_new_score)
@@ -118,25 +121,28 @@ def n_rrt(
     X_GC: RigidTransform,
     CF_d: components.ContactState,
 ) -> components.CompliantMotion:
+    print("init trees")
     forest, u_star = init_trees(b, K_star, X_GC, CF_d)
     if u_star is not None:
         return u_star
     curr_tree_idx = 0
-    max_iters = 3
-    nominal = b.X_WM.multiply(X_GC)
+    max_iters = 2
+    nominal = b.particles[0].X_WM.multiply(X_GC)
     for iter in range(max_iters):
+        print("propose node")
         T_curr = forest[curr_tree_idx]
         sample = alpha(nominal)
-        q_new, u_star = grow_tree_to_sample(T_curr, sample)
+        q_new, u_star = grow_tree_to_sample(b, T_curr, sample, CF_d)
         if u_star is not None:
             return u_star
-        r7_new = q_new.r7_repr
         for i, T in enumerate(forest):
             if i == curr_tree_idx:
                 continue
-            _, u_star = grow_tree_to_sample(T, r7_new)
+            print("check node on other trees")
+            _, u_star = grow_tree_to_sample(b, T, q_new.u.X_WCd, CF_d)
             if u_star is not None:
                 return u_star
-        tree_sizes = [len(T) for T in forest]
+        tree_sizes = [len(T.nodes) for T in forest]
+        print(f"{tree_sizes=}")
         curr_tree_idx = tree_sizes.index(min(tree_sizes))
     return None
