@@ -32,8 +32,8 @@ class Tree:
 
 
 def alpha(nominal: RigidTransform) -> RigidTransform:
-    r_vel = gen.uniform(low=-0.1, high=0.1, size=3)
-    t_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    t_vel = gen.uniform(low=-0.005, high=0.005, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     tf = mr.MatrixExp6(mr.VecTose3(random_vel))
     sample = RigidTransform(nominal.GetAsMatrix4() @ tf)
@@ -112,7 +112,9 @@ def grow_tree_to_sample(
             return q_near, u_new
         q_new = TreeNode(u_new, q_near, u_new_score)
         T.nodes.append(q_new)
-    return q_near, None
+        return q_near, None
+    else:
+        return None, None
 
 
 def n_rrt(
@@ -127,21 +129,22 @@ def n_rrt(
         return u_star
     curr_tree_idx = 0
     max_iters = 2
-    nominal = b.particles[0].X_WM.multiply(X_GC)
     for iter in range(max_iters):
-        print("propose node")
+        print(f"propose node for tree {curr_tree_idx}")
         T_curr = forest[curr_tree_idx]
+        nominal = forest[curr_tree_idx].nodes[0].u.X_WCd
         sample = alpha(nominal)
         q_new, u_star = grow_tree_to_sample(b, T_curr, sample, CF_d)
         if u_star is not None:
             return u_star
-        for i, T in enumerate(forest):
-            if i == curr_tree_idx:
-                continue
-            print("check node on other trees")
-            _, u_star = grow_tree_to_sample(b, T, q_new.u.X_WCd, CF_d)
-            if u_star is not None:
-                return u_star
+        if q_new is not None:
+            for idx, T in enumerate(forest):
+                if idx == curr_tree_idx:
+                    continue
+                print("check node on tree {idx}")
+                _, u_star = grow_tree_to_sample(b, T, q_new.u.X_WCd, CF_d)
+                if u_star is not None:
+                    return u_star
         tree_sizes = [len(T.nodes) for T in forest]
         print(f"{tree_sizes=}")
         curr_tree_idx = tree_sizes.index(min(tree_sizes))

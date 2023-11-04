@@ -23,7 +23,7 @@ def n_rrt_check():
     p_a = init(X_GM_x=-0.01)
     p_b = init(X_GM_x=0.01)
     b = state.Belief([p_a, p_b])
-    K_star = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
+    K_star = np.array([100.0, 100.0, 10.0, 100.0, 100.0, 600.0])
     X_GC = RigidTransform()
     u_star = directed_msets.n_rrt(b, K_star, X_GC, contact_defs.ground_align)
 
