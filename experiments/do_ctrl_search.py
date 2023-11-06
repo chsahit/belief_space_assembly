@@ -25,7 +25,7 @@ def n_rrt_check():
     b = state.Belief([p_a, p_b])
     K_star = np.array([100.0, 100.0, 10.0, 100.0, 100.0, 600.0])
     X_GC = RigidTransform()
-    u_star = directed_msets.n_rrt(b, K_star, X_GC, contact_defs.ground_align)
+    u_star = directed_msets.n_rrt(X_GC, K_star, b, contact_defs.ground_align)
 
 
 def n_rrt_hard():
@@ -34,7 +34,7 @@ def n_rrt_hard():
     b = state.Belief([p_a, p_b])
     K_star = np.array([100.0, 100.0, 10.0, 100.0, 100.0, 600.0])
     X_GC = RigidTransform()
-    u_star = directed_msets.n_rrt(b, K_star, X_GC, contact_defs.ground_align)
+    u_star = directed_msets.n_rrt(X_GC, K_star, b, contact_defs.ground_align)
 
 
 if __name__ == "__main__":

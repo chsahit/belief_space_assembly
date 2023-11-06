@@ -140,9 +140,9 @@ def grow_tree_to_sample(
 
 
 def n_rrt(
-    b: state.Belief,
-    K_star: np.ndarray,
     X_GC: RigidTransform,
+    K_star: np.ndarray,
+    b: state.Belief,
     CF_d: components.ContactState,
 ) -> components.CompliantMotion:
     print("init trees")

@@ -14,7 +14,7 @@ import components
 import dynamics
 import state
 import utils
-from planning import motion_sets
+from planning import directed_msets, motion_sets
 from simulation import annotate_geoms
 
 
@@ -96,7 +96,10 @@ def refine(
     if K_star is None:
         return None, None
     print(f"{K_star=}")
-    U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
+    # U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
+    U_candidates = [directed_msets.n_rrt(X_GC, K_star, b0, CF_d)]
+    if U_candidates[0] == None:
+        raise NotImplementedError("um, the search failed and idk what do")
     print("testing candidates")
     best_score = -1.0
     best_candidate = 0
