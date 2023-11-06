@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import FrozenSet, NamedTuple, Tuple
+from typing import FrozenSet, List, NamedTuple, Tuple
 
 import numpy as np
 from pydrake.all import RigidTransform, RollPitchYaw
@@ -57,3 +57,24 @@ class ObjectPose(NamedTuple):
             RollPitchYaw(np.array([0, 0, self.yaw * np.pi / 180])),
             [self.x, self.y, 0.075],
         )
+
+
+@dataclass(frozen=True)
+class TreeNode:
+    u: CompliantMotion
+    u_pred: "TreeNode"
+    score: int
+
+    @property
+    def r7_repr(self) -> np.ndarray:
+        # this is copy pasted from utils.py :(
+        X = self.u.X_WCd
+        quat = X.rotation().ToQuaternion()
+        quat = np.array([quat.w(), quat.x(), quat.y(), quat.z()])
+        return np.concatenate((quat, X.translation()))
+
+
+@dataclass
+class Tree:
+    p: "Particle"
+    nodes: List[TreeNode]

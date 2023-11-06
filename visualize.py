@@ -81,3 +81,17 @@ def plot_motion_sets(sets: List[HPolyhedron]):
     for i in range(2):
         plt.scatter(xs[i], ys[i], c=cmap[i])
     plt.show()
+
+
+def render_trees(forest: List[components.Tree]):
+    import matplotlib.pyplot as plt
+
+    colors = ["r", "g"]
+    for i, T in enumerate(forest):
+        for v in T.nodes:
+            if v.u_pred is None:
+                continue
+            xs = (v.u_pred.u.X_WCd.translation()[0], v.u.X_WCd.translation()[0])
+            ys = (v.u_pred.u.X_WCd.translation()[2], v.u.X_WCd.translation()[2])
+            plt.plot(xs, ys, marker="o", c=colors[i])
+    plt.show()

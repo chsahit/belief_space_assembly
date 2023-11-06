@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -9,26 +8,10 @@ import dynamics
 import mr
 import state
 import utils
+import visualize
 from planning import motion_sets
 
 gen = np.random.default_rng()
-
-
-@dataclass(frozen=True)
-class TreeNode:
-    u: components.CompliantMotion
-    u_pred: components.CompliantMotion
-    score: int
-
-    @property
-    def r7_repr(self) -> np.ndarray:
-        return utils.RigidTfToVec(self.u.X_WCd)
-
-
-@dataclass
-class Tree:
-    p: state.Particle
-    nodes: List[TreeNode]
 
 
 def alpha(nominal: RigidTransform) -> RigidTransform:
@@ -40,7 +23,7 @@ def alpha(nominal: RigidTransform) -> RigidTransform:
     return sample
 
 
-def nearest(T: Tree, sample: RigidTransform) -> TreeNode:
+def nearest(T: components.Tree, sample: RigidTransform) -> components.TreeNode:
     sample = utils.RigidTfToVec(sample)
     min_dist = np.inf
     min_node = None
@@ -55,7 +38,7 @@ def nearest(T: Tree, sample: RigidTransform) -> TreeNode:
 
 
 def stopping_configuration(
-    q_n: TreeNode,
+    q_n: components.TreeNode,
     sample: RigidTransform,
     p: state.Particle,
 ) -> components.CompliantMotion:
@@ -69,11 +52,11 @@ def stopping_configuration(
 
 
 def certified_stopping_conf(
-    q_ns: List[TreeNode],
+    q_ns: List[components.TreeNode],
     samples: List[RigidTransform],
     CF_d: components.ContactState,
     p: state.Particle,
-) -> Tuple[TreeNode, components.CompliantMotion]:
+) -> Tuple[components.TreeNode, components.CompliantMotion]:
     assert len(q_ns) == len(samples)
     if len(q_ns) == 1:
         stopping = stopping_configuration(q_ns[0], samples[0], p)
@@ -102,7 +85,7 @@ def init_trees(
     K_star: np.ndarray,
     X_GC: RigidTransform,
     CF_d: components.ContactState,
-) -> Tuple[List[Tree], Optional[components.CompliantMotion]]:
+) -> Tuple[List[components.Tree], Optional[components.CompliantMotion]]:
     forest = []
     soln = None
     for p in b.particles:
@@ -113,18 +96,18 @@ def init_trees(
         print(f"init tree with {root_score=}")
         if root_score == len(b.particles):
             soln = root_u
-        root = TreeNode(root_u, None, root_score)
-        forest.append(Tree(p, [root]))
+        root = components.TreeNode(root_u, None, root_score)
+        forest.append(components.Tree(p, [root]))
 
     return forest, soln
 
 
 def grow_tree_to_sample(
     b: state.Belief,
-    T: Tree,
+    T: components.Tree,
     samples: List[RigidTransform],
     CF_d: components.ContactState,
-) -> Tuple[TreeNode, Optional[components.CompliantMotion]]:
+) -> Tuple[components.TreeNode, Optional[components.CompliantMotion]]:
     q_nears = [nearest(T, sample) for sample in samples]
     q_near, u_new = certified_stopping_conf(q_nears, samples, CF_d, T.p)
     if u_new is not None:
@@ -132,7 +115,7 @@ def grow_tree_to_sample(
         print(f"adding node with score: {u_new_score}")
         if u_new_score == len(b.particles):
             return q_near, u_new
-        q_new = TreeNode(u_new, q_near, u_new_score)
+        q_new = components.TreeNode(u_new, q_near, u_new_score)
         T.nodes.append(q_new)
         return q_near, None
     else:
@@ -170,4 +153,5 @@ def n_rrt(
         tree_sizes = [len(T.nodes) for T in forest]
         print(f"{tree_sizes=}")
         curr_tree_idx = tree_sizes.index(min(tree_sizes))
+    visualize.render_trees(forest)
     return None
