@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 
 import numpy as np
-from pydrake.all import RigidTransform
+from pydrake.all import RigidTransform, RotationMatrix
 
 import components
 import dynamics
@@ -43,9 +43,12 @@ def stopping_configuration(
     p: state.Particle,
 ) -> components.CompliantMotion:
     diff = q_n.u.X_WCd.InvertAndCompose(sample)
-    S = 0.25 * np.eye(4)
-    S[3, 3] = 1
-    diff = RigidTransform(S @ diff.GetAsMatrix4())
+    R_diff = diff.rotation().matrix()
+    r_diff = mr.so3ToVec(mr.MatrixLog3(R_diff))
+    scaled_r_diff = 0.25 * r_diff
+    scaled_R = RotationMatrix(mr.MatrixExp3(mr.VecToso3(scaled_r_diff)))
+    scaled_t = 0.25 * diff.translation()
+    diff = RigidTransform(scaled_R, scaled_t)
     stopping_X_WCd = q_n.u.X_WCd.multiply(diff)
     stopping = components.CompliantMotion(q_n.u.X_GC, stopping_X_WCd, q_n.u.K)
     return stopping
@@ -133,7 +136,7 @@ def n_rrt(
     if u_star is not None:
         return u_star
     curr_tree_idx = 0
-    max_iters = 100
+    max_iters = 15
     for iter in range(max_iters):
         print(f"propose node for tree {curr_tree_idx}")
         T_curr = forest[curr_tree_idx]

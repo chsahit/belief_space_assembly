@@ -38,4 +38,4 @@ def n_rrt_hard():
 
 
 if __name__ == "__main__":
-    n_rrt_hard()
+    n_rrt_check()
