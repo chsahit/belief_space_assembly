@@ -12,6 +12,8 @@ import visualize
 from planning import motion_sets
 
 gen = np.random.default_rng()
+best_candidate = None
+best_candidate_fine_score = -1.0
 
 
 def alpha(nominal: RigidTransform) -> RigidTransform:
@@ -79,7 +81,14 @@ def certified_stopping_conf(
 def score_motion(
     b: state.Belief, u: components.CompliantMotion, CF_d: components.ContactState
 ) -> int:
+    global best_candidate
+    global best_candidate_fine_score
+
     posterior = dynamics.f_bel(b, u)
+    fine_score = posterior.score(CF_d)
+    if fine_score > best_candidate_fine_score:
+        best_candidate_fine_score = fine_score
+        best_candidate = u
     return sum([int(p.satisfies_contact(CF_d)) for p in posterior.particles])
 
 
@@ -131,12 +140,15 @@ def n_rrt(
     b: state.Belief,
     CF_d: components.ContactState,
 ) -> components.CompliantMotion:
-    print("init trees")
+    global best_candidate_fine_score
+    global best_candidate
+    best_candidate_fine_score = -1.0
+    best_candidate = None
     forest, u_star = init_trees(b, K_star, X_GC, CF_d)
     if u_star is not None:
         return u_star
     curr_tree_idx = 0
-    max_iters = 15
+    max_iters = 30
     for iter in range(max_iters):
         print(f"propose node for tree {curr_tree_idx}")
         T_curr = forest[curr_tree_idx]
@@ -157,4 +169,4 @@ def n_rrt(
         print(f"{tree_sizes=}")
         curr_tree_idx = tree_sizes.index(min(tree_sizes))
     visualize.render_trees(forest)
-    return None
+    return best_candidate
