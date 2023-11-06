@@ -57,7 +57,6 @@ def nearest(T: Tree, sample: RigidTransform) -> TreeNode:
 def stopping_configuration(
     q_n: TreeNode,
     sample: RigidTransform,
-    CF_d: components.ContactState,
     p: state.Particle,
 ) -> components.CompliantMotion:
     diff = q_n.u.X_WCd.InvertAndCompose(sample)
@@ -66,9 +65,29 @@ def stopping_configuration(
     diff = RigidTransform(S @ diff.GetAsMatrix4())
     stopping_X_WCd = q_n.u.X_WCd.multiply(diff)
     stopping = components.CompliantMotion(q_n.u.X_GC, stopping_X_WCd, q_n.u.K)
-    if dynamics.simulate(p, stopping).satisfies_contact(CF_d):
-        return stopping
-    return None
+    return stopping
+
+
+def certified_stopping_conf(
+    q_ns: List[TreeNode],
+    samples: List[RigidTransform],
+    CF_d: components.ContactState,
+    p: state.Particle,
+) -> Tuple[TreeNode, components.CompliantMotion]:
+    assert len(q_ns) == len(samples)
+    if len(q_ns) == 1:
+        stopping = stopping_configuration(q_ns[0], samples[0], p)
+        if dynamics.simulate(p, stopping).satisfies_contact(CF_d):
+            return q_ns[0], stopping
+        return None, None
+    U_stopping = [
+        stopping_configuration(q_ns[i], samples[i], p) for i in range(len(q_ns))
+    ]
+    runs = dynamics.f_cspace(p, U_stopping)
+    for i, run in enumerate(runs):
+        if run.satisfies_contact(CF_d):
+            return q_ns[i], U_stopping[i]
+    return None, None
 
 
 def score_motion(
@@ -101,10 +120,13 @@ def init_trees(
 
 
 def grow_tree_to_sample(
-    b: state.Belief, T: Tree, sample: RigidTransform, CF_d: components.ContactState
+    b: state.Belief,
+    T: Tree,
+    samples: List[RigidTransform],
+    CF_d: components.ContactState,
 ) -> Tuple[TreeNode, Optional[components.CompliantMotion]]:
-    q_near = nearest(T, sample)
-    u_new = stopping_configuration(q_near, sample, CF_d, T.p)
+    q_nears = [nearest(T, sample) for sample in samples]
+    q_near, u_new = certified_stopping_conf(q_nears, samples, CF_d, T.p)
     if u_new is not None:
         u_new_score = score_motion(b, u_new, CF_d)
         print(f"adding node with score: {u_new_score}")
@@ -128,21 +150,21 @@ def n_rrt(
     if u_star is not None:
         return u_star
     curr_tree_idx = 0
-    max_iters = 2
+    max_iters = 100
     for iter in range(max_iters):
         print(f"propose node for tree {curr_tree_idx}")
         T_curr = forest[curr_tree_idx]
         nominal = forest[curr_tree_idx].nodes[0].u.X_WCd
-        sample = alpha(nominal)
-        q_new, u_star = grow_tree_to_sample(b, T_curr, sample, CF_d)
+        samples = [alpha(nominal) for i in range(8)]
+        q_new, u_star = grow_tree_to_sample(b, T_curr, samples, CF_d)
         if u_star is not None:
             return u_star
         if q_new is not None:
             for idx, T in enumerate(forest):
                 if idx == curr_tree_idx:
                     continue
-                print("check node on tree {idx}")
-                _, u_star = grow_tree_to_sample(b, T, q_new.u.X_WCd, CF_d)
+                print(f"check node on tree {idx}")
+                _, u_star = grow_tree_to_sample(b, T, [q_new.u.X_WCd], CF_d)
                 if u_star is not None:
                     return u_star
         tree_sizes = [len(T.nodes) for T in forest]
