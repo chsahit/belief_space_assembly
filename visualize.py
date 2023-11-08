@@ -94,4 +94,5 @@ def render_trees(forest: List[components.Tree]):
             xs = (v.u_pred.u.X_WCd.translation()[0], v.u.X_WCd.translation()[0])
             ys = (v.u_pred.u.X_WCd.translation()[2], v.u.X_WCd.translation()[2])
             plt.plot(xs, ys, marker="o", c=colors[i])
-    plt.show()
+    print("not showing...")
+    # plt.show()
