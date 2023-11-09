@@ -18,8 +18,27 @@ def annotate_peg() -> Dict[str, RigidTransform]:
 def annotate_puzzle() -> Dict[str, RigidTransform]:
     epsilon = 1e-5
     id_to_rt = dict()
-    names = ["block::000", "block::100", "block::101"]
-    sphere_poses = [[0.0, 0.0, -0.1], [0.001, 0.0, -0.048], [-0.001, 0.0, -0.052]]
+    names = [
+        "block::000",
+        "block::100",
+        "block::101",
+        "block::200",
+        "block::201",
+        "block::300",
+        "block::301",
+        "block::302",
+    ]
+    sphere_poses = [
+        [0.0, 0.0, -0.1],  # bottom face centered
+        [0.001, 0.0, -0.048],  # inside slot 1
+        [-0.001, 0.0, -0.052],  # inside slot 2
+        [-0.02, 0.0, -0.12],  # bottom of back leg
+        [0.02, 0.0, -0.12],  # bottom of front leg, 201
+        [0.03, 0.0, -0.11],  # front of front leg, 300
+        [-0.03, 0.0, -0.11],  # back of back leg, 301
+        [0.03, 0.0, -0.10],  # top front of front leg, 302
+    ]
+    assert len(names) == len(sphere_poses)
     for name, p_MS in zip(names, sphere_poses):
         rt = RigidTransform(p_MS)
         id_to_rt[name] = rt

@@ -16,7 +16,7 @@ def init(X_WG_0_z: float = 0.3):
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/fixed_puzzle.sdf", "assets/moving_puzzle.sdf"
+        q_r_0, X_GM, X_WO, "assets/fixed_puzzle.sdf", "assets/moving_puzzle.sdf", mu=0.0
     )
     return p_0
 
@@ -39,6 +39,16 @@ def test_simulate():
     input()
 
 
+def poke():
+    p_0 = init()
+    # X_WG_d = utils.xyz_rpy_deg([0.50, 0.0, 0.2], [180, 0, 0])
+    X_WG_d = utils.xyz_rpy_deg([0.507, 0.0, 0.28], [180, 0, 0])
+    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
+    p_1 = dynamics.simulate(p_0, u_0, vis=True)
+    print(f"{p_1.epsilon_contacts()=}")
+    input()
+
+
 def test_ik():
     bottom = set((("fixed_puzzle::b1", "block::000"),))
     side = set(
@@ -54,4 +64,4 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    test_ik()
+    test_simulate()

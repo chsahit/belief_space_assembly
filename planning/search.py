@@ -15,7 +15,8 @@ def refine_schedule(
     soln = []
     b_curr = b0
     for mode in schedule:
-        if b_curr.satisfies_contact(g):
+        if b_curr.satisfies_contact(mode):
+            print(f"contact {mode} already satisfied")
             continue
         u, succ = refine_motion.refine(b_curr, mode)
         if u is None:

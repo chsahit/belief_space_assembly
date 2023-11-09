@@ -15,11 +15,16 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/fixed_puzzle.sdf", "assets/moving_puzzle.sdf"
+        q_r_0, X_GM, X_WO, "assets/fixed_puzzle.sdf", "assets/moving_puzzle.sdf", mu=0.6
     )
     return p0
 
 
+back_bottom = set((("fixed_puzzle::b4", "block::200"),))
+top_touch = set((("fixed_puzzle::b3", "block::201"),))
+front_touch = set((("fixed_puzzle::b3", "block::300"),))
+front_touch_c = set((("fixed_puzzle::b3", "block::302"),))
+back_touch = set((("fixed_puzzle::b4", "block::301"),))
 bottom = set((("fixed_puzzle::b1", "block::000"),))
 side = set(
     (
@@ -34,7 +39,8 @@ def puzzle_search():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     b0 = state.Belief([p_a, p_b])
-    modes = [bottom, side]
+    modes = [top_touch, front_touch_c, front_touch, bottom, side]
+    # modes = [front_touch]
     traj = search.refine_schedule(b0, bottom, modes)
     dynamics.visualize_trajectory(b0.particles[0], traj, name="p0.html")
     dynamics.visualize_trajectory(b0.particles[1], traj, name="p1.html")

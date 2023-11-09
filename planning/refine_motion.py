@@ -72,7 +72,7 @@ def compliance_search(
     K_opt = components.stiff
     U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p, density=5)
     print(f"K_curr={K_opt}, len(U_curr)={len(U_opt)}")
-    for i in range(6):
+    for i in list(range(6)) + [2]:
         K_curr = K_opt.copy()
         K_curr[i] = components.soft[i]
         U_curr = motion_sets.grow_motion_set(X_GC, K_curr, CF_d, p, density=5)
