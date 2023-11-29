@@ -95,10 +95,7 @@ def grow_motion_set(
     U = []
     v = False
     if np.linalg.norm(K - components.stiff) < 1e-4:
-        print("do vis")
         v = True
-    else:
-        print(f"{np.linalg.norm(K - components.stiff)=}, {len(CF_d)=}")
     X_WGd_0 = find_nearest_valid_target(p, CF_d, vis=v)
     if X_WGd_0 is None:
         print("IK solve failed, returning none")
@@ -114,6 +111,8 @@ def grow_motion_set(
         u_i = components.CompliantMotion(X_GC, X_WCd_i, K)
         U_candidates.append(u_i)
 
+    if v:
+        dynamics.simulate(p, U_candidates[0], vis=True)
     P_results = dynamics.f_cspace(p, U_candidates)
     """
     P_results = []

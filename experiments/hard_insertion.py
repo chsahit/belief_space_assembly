@@ -67,4 +67,4 @@ def bilateral_t_noise_easy():
 
 
 if __name__ == "__main__":
-    bilateral_noise()
+    bilateral_noise_easy()

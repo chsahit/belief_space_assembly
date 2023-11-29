@@ -90,6 +90,7 @@ def refine(
     b0: state.Belief, CF_d: components.ContactState
 ) -> Tuple[components.CompliantMotion, state.Belief]:
     p_nom = b0.sample()
+    p_nom = b0.particles[1]
     spheres = annotate_geoms.annotate(b0.particles[0].manip_geom)
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
     K_star = compliance_search(X_GC, CF_d, p_nom)

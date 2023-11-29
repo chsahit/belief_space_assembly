@@ -15,6 +15,7 @@ from pydrake.all import (
     Role,
     RollPitchYaw,
     RotationMatrix,
+    Simulator,
     Solve,
 )
 
@@ -160,9 +161,10 @@ def project_manipuland_to_contacts(
     p_aligned.q_r = plant.GetPositions(
         plant_context, plant.GetModelInstanceByName("panda")
     )
-    if vis:
-        # p.env_geom = "assets/empty_world.sdf"
-        visualize.show_particle(p_aligned)
+    X_WG_out = step_sim(p_aligned)
+    # if vis:
+    # p.env_geom = "assets/empty_world.sdf"
+    #     visualize.show_particle(p_aligned)
     return X_WG_out
 
 
@@ -186,3 +188,25 @@ def axis_align_particle(p: state.Particle) -> state.Particle:
     new_p = p.deepcopy()
     new_p.q_r = q_r_aa
     return new_p
+
+
+def step_sim(p: state.Particle) -> RigidTransform:
+    # print("before step: ")
+    # visualize.show_particle(p)
+    diagram, _ = p.make_plant()
+    plant = diagram.GetSubsystemByName("plant")
+    simulator = Simulator(diagram)
+    plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
+    simulator.Initialize()
+    simulator.AdvanceTo(0.2)
+    X_WG = plant.CalcRelativeTransform(
+        plant_context,
+        plant.world_frame(),
+        plant.GetBodyByName("panda_hand").body_frame(),
+    )
+    q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
+    p_next = p.deepcopy()
+    p_next.q_r = q_r_T
+    # print("after step: ")
+    # visualize.show_particle(p_next)
+    return X_WG
