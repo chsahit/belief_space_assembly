@@ -89,7 +89,15 @@ def score_motion(
     if fine_score > best_candidate_fine_score:
         best_candidate_fine_score = fine_score
         best_candidate = u
-    return sum([int(p.satisfies_contact(CF_d)) for p in posterior.particles])
+    score = sum([int(p.satisfies_contact(CF_d)) for p in posterior.particles])
+    """
+    if score == len(b.particles) and ("b2" in str(CF_d)):
+        print("simulating successful motion: ")
+        for prior_p in b.particles:
+            dynamics.simulate(prior_p, u, vis=True)
+        print("epsilon contacts: ", [p.epsilon_contacts() for p in posterior.particles])
+    """
+    return score
 
 
 def init_trees(

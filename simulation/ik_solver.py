@@ -99,7 +99,10 @@ def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId
 
 
 def project_manipuland_to_contacts(
-    p: state.Particle, CF_d: components.ContactState, fallback: bool = False
+    p: state.Particle,
+    CF_d: components.ContactState,
+    fallback: bool = False,
+    vis: bool = False,
 ) -> RigidTransform:
     p_aligned = axis_align_particle(p)
     diagram, _ = p_aligned.make_plant()
@@ -154,10 +157,12 @@ def project_manipuland_to_contacts(
             print("info on p_aligned: \n", utils.rt_to_str(p_aligned.X_WG))
             print(f"warning, ik solve failed.")
             return None
-    # p_vis = p.deepcopy()
-    # p.env_geom = "assets/empty_world.sdf"
-    # p.q_r = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
-    # visualize.show_particle(p)
+    p_aligned.q_r = plant.GetPositions(
+        plant_context, plant.GetModelInstanceByName("panda")
+    )
+    if vis:
+        # p.env_geom = "assets/empty_world.sdf"
+        visualize.show_particle(p_aligned)
     return X_WG_out
 
 

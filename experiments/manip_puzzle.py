@@ -42,7 +42,8 @@ def test_simulate():
 def poke():
     p_0 = init()
     # X_WG_d = utils.xyz_rpy_deg([0.50, 0.0, 0.2], [180, 0, 0])
-    X_WG_d = utils.xyz_rpy_deg([0.507, 0.0, 0.28], [180, 0, 0])
+    X_WG_d = utils.xyz_rpy_deg([0.501, 0.0, 0.28], [180, 0, 0])
+    # X_WG_d = utils.xyz_rpy_deg([0.51288, 0.0, 0.27121], [180, 0, 0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
     print(f"{p_1.epsilon_contacts()=}")
@@ -58,10 +59,12 @@ def test_ik():
             ("fixed_puzzle::b2", "block::100"),
         )
     )
-    pose = ik_solver.project_manipuland_to_contacts(init(X_WG_0_z=0.21), side)
+    ft = set((("fixed_puzzle::b3", "block::300"), ("fixed_puzzle::b3", "block::302")))
+    ft = set((("fixed_puzzle::b3", "block::300"),))
+    pose = ik_solver.project_manipuland_to_contacts(init(X_WG_0_z=0.29), ft)
     print("pose=")
     print(utils.rt_to_str(pose))
 
 
 if __name__ == "__main__":
-    test_simulate()
+    test_ik()

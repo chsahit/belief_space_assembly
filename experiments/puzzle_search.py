@@ -24,6 +24,12 @@ back_bottom = set((("fixed_puzzle::b4", "block::200"),))
 top_touch = set((("fixed_puzzle::b3", "block::201"),))
 front_touch = set((("fixed_puzzle::b3", "block::300"),))
 front_touch_c = set((("fixed_puzzle::b3", "block::302"),))
+ft = set(
+    (
+        ("fixed_puzzle::b3", "block::300"),
+        ("fixed_puzzle::b3", "block::302"),
+    )
+)
 back_touch = set((("fixed_puzzle::b4", "block::301"),))
 bottom = set((("fixed_puzzle::b1", "block::000"),))
 side = set(
@@ -39,8 +45,8 @@ def puzzle_search():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     b0 = state.Belief([p_a, p_b])
-    modes = [top_touch, front_touch_c, front_touch, bottom, side]
-    # modes = [front_touch]
+    # modes = [top_touch, ft, ft, bottom, side]
+    modes = [ft, ft, bottom, side]
     traj = search.refine_schedule(b0, bottom, modes)
     dynamics.visualize_trajectory(b0.particles[0], traj, name="p0.html")
     dynamics.visualize_trajectory(b0.particles[1], traj, name="p1.html")
