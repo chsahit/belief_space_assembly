@@ -53,7 +53,6 @@ def show_particle(p: state.Particle):
     meshcat_vis.StartRecording()
     simulator.AdvanceTo(0.1)
     meshcat_vis.PublishRecording()
-    input()
 
 
 def plot_motion_sets(sets: List[HPolyhedron]):

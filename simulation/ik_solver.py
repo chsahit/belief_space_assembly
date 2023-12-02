@@ -162,9 +162,11 @@ def project_manipuland_to_contacts(
         plant_context, plant.GetModelInstanceByName("panda")
     )
     X_WG_out = step_sim(p_aligned)
-    # if vis:
-    # p.env_geom = "assets/empty_world.sdf"
-    #     visualize.show_particle(p_aligned)
+    if vis:
+        print("showing ik result")
+        print(utils.rt_to_str(X_WG_out))
+        visualize.show_particle(p_aligned)
+        # p_aligned.env_geom = "assets/empty_world.sdf"
     return X_WG_out
 
 
