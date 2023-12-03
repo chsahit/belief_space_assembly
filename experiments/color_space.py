@@ -38,7 +38,7 @@ def step_one() -> state.Belief:
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     b0 = state.Belief([p_a, p_b])
-    u = search.refine_schedule(b0, top_touch, [top_touch])
+    u = search.refine_schedule(b0, top_touch, [top_touch])[0]
     posterior = dynamics.f_bel(b0, u)
     return posterior
 
@@ -54,7 +54,7 @@ def color_space(
     color_dat = []
     for i, nominal in enumerate(noms):
         print("exploring neighborhood around particle ", i)
-        displacements = [directed_msets.alpha(nominal) for i in range(8)]
+        displacements = [directed_msets.alpha(nominal) for i in range(5)]
         displacements[0] = nominal
         differences = [
             noms[0].InvertAndCompose(displacement) for displacement in displacements
@@ -75,7 +75,11 @@ def color_space(
 
 
 def build_colormap_ft():
+    print("initializing belief state...")
     b = step_one()
+    K_star = components.stiff
+    color_dat = color_space(b, top_touch, K_star, RigidTransform())
+    visualize_colormap(color_dat)
 
 
 def build_colormap_tt():
@@ -115,4 +119,4 @@ def visualize_colormap(colordat):
 
 
 if __name__ == "__main__":
-    build_colormap_tt()
+    build_colormap_ft()
