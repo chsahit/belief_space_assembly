@@ -49,7 +49,8 @@ def color_space(
     K_star: np.ndarray,
     X_GC: RigidTransform,
 ):
-    print("generating coloring...")
+    num_samples = 5
+    print(f"generating coloring with {num_samples * len(b.particles)} samples")
     noms = [ik_solver.project_manipuland_to_contacts(p, CF_d) for p in b.particles]
     color_dat = []
     for i, nominal in enumerate(noms):
@@ -99,6 +100,8 @@ def rt_to_r6(X: RigidTransform):
 
 def visualize_colormap(colordat):
     cmap = {1: "r", 0: "b"}
+    total_successes = 0
+    succ_map = {0: 0, 1: 0}
     pca = PCA(n_components=2)
     all_differences = []
     for differences, _ in colordat:
@@ -107,16 +110,29 @@ def visualize_colormap(colordat):
     all_differences = np.array(all_differences)
     tfs = pca.fit_transform(all_differences)
 
+    black_circles = []
+    colored_circles = []
+    purple_circles = []
+
     for differences, u_dat in colordat:
         for k, v in u_dat.items():
-            if len(v) == 2:
-                c = "purple"
-            else:
-                c = cmap[v[0]]
             pos = pca.transform(np.array([rt_to_r6(differences[k])]))
-            plt.scatter(pos[0][0], pos[0][1], c=c)
+            if len(v) == 2:
+                purple_circles.append((pos, "purple"))
+                total_successes += 1
+            elif v[0] == -1:
+                black_circles.append((pos, "black"))
+            else:
+                colored_circles.append((pos, cmap[v[0]]))
+                succ_map[v[0]] += 1
+
+    print(f"{total_successes=}, {succ_map=}")
+    all_circles = black_circles + colored_circles + purple_circles
+    for pos, c in black_circles:
+        plt.scatter(pos[0][0], pos[0][1], c=c)
+
     plt.savefig("colormap.png")
 
 
 if __name__ == "__main__":
-    build_colormap_ft()
+    build_colormap_tt()
