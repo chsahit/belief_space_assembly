@@ -1,4 +1,5 @@
 import sys
+import time
 from collections import defaultdict
 from typing import Dict
 
@@ -52,6 +53,7 @@ def color_space(
     num_samples: int,
 ):
     print(f"generating coloring with {num_samples * len(b.particles)} samples")
+    start_time = time.time()
     noms = [ik_solver.project_manipuland_to_contacts(p, CF_d) for p in b.particles]
     color_dat = []
     for i, nominal in enumerate(noms):
@@ -76,6 +78,7 @@ def color_space(
             if len(u_dat[i]) == 0:
                 u_dat[i].append(-1)
         color_dat.append((differences, u_dat))
+    print(f"finished coloring in {time.time() - start_time} seconds")
     return color_dat
 
 
@@ -84,7 +87,7 @@ def build_colormap_ft(num_samples: int):
     b = step_one()
     K_star = components.stiff
     color_dat = color_space(b, top_touch, K_star, RigidTransform(), num_samples)
-    visualize_colormap(color_dat, "colormap_ft.png")
+    visualize_colormap(color_dat, "colormap_ft")
 
 
 def build_colormap_tt(num_samples: int):
@@ -94,7 +97,7 @@ def build_colormap_tt(num_samples: int):
     K_star = components.stiff
     color_dat = color_space(b0, top_touch, K_star, RigidTransform(), num_samples)
     # print(color_dat)
-    visualize_colormap(color_dat, "colormap_tt.png")
+    visualize_colormap(color_dat, "colormap_tt")
 
 
 def rt_to_r6(X: RigidTransform):
@@ -135,7 +138,12 @@ def visualize_colormap(colordat, fname: str):
     for pos, c in all_circles:
         plt.scatter(pos[0][0], pos[0][1], c=c)
 
-    plt.savefig(fname)
+    plt.savefig(fname + "_bg.png")
+    plt.clf()
+    all_circles = colored_circles + purple_circles
+    for pos, c in all_circles:
+        plt.scatter(pos[0][0], pos[0][1], c=c)
+    plt.savefig(fname + ".png")
 
 
 if __name__ == "__main__":

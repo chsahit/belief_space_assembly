@@ -10,6 +10,7 @@ import state
 import utils
 import visualize
 from planning import motion_sets
+from simulation import ik_solver
 
 gen = np.random.default_rng()
 best_candidate = None
@@ -23,6 +24,29 @@ def alpha(nominal: RigidTransform) -> RigidTransform:
     tf = mr.MatrixExp6(mr.VecTose3(random_vel))
     sample = RigidTransform(nominal.GetAsMatrix4() @ tf)
     return sample
+
+
+def grow_randomized_mset(
+    X_GC: RigidTransform,
+    K: np.ndarray,
+    CF_d: components.ContactState,
+    p: state.Particle,
+    density: int = 9,
+) -> List[components.CompliantMotion]:
+    X_WGd_0 = ik_solver.project_manipuland_to_contacts(p, CF_d)
+    X_WCd_0 = X_WGd_0.multiply(X_GC)
+    displacements = [alpha(X_WCd_0) for i in range(density * 6)]
+    displacements[0] = X_WCd_0
+    U_candidates = [
+        components.CompliantMotion(X_GC, displacement, K)
+        for displacement in displacements
+    ]
+    P_results = dynamics.f_cspace(p, U_candidates)
+    U = []
+    for idx, p_r in enumerate(P_results):
+        if p_r.satisfies_contact(CF_d):
+            U.append(U_candidates[idx])
+    return U
 
 
 def nearest(T: components.Tree, sample: RigidTransform) -> components.TreeNode:
