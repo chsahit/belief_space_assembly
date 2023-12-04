@@ -71,6 +71,9 @@ def color_space(
             for i, succ in enumerate(successes):
                 if succ:
                     u_dat[i].append(p_idx)
+        for i in range(len(motions)):
+            if len(u_dat[i]) == 0:
+                u_dat[i].append(-1)
         color_dat.append((differences, u_dat))
     return color_dat
 
@@ -128,7 +131,7 @@ def visualize_colormap(colordat):
 
     print(f"{total_successes=}, {succ_map=}")
     all_circles = black_circles + colored_circles + purple_circles
-    for pos, c in black_circles:
+    for pos, c in all_circles:
         plt.scatter(pos[0][0], pos[0][1], c=c)
 
     plt.savefig("colormap.png")
