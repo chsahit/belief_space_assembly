@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 from typing import Dict
 
@@ -48,14 +49,14 @@ def color_space(
     CF_d: components.ContactState,
     K_star: np.ndarray,
     X_GC: RigidTransform,
+    num_samples: int,
 ):
-    num_samples = 5
     print(f"generating coloring with {num_samples * len(b.particles)} samples")
     noms = [ik_solver.project_manipuland_to_contacts(p, CF_d) for p in b.particles]
     color_dat = []
     for i, nominal in enumerate(noms):
         print("exploring neighborhood around particle ", i)
-        displacements = [directed_msets.alpha(nominal) for i in range(5)]
+        displacements = [directed_msets.alpha(nominal) for i in range(num_samples)]
         displacements[0] = nominal
         differences = [
             noms[0].InvertAndCompose(displacement) for displacement in displacements
@@ -78,22 +79,22 @@ def color_space(
     return color_dat
 
 
-def build_colormap_ft():
+def build_colormap_ft(num_samples: int):
     print("initializing belief state...")
     b = step_one()
     K_star = components.stiff
-    color_dat = color_space(b, top_touch, K_star, RigidTransform())
-    visualize_colormap(color_dat)
+    color_dat = color_space(b, top_touch, K_star, RigidTransform(), num_samples)
+    visualize_colormap(color_dat, "colormap_ft.png")
 
 
-def build_colormap_tt():
+def build_colormap_tt(num_samples: int):
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     b0 = state.Belief([p_a, p_b])
     K_star = components.stiff
-    color_dat = color_space(b0, top_touch, K_star, RigidTransform())
+    color_dat = color_space(b0, top_touch, K_star, RigidTransform(), num_samples)
     # print(color_dat)
-    visualize_colormap(color_dat)
+    visualize_colormap(color_dat, "colormap_tt.png")
 
 
 def rt_to_r6(X: RigidTransform):
@@ -101,7 +102,7 @@ def rt_to_r6(X: RigidTransform):
     return np.concatenate((r, X.translation()))
 
 
-def visualize_colormap(colordat):
+def visualize_colormap(colordat, fname: str):
     cmap = {1: "r", 0: "b"}
     total_successes = 0
     succ_map = {0: 0, 1: 0}
@@ -134,8 +135,12 @@ def visualize_colormap(colordat):
     for pos, c in all_circles:
         plt.scatter(pos[0][0], pos[0][1], c=c)
 
-    plt.savefig("colormap.png")
+    plt.savefig(fname)
 
 
 if __name__ == "__main__":
-    build_colormap_tt()
+    if len(sys.argv) == 1:
+        num_samples = 5
+    else:
+        num_samples = int(sys.argv[1])
+    build_colormap_tt(num_samples)
