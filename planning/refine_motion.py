@@ -97,7 +97,8 @@ def refine(
     X_GC = compute_compliance_frame(p_nom.X_GM, CF_d, spheres)
     K_star = compliance_search(X_GC, CF_d, p_nom)
     if K_star is None:
-        return None, None
+        K_star = components.stiff
+        # return None, None
     print(f"{K_star=}")
     # U_candidates = motion_sets.intersect_motion_sets(X_GC, K_star, b0, CF_d)
     U_candidates = [directed_msets.n_rrt(X_GC, K_star, b0, CF_d)]
