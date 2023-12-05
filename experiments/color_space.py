@@ -86,7 +86,7 @@ def build_colormap_ft(num_samples: int):
     print("initializing belief state...")
     b = step_one()
     K_star = components.stiff
-    color_dat = color_space(b, front_touch, K_star, RigidTransform(), num_samples)
+    color_dat = color_space(b, ft, K_star, RigidTransform(), num_samples)
     visualize_colormap(color_dat, "colormap_ft")
 
 
