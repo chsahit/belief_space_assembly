@@ -16,7 +16,12 @@ def init(X_WG_0_z: float = 0.3):
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/big_fixed_puzzle.sdf", "assets/moving_puzzle.sdf", mu=0.0
+        q_r_0,
+        X_GM,
+        X_WO,
+        "assets/big_fixed_puzzle.sdf",
+        "assets/moving_puzzle.sdf",
+        mu=0.0,
     )
     return p_0
 

@@ -71,13 +71,23 @@ def compliance_search(
     print("searching for compliance")
     K_opt = components.stiff
     # U_opt = motion_sets.grow_motion_set(X_GC, K_opt, CF_d, p, density=5)
-    U_opt = directed_msets.grow_randomized_mset(X_GC, K_opt, CF_d, p, density=5)
+    r_vels = [
+        directed_msets.gen.uniform(low=-0.05, high=0.05, size=3) for i in range(30)
+    ]
+    t_vels = [
+        directed_msets.gen.uniform(low=-0.005, high=0.005, size=3) for i in range(30)
+    ]
+    U_opt = directed_msets.grow_randomized_mset(
+        X_GC, K_opt, CF_d, p, density=5, r_vels=r_vels, t_vels=t_vels
+    )
     print(f"K_curr={K_opt}, len(U_curr)={len(U_opt)}")
     for i in list(range(6)) + [2]:
         K_curr = K_opt.copy()
         K_curr[i] = components.soft[i]
         # U_curr = motion_sets.grow_motion_set(X_GC, K_curr, CF_d, p, density=5)
-        U_curr = directed_msets.grow_randomized_mset(X_GC, K_curr, CF_d, p, density=5)
+        U_curr = directed_msets.grow_randomized_mset(
+            X_GC, K_curr, CF_d, p, density=5, r_vels=r_vels, t_vels=t_vels
+        )
         print(f"{K_curr=}, {len(U_curr)=}")
         if len(U_curr) > len(U_opt):
             K_opt = K_curr

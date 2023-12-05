@@ -12,14 +12,18 @@ import visualize
 from planning import motion_sets
 from simulation import ik_solver
 
-gen = np.random.default_rng()
+gen = np.random.default_rng(0)
 best_candidate = None
 best_candidate_fine_score = -1.0
 
 
-def alpha(nominal: RigidTransform) -> RigidTransform:
-    r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
-    t_vel = gen.uniform(low=-0.005, high=0.005, size=3)
+def alpha(
+    nominal: RigidTransform, r_vel: np.ndarray = None, t_vel: np.ndarray = None
+) -> RigidTransform:
+    if r_vel is None:
+        r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    if t_vel is None:
+        t_vel = gen.uniform(low=-0.005, high=0.005, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     tf = mr.MatrixExp6(mr.VecTose3(random_vel))
     sample = RigidTransform(nominal.GetAsMatrix4() @ tf)
@@ -32,10 +36,21 @@ def grow_randomized_mset(
     CF_d: components.ContactState,
     p: state.Particle,
     density: int = 9,
+    r_vels: List[np.ndarray] = None,
+    t_vels: List[np.ndarray] = None,
 ) -> List[components.CompliantMotion]:
+    if r_vels is None:
+        assert t_vels is None
+    else:
+        assert len(r_vels) == len(t_vels)
     X_WGd_0 = ik_solver.project_manipuland_to_contacts(p, CF_d)
     X_WCd_0 = X_WGd_0.multiply(X_GC)
-    displacements = [alpha(X_WCd_0) for i in range(density * 6)]
+    if r_vels is None:
+        displacements = [alpha(X_WCd_0) for i in range(density * 6)]
+    else:
+        displacements = [
+            alpha(X_WCd_0, r_vels[i], t_vels[i]) for i in range(density * 6)
+        ]
     displacements[0] = X_WCd_0
     U_candidates = [
         components.CompliantMotion(X_GC, displacement, K)
