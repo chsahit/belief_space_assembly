@@ -16,11 +16,11 @@ import utils
 from planning import directed_msets, search
 from simulation import ik_solver
 
-top_touch = set((("fixed_puzzle::b3", "block::201"),))
+top_touch = set((("big_fixed_puzzle::b3", "block::201"),))
 ft = set(
     (
-        ("fixed_puzzle::b3", "block::300"),
-        ("fixed_puzzle::b3", "block::302"),
+        ("big_fixed_puzzle::b3", "block::300"),
+        ("big_fixed_puzzle::b3", "block::302"),
     )
 )
 
