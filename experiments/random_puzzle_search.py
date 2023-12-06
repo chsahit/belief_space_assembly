@@ -47,6 +47,8 @@ def try_refine_b():
     u_star = randomized_search.refine_b(b0, top_touch)
     if u_star is not None:
         print(f"{u_star.X_WCd=}")
+    else:
+        return None
     b1 = dynamics.f_bel(b0, u_star)
     assert b1.satisfies_contact(top_touch)
     u1_star = randomized_search.refine_b(b1, ft)
