@@ -24,6 +24,7 @@ def annotate_puzzle() -> Dict[str, RigidTransform]:
         "block::101",
         "block::200",
         "block::201",
+        "block::202",
         "block::300",
         "block::301",
         "block::302",
@@ -34,6 +35,7 @@ def annotate_puzzle() -> Dict[str, RigidTransform]:
         [-0.001, 0.0, -0.052],  # inside slot 2
         [-0.02, 0.0, -0.12],  # bottom of back leg
         [0.02, 0.0, -0.12],  # bottom of front leg, 201
+        [-0.02, 0.0, -0.12],  # bottom of back leg, 202
         [0.03, 0.0, -0.11],  # front of front leg, 300
         [-0.03, 0.0, -0.11],  # back of back leg, 301
         [0.03, 0.0, -0.10],  # top front of front leg, 302

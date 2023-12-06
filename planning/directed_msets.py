@@ -43,7 +43,9 @@ def grow_randomized_mset(
         assert t_vels is None
     else:
         assert len(r_vels) == len(t_vels)
-    X_WGd_0 = ik_solver.project_manipuland_to_contacts(p, CF_d)
+    vis = "300" in str(CF_d)
+    print("project manipuland to contacts [directed_msets.py]")
+    X_WGd_0 = ik_solver.project_manipuland_to_contacts(p, CF_d, vis=vis)
     X_WCd_0 = X_WGd_0.multiply(X_GC)
     if r_vels is None:
         displacements = [alpha(X_WCd_0) for i in range(density * 6)]
