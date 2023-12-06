@@ -26,6 +26,12 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
 
 
 top_touch = set((("big_fixed_puzzle::b3", "block::201"),))
+ft = set(
+    (
+        ("big_fixed_puzzle::b3", "block::300"),
+        ("big_fixed_puzzle::b3", "block::302"),
+    )
+)
 
 
 def try_refine_p():
@@ -34,5 +40,17 @@ def try_refine_p():
     print(f"{len(U)=}")
 
 
+def try_refine_b():
+    p_a = init(X_GM_x=-0.005)
+    p_b = init(X_GM_x=0.005)
+    b0 = state.Belief([p_a, p_b])
+    u_star = randomized_search.refine_b(b0, top_touch)
+    if u_star is not None:
+        print(f"{u_star.X_WCd=}")
+    b1 = dynamics.f_bel(b0, u_star)
+    assert b1.satisfies_contact(top_touch)
+    u1_star = randomized_search.refine_b(b1, ft)
+
+
 if __name__ == "__main__":
-    try_refine_p()
+    try_refine_b()

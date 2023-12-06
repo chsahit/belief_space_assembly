@@ -8,6 +8,7 @@ import components
 import dynamics
 import mr
 import state
+from simulation import ik_solver
 
 gen = np.random.default_rng(0)
 
@@ -18,7 +19,7 @@ def generate_targets(
     r_bound: float = 0.05,
     t_bound: float = 0.005,
 ) -> List[RigidTransform]:
-    targets = []
+    targets = [nominal]
     for i in range(count):
         r_vel = gen.uniform(low=-r_bound, high=r_bound, size=3)
         t_vel = gen.uniform(low=-t_bound, high=t_bound, size=3)
@@ -52,8 +53,10 @@ def refine_p(
     K: np.ndarray,
     targets: List[RigidTransform] = None,
 ) -> List[components.CompliantMotion]:
+    nominal = p.X_WG
+    # nominal = ik_solver.project_manipuland_to_contacts(p, CF_d)
     if targets is None:
-        targets = generate_targets(p.X_WG, r_bound=0.1, t_bound=0.03, count=100)
+        targets = generate_targets(nominal, r_bound=0.1, t_bound=0.03, count=10)
     X_GC = RigidTransform()
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     P_next = dynamics.f_cspace(p, motions)
@@ -66,5 +69,24 @@ def refine_p(
 
 def refine_b(
     b: state.Belief, CF_d: components.CompliantMotion
-) -> List[components.CompliantMotion]:
-    pass
+) -> components.CompliantMotion:
+    U0 = refine_p(b.particles[0], CF_d, components.stiff)
+    print(f"{len(U0)=}")
+    if len(U0) > 0:
+        P1_next = dynamics.f_cspace(b.particles[1], U0)
+    else:
+        P1_next = []
+    for i, p1_next in enumerate(P1_next):
+        if p1_next.satisfies_contact(CF_d):
+            return U0[i]
+    U1 = refine_p(b.particles[1], CF_d, components.stiff)
+    print(f"{len(U1)=}")
+    if len(U1) > 0:
+        P0_next = dynamics.f_cspace(b.particles[0], U1)
+    else:
+        P0_next = []
+    for i, p0_next in enumerate(P0_next):
+        if p0_next.satisfies_contact(CF_d):
+            return U1[i]
+    print("no motion found")
+    return None
