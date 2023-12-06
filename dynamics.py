@@ -1,12 +1,25 @@
 import multiprocessing
 import signal
 import sys
+import time
 from typing import List, Tuple
 
 from pydrake.all import Simulator
 
 import components
 import state
+
+
+def AdvanceToWithTimeout(
+    simulator: Simulator, sim_timeout: float, clock_timeout: float = 60.0
+):
+    curr_time_sim = 0.0
+    start_time_clock = time.time()
+    while curr_time_sim < sim_timeout:
+        curr_time_sim += 0.1
+        if time.time() - start_time_clock > clock_timeout:
+            break
+        simulator.AdvanceTo(curr_time_sim)
 
 
 def simulate(
@@ -38,7 +51,8 @@ def simulate(
         meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
         meshcat_vis.StartRecording()
         try:
-            simulator.AdvanceTo(motion.timeout)
+            # simulator.AdvanceTo(motion.timeout)
+            AdvanceToWithTimeout(simulator, motion.timeout)
         except Exception as e:
             print(f"EXCEPTION: {e}")
             print(f"{motion.X_WCd=}, {motion.X_GC}")
@@ -47,7 +61,8 @@ def simulate(
         with open("meshcat_html.html", "w") as f:
             f.write(meshcat.StaticHtml())
     else:
-        simulator.AdvanceTo(motion.timeout)
+        # simulator.AdvanceTo(motion.timeout)
+        AdvanceToWithTimeout(simulator, motion.timeout)
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
