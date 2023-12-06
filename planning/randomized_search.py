@@ -17,8 +17,8 @@ if os.uname()[1] == "londonsystem":
     compliance_samples = 16
     refinement_samples = 32
 else:
-    compliance_samples = 500
-    refinement_samples = 1500
+    compliance_samples = 50
+    refinement_samples = 100
 print(f"{compliance_samples=}, {refinement_samples=}")
 
 
@@ -82,7 +82,7 @@ def refine_p(
     targets: List[RigidTransform] = None,
 ) -> List[components.CompliantMotion]:
     nominal = p.X_WG
-    # nominal = ik_solver.project_manipuland_to_contacts(p, CF_d)
+    nominal = ik_solver.project_manipuland_to_contacts(p, CF_d)
     if targets is None:
         targets = generate_targets(
             nominal, r_bound=0.1, t_bound=0.03, count=refinement_samples
@@ -119,5 +119,18 @@ def refine_b(
     for i, p0_next in enumerate(P0_next):
         if p0_next.satisfies_contact(CF_d):
             return U1[i]
-    print("no motion found")
-    return None
+    uncert_reduction_targets = generate_targets(b.particles[0].X_WG)
+    uncert_reduction_candidates = [
+        components.CompliantMotion(RigidTransform(), target, K_star)
+        for target in uncert_reduction_targets
+    ]
+    lowest_uncert_u = uncert_reduction_candidates[0]
+    cert_lb = 0
+    for candidate in uncert_reduction_candidates:
+        posterior = dynamics.f_bel(b, candidate)
+        certainty = len(posterior.contact_state())
+        if certainty > cert_lb:
+            cert_lb = certainty
+            lowest_uncert_u = candidate
+    print(f"returning candidate motion with {cert_lb=}")
+    return lowest_uncert_u
