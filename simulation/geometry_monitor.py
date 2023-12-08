@@ -19,6 +19,7 @@ class GeometryMonitor(LeafSystem):
     def __init__(self):
         LeafSystem.__init__(self)
         self.constraints = None
+        self.manip_poly = None
         self.contacts = frozenset()
         self.sdf = dict()
         self._geom_port = self.DeclareAbstractInputPort(
@@ -33,6 +34,14 @@ class GeometryMonitor(LeafSystem):
             if ("bin_model" in name) or ("fixed_puzzle" in name):
                 polyhedron = HPolyhedron(VPolytope(query_obj, g_id))
                 self.constraints[name] = (polyhedron.A(), polyhedron.b())
+            if "block" in name:
+                polyhedron = HPolyhedron(
+                    VPolytope(query_obj, g_id),
+                    reference_frame=inspector.GetFrameId(g_id),
+                )
+                self.manip_poly = (polyhedron.A(), polyhedron.b())
+        if self.manip_poly is None:
+            print("warning, manipulator geometry not cached")
 
     def _set_contacts(self, query_obj: QueryObject, inspector: SceneGraphInspector):
         sdf = dict()

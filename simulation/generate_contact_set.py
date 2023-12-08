@@ -1,31 +1,41 @@
 from typing import List
 
-from pydrake.all import HPolyhedron, RigidTransform
+import numpy as np
+from pydrake.all import HPolyhedron, Intersection, MinkowskiSum
 
 import components
 import state
 from simulation import annotate_geoms
 
-
-def compute_contact_set(
-    p: state.Particle, CF_d: components.ContactState
-) -> HPolyhedron:
-    constraints = p.constraints
-    corner_map = annotate_geoms.annotate(p.manip_geom)
-    hp = None
-    for env_poly, object_corner in CF_d:
-        X_MP = corner_map[object_corner]
-        A, b = constraints[env_poly]
-        A_translated = A @ X_MP.GetAsMatrix4()
-        if hp is None:
-            hp = HPolyhedron(A_translated, b)
-        else:
-            curr_hp = HPolyhedron(A_translated, b)
-            hp = hp.Intersection(curr_hp)
-    return hp
+gen = np.random.default_rng(0)
 
 
 def compute_samples_from_contact_set(
-    p: state.Particle, CF_d: components.ContactState
-) -> List[RigidTransform]:
-    pass
+    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
+) -> List[np.ndarray]:
+    contact_manifold = None
+    constraints = p.constraints
+    samples = []
+    for env_poly, _ in CF_d:
+        A_env, b_env = constraints[env_poly]
+        env_geometry = HPolyhedron(A_env, b_env)
+        A_manip, b_manip = p._manip_poly
+        A_manip = -1 * A_manip
+        manip_geometry = HPolyhedron(A_manip, b_manip)
+        minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
+        if contact_manifold is None:
+            contact_manifold = minkowski_sum
+        else:
+            contact_manifold = Intersection(contact_manifold, minkowski_sum)
+    assert not contact_manifold.IsEmpty()
+    for sample_id in range(num_samples):
+        interior_pt = contact_manifold.MaybeGetFeasiblePoint()
+        is_interior = True
+        random_direction = gen.uniform(low=-1, high=1, size=3)
+        step_size = 1e-4
+        while not is_interior:
+            interior_pt += epsilon * random_direction
+            is_interior = contact_manifold.PointInSet(interior_pt)
+        interior_pt -= epsilon * random_direction
+        samples.append(interior_pt)
+    return samples

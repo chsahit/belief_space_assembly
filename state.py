@@ -31,6 +31,7 @@ class Particle:
         self._sdf = None
         self._constraints = None
         self._X_WG = None
+        self._manip_poly = None
         self.trajectory = []
 
     def make_plant(self, vis: bool = False, collision: bool = False) -> System:
@@ -54,6 +55,7 @@ class Particle:
         self._contacts = geom_monitor.contacts
         self._sdf = geom_monitor.sdf
         self._constraints = geom_monitor.constraints
+        self._manip_poly = geom_monitor.manip_poly
 
     @property
     def contacts(self) -> components.ContactState:
@@ -103,6 +105,7 @@ class Particle:
             mu=self.mu,
         )
         new_p._constraints = self._constraints
+        new_p._manip_poly = self._manip_poly
         return new_p
 
     def satisfies_contact(self, CF_d: components.ContactState, epsilon=0.001) -> bool:
