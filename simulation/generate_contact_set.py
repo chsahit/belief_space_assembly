@@ -7,7 +7,7 @@ import components
 import state
 from simulation import annotate_geoms
 
-gen = np.random.default_rng(0)
+gen = np.random.default_rng(1)
 
 
 def compute_samples_from_contact_set(
@@ -16,6 +16,7 @@ def compute_samples_from_contact_set(
     contact_manifold = None
     constraints = p.constraints
     samples = []
+    print(f"{CF_d=}")
     for env_poly, _ in CF_d:
         A_env, b_env = constraints[env_poly]
         env_geometry = HPolyhedron(A_env, b_env)
@@ -32,10 +33,14 @@ def compute_samples_from_contact_set(
         interior_pt = contact_manifold.MaybeGetFeasiblePoint()
         is_interior = True
         random_direction = gen.uniform(low=-1, high=1, size=3)
+        # random_direction = np.array([0.0, 0.0,1.0])
+        random_direction[-1] = abs(random_direction[-1])
+        random_direction = random_direction / np.linalg.norm(random_direction)
         step_size = 1e-4
-        while not is_interior:
-            interior_pt += epsilon * random_direction
+        while is_interior:
+            interior_pt += step_size * random_direction
             is_interior = contact_manifold.PointInSet(interior_pt)
-        interior_pt -= epsilon * random_direction
+        interior_pt -= step_size * random_direction
+        assert contact_manifold.PointInSet(interior_pt)
         samples.append(interior_pt)
     return samples

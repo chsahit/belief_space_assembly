@@ -34,10 +34,12 @@ class GeometryMonitor(LeafSystem):
             if ("bin_model" in name) or ("fixed_puzzle" in name):
                 polyhedron = HPolyhedron(VPolytope(query_obj, g_id))
                 self.constraints[name] = (polyhedron.A(), polyhedron.b())
-            if "block" in name:
+            if "block" in name and (not name[-3:].isnumeric()):
+                print(f"{name=}")
                 polyhedron = HPolyhedron(
-                    VPolytope(query_obj, g_id),
-                    reference_frame=inspector.GetFrameId(g_id),
+                    VPolytope(
+                        query_obj, g_id, reference_frame=inspector.GetFrameId(g_id)
+                    ),
                 )
                 self.manip_poly = (polyhedron.A(), polyhedron.b())
         if self.manip_poly is None:
