@@ -17,10 +17,10 @@ def compute_samples_from_contact_set(
     constraints = p.constraints
     samples = []
     print(f"{CF_d=}")
-    for env_poly, _ in CF_d:
+    for env_poly, manip_poly_name in CF_d:
         A_env, b_env = constraints[env_poly]
         env_geometry = HPolyhedron(A_env, b_env)
-        A_manip, b_manip = p._manip_poly
+        A_manip, b_manip = p._manip_poly[manip_poly_name]
         A_manip = -1 * A_manip
         manip_geometry = HPolyhedron(A_manip, b_manip)
         minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
@@ -33,8 +33,8 @@ def compute_samples_from_contact_set(
         interior_pt = contact_manifold.MaybeGetFeasiblePoint()
         is_interior = True
         random_direction = gen.uniform(low=-1, high=1, size=3)
-        # random_direction = np.array([0.0, 0.0,1.0])
-        random_direction[-1] = abs(random_direction[-1])
+        random_direction = np.array([-1.0, 0.0, 1.0])
+        # random_direction[-1] = abs(random_direction[-1])
         random_direction = random_direction / np.linalg.norm(random_direction)
         step_size = 1e-4
         while is_interior:

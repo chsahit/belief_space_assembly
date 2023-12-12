@@ -3,6 +3,7 @@ from pydrake.all import (
     EventStatus,
     HPolyhedron,
     LeafSystem,
+    MultibodyPlant,
     QueryObject,
     SceneGraphInspector,
     VPolytope,
@@ -16,10 +17,11 @@ class GeometryMonitor(LeafSystem):
     and geometric constraints from the plant it is connected to.
     """
 
-    def __init__(self):
+    def __init__(self, plant: MultibodyPlant):
         LeafSystem.__init__(self)
+        self.plant = plant
         self.constraints = None
-        self.manip_poly = None
+        self.manip_poly = dict()
         self.contacts = frozenset()
         self.sdf = dict()
         self._geom_port = self.DeclareAbstractInputPort(
@@ -35,13 +37,16 @@ class GeometryMonitor(LeafSystem):
                 polyhedron = HPolyhedron(VPolytope(query_obj, g_id))
                 self.constraints[name] = (polyhedron.A(), polyhedron.b())
             if "block" in name and (not name[-3:].isnumeric()):
-                print(f"{name=}")
+                frame_id_local = inspector.GetFrameId(g_id)
+                body = self.plant.GetBodyFromFrameId(frame_id_local)
+                frame_id_body = self.plant.GetBodyFrameIdOrThrow(body.index())
+                # parent = inspector.GetParentFrame(frame_id_body)
+                f_id_b2 = self.plant.GetFrameByName("base_link").index()
                 polyhedron = HPolyhedron(
-                    VPolytope(
-                        query_obj, g_id, reference_frame=inspector.GetFrameId(g_id)
-                    ),
+                    VPolytope(query_obj, g_id, reference_frame=frame_id_body),
                 )
-                self.manip_poly = (polyhedron.A(), polyhedron.b())
+                # breakpoint()
+                self.manip_poly[name] = (polyhedron.A(), polyhedron.b())
         if self.manip_poly is None:
             print("warning, manipulator geometry not cached")
 

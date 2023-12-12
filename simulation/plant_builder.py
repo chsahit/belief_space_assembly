@@ -210,7 +210,7 @@ def _construct_diagram(
 
     if collision_check:
         geom_monitor = builder.AddNamedSystem(
-            "geom_monitor", geometry_monitor.GeometryMonitor()
+            "geom_monitor", geometry_monitor.GeometryMonitor(plant)
         )
         builder.Connect(
             scene_graph.get_query_output_port(),
