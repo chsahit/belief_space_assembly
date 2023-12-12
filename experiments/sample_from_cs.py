@@ -46,13 +46,19 @@ ft = set(
     )
 )
 
+top_touch_n = set((("big_fixed_puzzle::b3", "block::b4"),))
+ft_n = set(
+    (
+        ("big_fixed_puzzle::b3", "block::b4"),
+        ("big_fixed_puzzle::b3", "block::b4"),
+    )
+)
+
 
 def test_sampler():
-    p = init_pih()
+    p = init()
     R_WM = p.X_WM.rotation()
-    sample = generate_contact_set.compute_samples_from_contact_set(
-        p, contact_defs.ground_align
-    )[0]
+    sample = generate_contact_set.compute_samples_from_contact_set(p, top_touch_n)[0]
     X_WM = RigidTransform(R_WM, sample)
     # TODO: rotation of polyhedron might be funky, since its based around body frame
     X_WG = X_WM.multiply(p.X_GM.inverse())
@@ -65,5 +71,15 @@ def test_sampler():
     input()
 
 
+def test_ik():
+    p = init()
+    X_WG = ik_solver.project_manipuland_to_contacts(p, ft)
+    q_r = ik_solver.gripper_to_joint_states(X_WG)
+    new_p = p.deepcopy()
+    new_p.q_r = q_r
+    visualize.show_particle(new_p)
+    input()
+
+
 if __name__ == "__main__":
-    test_sampler()
+    test_ik()
