@@ -34,53 +34,53 @@
 			<box><size>0.1105 0.019000000000000003 0.02</size></box>
 		</geometry>
 	</collision>
-	<visual name="b3_top">
-		<pose>0.04025 0.0 0.068 0.0 0.0 0.0</pose>
+	<visual name="b3_in">
+		<pose>0.03025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.004</size></box>
+			<box><size>0.01 0.031 0.02</size></box>
 		</geometry>
 	</visual>
-	<collision name="b3_top">
-		<pose>0.04025 0.0 0.068 0.0 0.0 0.0</pose>
+	<collision name="b3_in">
+		<pose>0.03025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.004</size></box>
+			<box><size>0.01 0.031 0.02</size></box>
 		</geometry>
-        </collision>	
-        <visual name="b3_bottom">
-		<pose>0.04025 0.0 0.058 0.0 0.0 0.0</pose>
+        </collision>
+        <visual name="b3_out">
+		<pose>0.04525 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.016</size></box>
+			<box><size>0.02 0.031 0.02</size></box>
 		</geometry>
 	</visual>
-	<collision name="b3_bottom">
-		<pose>0.04025 0.0 0.058 0.0 0.0 0.0</pose>
+	<collision name="b3_out">
+		<pose>0.04525 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.016</size></box>
+			<box><size>0.02 0.031 0.02</size></box>
 		</geometry>
 	</collision>
 
-	<visual name="b4_top">
-		<pose>-0.04025 0.0 0.068 0.0 0.0 0.0</pose>
+	<visual name="b4_in">
+		<pose>-0.03025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.004</size></box>
+			<box><size>0.01 0.031 0.02</size></box>
 		</geometry>
 	</visual>
-	<collision name="b4_top">
-		<pose>-0.04025 0.0 0.068 0.0 0.0 0.0</pose>
+	<collision name="b4_in">
+		<pose>-0.03025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.004</size></box>
+			<box><size>0.01 0.031 0.02</size></box>
 		</geometry>
-        </collision>
-        <visual name="b4_bottom">
-		<pose>-0.04025 0.0 0.058 0.0 0.0 0.0</pose>
+         </collision>
+        <visual name="b4_out">
+		<pose>-0.04525 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.016</size></box>
+			<box><size>0.02 0.031 0.02</size></box>
 		</geometry>
 	</visual>
-	<collision name="b4_bottom">
-		<pose>-0.04025 0.0 0.058 0.0 0.0 0.0</pose>
+	<collision name="b4_out">
+		<pose>-0.04525 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.016</size></box>
+			<box><size>0.02 0.031 0.02</size></box>
 		</geometry>
 	</collision>
 

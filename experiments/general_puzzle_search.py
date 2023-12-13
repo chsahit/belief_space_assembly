@@ -20,27 +20,18 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
         X_GM,
         X_WO,
         "assets/big_fixed_puzzle_div.sdf",
-        "assets/moving_puzzle.sdf",
+        "assets/moving_puzzle_div.sdf",
         mu=0.6,
     )
     return p0
 
 
-top_touch = set((("big_fixed_puzzle::b3_out", "block::b4"),))
-ft = set(
-    (
-        ("big_fixed_puzzle::b3", "block::b4"),
-        ("big_fixed_puzzle::b3", "block::b4"),
-    )
+top_touch = set((("big_fixed_puzzle::b3_top", "block::b4_bottom"),))
+bt = set((("big_fixed_puzzle::b4_bottom", "block::b5_top"),))
+bottom = set((("big_fixed_puzzle::b1", "block::b3"),))
+goal = set(
+    (("big_fixed_puzzle::b1", "block::b3"), ("big_fixed_puzzle::b2", "block::b2"))
 )
-it = set(
-    (
-        ("big_fixed_puzzle::b3_in", "block::b3"),
-        ("big_fixed_puzzle::b3_in", "block::b3"),
-    )
-)
-bt = set((("big_fixed_puzzle::b4_in", "block::b5"),))
-it2 = set((("big_fixed_puzzle::b4_in", "block::b3"),))
 
 
 def try_refine_p():
@@ -60,48 +51,11 @@ def b_r(b, mode):
 def try_refine_b():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
-    b0 = state.Belief([p_a, p_b])
-    b1 = b_r(b0, top_touch)
-    b2 = b_r(b1, it2)
-    b3 = b_r(b1, bt)
-    b4 = b_r(b3, it)
-
-    """
-    u_star = randomized_search.refine_b(b0, top_touch)
-    dynamics.simulate(p_a, u_star, vis=True)
-    dynamics.simulate(p_b, u_star, vis=True)
-    b1 = dynamics.f_bel(b0, u_star)
-    u1_star = randomized_search.refine_b(b1, it2)
-    dynamics.simulate(b1.particles[0], u1_star, vis=True)
-    dynamics.simulate(b1.particles[1], u1_star, vis=True)
-
-    b1 = dynamics.f_bel(b0, u_star)
-    u1_star = randomized_search.refine_b(b1, it2)
-    dynamics.simulate(b1.particles[0], u1_star, vis=True)
-    dynamics.simulate(b1.particles[1], u1_star, vis=True)
-    b2 = dynamics.f_bel(b1, u1_star)
-    u2_star = randomized_search.refine_b(b2, it)
-    dynamics.simulate(b2.particles[0], u2_star, vis=True)
-    dynamics.simulate(b2.particles[1], u2_star, vis=True)
-    """
+    curr = state.Belief([p_a, p_b])
+    modes = [top_touch, bt, bottom, goal]
+    for mode in modes:
+        curr = b_r(curr, mode)
     input()
-
-
-def try_refine_b_pih():
-    p_a = init_pih(X_GM_x=-0.005)
-    p_b = init_pih(X_GM_x=-0.0049)
-    b0 = state.Belief([p_a, p_b])
-    u_star = randomized_search.refine_b(b0, contact_defs.b_full_chamfer_touch)
-    if u_star is not None:
-        print(f"{u_star.X_WCd=}")
-    else:
-        return None
-    b1 = dynamics.f_bel(b0, u_star)
-    u1_star = randomized_search.refine_b(b1, contact_defs.ground_align)
-    b2 = dynamics.f_bel(b1, u1_star)
-    u2_star = randomized_search.refine_b(b2, contact_defs.ground_align)
-    for p in b2.particles:
-        dynamics.simulate(p, u2_star, vis=True)
 
 
 if __name__ == "__main__":

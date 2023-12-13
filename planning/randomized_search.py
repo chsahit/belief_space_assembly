@@ -64,6 +64,7 @@ def solve_for_compliance(
             succ_count = curr_succ_count
             K_opt = K_curr
 
+    """
     K_opt_soft = np.copy(components.soft)
     succ_count_soft = len(refine_p(p, CF_d, K_opt_soft, targets=targets))
     print(f"{K_opt_soft=}, {succ_count_soft=}")
@@ -77,6 +78,7 @@ def solve_for_compliance(
             K_opt_soft = K_curr
     if succ_count_soft > succ_count:
         K_opt = K_opt_soft
+    """
     print(f"{K_opt=}")
     return K_opt
 

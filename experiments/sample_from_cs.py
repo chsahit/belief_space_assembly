@@ -22,7 +22,7 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
         q_r_0,
         X_GM,
         X_WO,
-        "assets/big_fixed_puzzle.sdf",
+        "assets/big_fixed_puzzle_div.sdf",
         "assets/moving_puzzle.sdf",
         mu=0.6,
     )
@@ -40,6 +40,7 @@ def init_pih(X_GM_x: float = 0.0, X_GM_p: float = 0.0) -> RigidTransform:
     return p_0
 
 
+"""
 top_touch = set((("big_fixed_puzzle::b3", "block::201"),))
 ft = set(
     (
@@ -65,7 +66,14 @@ it3 = set((("big_fixed_puzzle::b4", "block::b5"),))
 it2 = set((("big_fixed_puzzle::b4", "block::b3"),))
 
 tt2 = set((("big_fixed_puzzle::b4", "block::b5"),))
+"""
 
+bt = set((("big_fixed_puzzle::b4_in", "block::b5"),))
+bottom = set((("big_fixed_puzzle::b1", "block::b3"),))
+
+goal = set(
+    (("big_fixed_puzzle::b1", "block::b3"), ("big_fixed_puzzle::b2", "block::b2"))
+)
 
 def test_sampler():
     global calls
@@ -88,7 +96,7 @@ def test_sampler():
 
 def ts2():
     p = init()
-    X_WG = generate_contact_set.project_manipuland_to_contacts(p, tt2)[0]
+    X_WG = generate_contact_set.project_manipuland_to_contacts(p, goal)[0]
     q_r = ik_solver.gripper_to_joint_states(X_WG)
     new_p = p.deepcopy()
     new_p.q_r = q_r

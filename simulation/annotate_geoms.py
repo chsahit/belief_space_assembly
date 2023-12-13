@@ -50,7 +50,7 @@ def annotate_puzzle() -> Dict[str, RigidTransform]:
 def annotate(geom: str) -> Dict[str, RigidTransform]:
     if geom == "assets/peg.urdf":
         return annotate_peg()
-    elif geom == "assets/moving_puzzle.sdf":
+    elif geom == "assets/moving_puzzle.sdf" or geom == "assets/moving_puzzle_div.sdf":
         return annotate_puzzle()
     else:
         raise NotImplementedError
