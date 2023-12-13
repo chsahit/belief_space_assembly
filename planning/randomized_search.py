@@ -111,7 +111,7 @@ def refine_p(
     return U
 
 
-def refine_b(
+def _refine_b(
     b: state.Belief, CF_d: components.CompliantMotion
 ) -> components.CompliantMotion:
     K_star = solve_for_compliance(b.particles[0], CF_d)
@@ -148,3 +148,31 @@ def refine_b(
             lowest_uncert_u = candidate
     print(f"returning candidate motion with {cert_lb=}")
     return lowest_uncert_u
+
+
+def refine_b(
+    b: state.Belief, CF_d: components.CompliantMotion
+) -> components.CompliantMotion:
+    K_star = solve_for_compliance(b.particles[0], CF_d)
+    U0 = refine_p(b.particles[0], CF_d, K_star)
+    print(f"{len(U0)=}")
+    if len(U0) == 0:
+        breakpoint()
+    P1_next = dynamics.f_cspace(b.particles[1], U0)
+    U = []
+    for i, p1_next in enumerate(P1_next):
+        if p1_next.satisfies_contact(CF_d):
+            U.append(U0[i])
+    if len(U) == 0:
+        print("no intersect")
+        U = U0
+    best_u = None
+    most_certainty = float("-inf")
+    for u in U:
+        posterior = dynamics.f_bel(b, u)
+        certainty = len(posterior.contact_state())
+        if certainty > most_certainty:
+            most_certainty = certainty
+            best_u = u
+    print(f"{most_certainty=}")
+    return best_u

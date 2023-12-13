@@ -63,8 +63,7 @@ def try_refine_b():
     b0 = state.Belief([p_a, p_b])
     b1 = b_r(b0, top_touch)
     b2 = b_r(b1, it2)
-    b3 = b_r(b2, ft)
-    b4 = b_r(b3, it)
+    b3 = b_r(b2, it)
 
     """
     u_star = randomized_search.refine_b(b0, top_touch)
