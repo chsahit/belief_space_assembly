@@ -39,6 +39,8 @@ it = set(
         ("big_fixed_puzzle::b3", "block::b3"),
     )
 )
+bt = set((("big_fixed_puzzle::b4", "block::b5"),))
+it2 = set((("big_fixed_puzzle::b4", "block::b3"),))
 
 
 def try_refine_p():
@@ -47,22 +49,47 @@ def try_refine_p():
     print(f"{len(U)=}")
 
 
+def b_r(b, mode):
+    u_star = randomized_search.refine_b(b, mode)
+    dynamics.simulate(b.particles[0], u_star, vis=True)
+    dynamics.simulate(b.particles[1], u_star, vis=True)
+    posterior = dynamics.f_bel(b, u_star)
+    return posterior
+
+
 def try_refine_b():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     b0 = state.Belief([p_a, p_b])
+    b1 = b_r(b0, top_touch)
+    b2 = b_r(b1, it2)
+    b3 = b_r(b2, ft)
+    b4 = b_r(b3, it)
+
+    """
     u_star = randomized_search.refine_b(b0, top_touch)
-    if u_star is not None:
-        print(f"{u_star.X_WCd=}")
-    else:
-        return None
+    dynamics.simulate(p_a, u_star, vis=True)
+    dynamics.simulate(p_b, u_star, vis=True)
     b1 = dynamics.f_bel(b0, u_star)
-    u1_star = randomized_search.refine_b(b1, it)
+    u1_star = randomized_search.refine_b(b1, it2)
+    dynamics.simulate(b1.particles[0], u1_star, vis=True)
+    dynamics.simulate(b1.particles[1], u1_star, vis=True)
+
+    b1 = dynamics.f_bel(b0, u_star)
+    u1_star = randomized_search.refine_b(b1, it2)
+    dynamics.simulate(b1.particles[0], u1_star, vis=True)
+    dynamics.simulate(b1.particles[1], u1_star, vis=True)
+    b2 = dynamics.f_bel(b1, u1_star)
+    u2_star = randomized_search.refine_b(b2, it)
+    dynamics.simulate(b2.particles[0], u2_star, vis=True)
+    dynamics.simulate(b2.particles[1], u2_star, vis=True)
+    """
+    input()
 
 
 def try_refine_b_pih():
     p_a = init_pih(X_GM_x=-0.005)
-    p_b = init_pih(X_GM_x=0.005)
+    p_b = init_pih(X_GM_x=-0.0049)
     b0 = state.Belief([p_a, p_b])
     u_star = randomized_search.refine_b(b0, contact_defs.b_full_chamfer_touch)
     if u_star is not None:

@@ -65,8 +65,8 @@ class ControllerSystem(LeafSystem):
             self.plant_context, self.plant.world_frame(), G
         )
         if self.motion is None:
-            if not self.printed:
-                print("warning, X_GC is none")
+            # if not self.printed:
+            # print("warning, X_GC is none")
             X_GC = RigidTransform()
             self.printed = True
         else:

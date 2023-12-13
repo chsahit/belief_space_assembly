@@ -100,7 +100,8 @@ def refine_p(
         )
         """
 
-    X_GC = RigidTransform()
+    X_GC = RigidTransform([0.0, 0.0, 0.15])
+    targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     P_next = dynamics.f_cspace(p, motions)
     U = []

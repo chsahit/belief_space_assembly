@@ -61,6 +61,10 @@ it = set(
         ("big_fixed_puzzle::b2", "block::b3"),
     )
 )
+it3 = set((("big_fixed_puzzle::b4", "block::b5"),))
+it2 = set((("big_fixed_puzzle::b4", "block::b3"),))
+
+tt2 = set((("big_fixed_puzzle::b4", "block::b5"),))
 
 
 def test_sampler():
@@ -68,7 +72,7 @@ def test_sampler():
     calls += 1
     p = init()
     R_WM = p.X_WM.rotation()
-    sample = generate_contact_set.compute_samples_from_contact_set(p, it)[0]
+    sample = generate_contact_set.compute_samples_from_contact_set(p, it2)[0]
     X_WM = RigidTransform(R_WM, sample)
     # TODO: rotation of polyhedron might be funky, since its based around body frame
     X_WG = X_WM.multiply(p.X_GM.inverse())
@@ -78,8 +82,17 @@ def test_sampler():
     new_p.q_r = q_r
     print(utils.rt_to_str(new_p.X_WG))
     wca = visualize.show_particle(new_p)
-    if wca < -0.014 and calls <= 100:
+    if wca < -0.01 and calls <= 100:
         test_sampler()
+
+
+def ts2():
+    p = init()
+    X_WG = generate_contact_set.project_manipuland_to_contacts(p, tt2)[0]
+    q_r = ik_solver.gripper_to_joint_states(X_WG)
+    new_p = p.deepcopy()
+    new_p.q_r = q_r
+    visualize.show_particle(new_p)
     input()
 
 
@@ -94,4 +107,6 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    test_sampler()
+    for i in range(6):
+        ts2()
+        print("\n")

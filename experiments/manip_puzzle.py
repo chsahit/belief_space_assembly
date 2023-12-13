@@ -10,7 +10,7 @@ import utils
 from simulation import ik_solver
 
 
-def init(X_WG_0_z: float = 0.3):
+def init(X_WG_0_z: float = 0.3, mu=0.0):
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, X_WG_0_z], [180, 0, 0])
     X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.09], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
@@ -21,7 +21,7 @@ def init(X_WG_0_z: float = 0.3):
         X_WO,
         "assets/big_fixed_puzzle.sdf",
         "assets/moving_puzzle.sdf",
-        mu=0.0,
+        mu=mu,
     )
     return p_0
 
@@ -41,6 +41,39 @@ def test_simulate():
     tT = time.time()
     print(f"{p_2.epsilon_contacts()=}")
     print(f"sim time={tT - t0}")
+    input()
+
+
+def n_motions():
+    p = init(mu=0.6)
+    X_WG_d0 = utils.xyz_rpy_deg([0.53, 0.0, 0.26], [180, 0, 0])
+    u0 = components.CompliantMotion(RigidTransform(), X_WG_d0, components.stiff)
+    p1 = dynamics.simulate(p, u0, vis=True)
+    print("sim 1")
+    X_WC_d1 = utils.xyz_rpy_deg([0.49, 0.0, 0.08], [180, 0, 0])
+    X_WC_d1 = utils.xyz_rpy_deg([0.46, 0.0, 0.23], [180, 0, 0])
+    X_GC = RigidTransform([0.03, 0.0, 0.15])
+    X_GC = RigidTransform()
+    K1 = np.array([100.0, 10.0, 100.0, 600.0, 600.0, 600.0])
+    u1 = components.CompliantMotion(X_GC, X_WC_d1, K1)
+    p2 = dynamics.simulate(p1, u1, vis=True)
+    print("sim 2")
+    p3 = p2
+    """
+    X_WC_d2 = RigidTransform(p2.X_WG.rotation(), np.array([0.49, 0, 0.0]))
+    K2 = np.array([100.0, 100.0, 100.0, 600.0, 600.0, 100.0])
+    u2 = components.CompliantMotion(X_GC, X_WC_d2, K2)
+    p3 = dynamics.simulate(p2, u2, vis=True)
+    print("sim 3")
+    """
+    # X_WC_d2 = RigidTransform(p2.X_WG.rotation(), np.array([0.49, 0, 0.0]))
+    X_WC_d3 = utils.xyz_rpy_deg([0.5, 0.0, 0.02], [180, 0, 0])
+    X_WC_d3 = utils.xyz_rpy_deg([0.53, 0.0, 0.17], [180, 0, 0])
+    K3 = np.array([100.0, 100.0, 100.0, 600.0, 600.0, 600.0])
+    u3 = components.CompliantMotion(X_GC, X_WC_d3, K3)
+    p4 = dynamics.simulate(p3, u3, vis=True)
+    print("sim 4")
+
     input()
 
 
@@ -72,4 +105,4 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    test_simulate()
+    n_motions()
