@@ -19,14 +19,14 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
         q_r_0,
         X_GM,
         X_WO,
-        "assets/big_fixed_puzzle.sdf",
+        "assets/big_fixed_puzzle_div.sdf",
         "assets/moving_puzzle.sdf",
         mu=0.6,
     )
     return p0
 
 
-top_touch = set((("big_fixed_puzzle::b3", "block::b4"),))
+top_touch = set((("big_fixed_puzzle::b3_out", "block::b4"),))
 ft = set(
     (
         ("big_fixed_puzzle::b3", "block::b4"),
@@ -35,12 +35,12 @@ ft = set(
 )
 it = set(
     (
-        ("big_fixed_puzzle::b3", "block::b3"),
-        ("big_fixed_puzzle::b3", "block::b3"),
+        ("big_fixed_puzzle::b3_in", "block::b3"),
+        ("big_fixed_puzzle::b3_in", "block::b3"),
     )
 )
-bt = set((("big_fixed_puzzle::b4", "block::b5"),))
-it2 = set((("big_fixed_puzzle::b4", "block::b3"),))
+bt = set((("big_fixed_puzzle::b4_in", "block::b5"),))
+it2 = set((("big_fixed_puzzle::b4_in", "block::b3"),))
 
 
 def try_refine_p():
@@ -63,7 +63,8 @@ def try_refine_b():
     b0 = state.Belief([p_a, p_b])
     b1 = b_r(b0, top_touch)
     b2 = b_r(b1, it2)
-    b3 = b_r(b2, it)
+    b3 = b_r(b1, bt)
+    b4 = b_r(b3, it)
 
     """
     u_star = randomized_search.refine_b(b0, top_touch)

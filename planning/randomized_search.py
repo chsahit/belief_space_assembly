@@ -17,8 +17,8 @@ if os.uname()[1] == "londonsystem":
     compliance_samples = 16
     refinement_samples = 32
 else:
-    compliance_samples = 50
-    refinement_samples = 100
+    compliance_samples = 40
+    refinement_samples = 60
 print(f"{compliance_samples=}, {refinement_samples=}")
 
 
