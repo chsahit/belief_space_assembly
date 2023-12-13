@@ -11,29 +11,55 @@
 		</inertia>
 	</inertial>
 	<visual name="b1">
-		<pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+		<pose>0.0 0.0 -0.0025 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.028999999999999998 0.07 0.02</size></box>
+			<box><size>0.028999999999999998 0.07 0.015</size></box>
 		</geometry>
 	</visual>
 	<collision name="b1">
-		<pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+		<pose>0.0 0.0 -0.0025 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.028999999999999998 0.07 0.02</size></box>
+			<box><size>0.028999999999999998 0.07 0.015</size></box>
+		</geometry>
+        </collision>
+        <visual name="b1_top">
+		<pose>0.0 0.0 0.0075 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.028999999999999998 0.07 0.005</size></box>
+		</geometry>
+	</visual>
+	<collision name="b1_top">
+		<pose>0.0 0.0 0.0075 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.028999999999999998 0.07 0.005</size></box>
 		</geometry>
 	</collision>
+
 	<visual name="b2">
-		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
+		<pose>0.0 0.0255 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.1105 0.019000000000000003 0.02</size></box>
+			<box><size>0.1105 0.018 0.02</size></box>
 		</geometry>
 	</visual>
 	<collision name="b2">
-		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
+		<pose>0.0 0.0255 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.1105 0.019000000000000003 0.02</size></box>
+			<box><size>0.1105 0.018 0.02</size></box>
+		</geometry>
+        </collision>
+        <visual name="b2_inside">
+		<pose>0.0 0.016 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.075 0.001 0.02</size></box>
+		</geometry>
+	</visual>
+	<collision name="b2_inside">
+		<pose>0.0 0.016 0.06 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.075 0.001 0.02</size></box>
 		</geometry>
 	</collision>
+
 	<visual name="b3_top">
 		<pose>0.04025 0.0 0.068 0.0 0.0 0.0</pose>
 		<geometry>

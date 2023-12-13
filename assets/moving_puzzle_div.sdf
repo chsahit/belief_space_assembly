@@ -27,21 +27,39 @@
 		</drake:proximity_properties>
 	</collision>
 	<visual name="b2">
-		<pose>0.0 -0.0075 -0.05 0.0 0.0 0.0</pose>
+		<pose>0.0 -0.0085 -0.05 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.05 0.015 0.02</size></box>
+			<box><size>0.05 0.013 0.02</size></box>
                 </geometry>
 	</visual>
 	<collision name="b2">
-		<pose>0.0 -0.0075 -0.05 0.0 0.0 0.0</pose>
+		<pose>0.0 -0.0085 -0.05 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.05 0.015 0.02</size></box>
+			<box><size>0.05 0.013 0.02</size></box>
+		</geometry>
+		<drake:proximity_properties>
+			<drake:mu_static>0.0</drake:mu_static>
+			<drake:mu_dynamic>0.0</drake:mu_dynamic>
+		</drake:proximity_properties>
+        </collision>
+
+        <visual name="b2_inside">
+		<pose>0.0 -0.001 -0.05 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.05 0.002 0.02</size></box>
+                </geometry>
+	</visual>
+	<collision name="b2_inside">
+		<pose>0.0 -0.001 -0.05 0.0 0.0 0.0</pose>
+		<geometry>
+			<box><size>0.05 0.002 0.02</size></box>
 		</geometry>
 		<drake:proximity_properties>
 			<drake:mu_static>0.0</drake:mu_static>
 			<drake:mu_dynamic>0.0</drake:mu_dynamic>
 		</drake:proximity_properties>
 	</collision>
+
 	<visual name="b3">
 		<pose>0.0 0.0 -0.08 0.0 0.0 0.0</pose>
 		<geometry>

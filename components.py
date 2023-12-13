@@ -39,10 +39,13 @@ class Grasp(NamedTuple):
     x: float
     z: float
     pitch: float
+    roll: float = 0
 
     def get_tf(self):
         return RigidTransform(
-            RollPitchYaw(np.array([0, self.pitch * np.pi / 180, 0])),
+            RollPitchYaw(
+                np.array([self.roll * np.pi / 180, self.pitch * np.pi / 180, 0])
+            ),
             [self.x, 0, self.z],
         )
 

@@ -64,21 +64,20 @@ def solve_for_compliance(
             succ_count = curr_succ_count
             K_opt = K_curr
 
-    """
-    K_opt_soft = np.copy(components.soft)
-    succ_count_soft = len(refine_p(p, CF_d, K_opt_soft, targets=targets))
-    print(f"{K_opt_soft=}, {succ_count_soft=}")
-    for i in range(6):
-        K_curr = np.copy(K_opt_soft)
-        K_curr[i] = components.stiff[i]
-        curr_succ_count_soft = len(refine_p(p, CF_d, K_curr, targets=targets))
-        print(f"{K_curr=}, {curr_succ_count_soft=}")
-        if curr_succ_count_soft > succ_count_soft:
-            succ_count_soft = curr_succ_count_soft
-            K_opt_soft = K_curr
-    if succ_count_soft > succ_count:
-        K_opt = K_opt_soft
-    """
+    if succ_count == 0:
+        K_opt_soft = np.copy(components.soft)
+        succ_count_soft = len(refine_p(p, CF_d, K_opt_soft, targets=targets))
+        print(f"{K_opt_soft=}, {succ_count_soft=}")
+        for i in range(6):
+            K_curr = np.copy(K_opt_soft)
+            K_curr[i] = components.stiff[i]
+            curr_succ_count_soft = len(refine_p(p, CF_d, K_curr, targets=targets))
+            print(f"{K_curr=}, {curr_succ_count_soft=}")
+            if curr_succ_count_soft > succ_count_soft:
+                succ_count_soft = curr_succ_count_soft
+                K_opt_soft = K_curr
+        if succ_count_soft > succ_count:
+            K_opt = K_opt_soft
     print(f"{K_opt=}")
     return K_opt
 

@@ -29,8 +29,12 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
 top_touch = set((("big_fixed_puzzle::b3_top", "block::b4_bottom"),))
 bt = set((("big_fixed_puzzle::b4_bottom", "block::b5_top"),))
 bottom = set((("big_fixed_puzzle::b1", "block::b3"),))
+side = set((("big_fixed_puzzle::b2_inside", "block::b2"),))
 goal = set(
-    (("big_fixed_puzzle::b1", "block::b3"), ("big_fixed_puzzle::b2", "block::b2"))
+    (
+        ("big_fixed_puzzle::b1_top", "block::b3"),
+        ("big_fixed_puzzle::b2_inside", "block::b2"),
+    )
 )
 
 
@@ -52,7 +56,7 @@ def try_refine_b():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     curr = state.Belief([p_a, p_b])
-    modes = [top_touch, bt, bottom, goal]
+    modes = [top_touch, bt, bottom, side, goal]
     for mode in modes:
         curr = b_r(curr, mode)
     input()
