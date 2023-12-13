@@ -9,7 +9,7 @@ import components
 import dynamics
 import mr
 import state
-from simulation import ik_solver
+from simulation import generate_contact_set, ik_solver
 
 gen = np.random.default_rng(0)
 
@@ -42,10 +42,16 @@ def generate_targets(
 def solve_for_compliance(
     p: state.Particle, CF_d: components.ContactState
 ) -> np.ndarray:
+    """
     X_WG = p.X_WG
     targets = generate_targets(
         p.X_WG, r_bound=0.1, t_bound=0.03, count=compliance_samples
     )
+    """
+    targets = generate_contact_set.project_manipuland_to_contacts(
+        p, CF_d, num_samples=compliance_samples
+    )
+
     K_opt = np.copy(components.stiff)
     succ_count = len(refine_p(p, CF_d, K_opt, targets=targets))
     print(f"{K_opt=}, {succ_count=}")
@@ -82,11 +88,18 @@ def refine_p(
     targets: List[RigidTransform] = None,
 ) -> List[components.CompliantMotion]:
     nominal = p.X_WG
-    nominal = ik_solver.project_manipuland_to_contacts(p, CF_d)
+    # nominal = ik_solver.project_manipuland_to_contacts(p, CF_d)
     if targets is None:
+        targets = generate_contact_set.project_manipuland_to_contacts(
+            p, CF_d, num_samples=refinement_samples
+        )
+
+        """
         targets = generate_targets(
             nominal, r_bound=0.1, t_bound=0.03, count=refinement_samples
         )
+        """
+
     X_GC = RigidTransform()
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     P_next = dynamics.f_cspace(p, motions)

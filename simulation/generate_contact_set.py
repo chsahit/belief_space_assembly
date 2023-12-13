@@ -1,7 +1,7 @@
 from typing import List
 
 import numpy as np
-from pydrake.all import HPolyhedron, Intersection, MinkowskiSum
+from pydrake.all import HPolyhedron, Intersection, MinkowskiSum, RigidTransform
 
 import components
 import state
@@ -33,9 +33,10 @@ def compute_samples_from_contact_set(
         interior_pt = contact_manifold.MaybeGetFeasiblePoint()
         is_interior = True
         random_direction = gen.uniform(low=-1, high=1, size=3)
-        random_direction = np.array([-1.0, 0.0, 1.0])
+        # random_direction = np.array([-1.0, 0.0, 1.0])
         # random_direction[-1] = abs(random_direction[-1])
         random_direction = random_direction / np.linalg.norm(random_direction)
+        print(f"{random_direction=}")
         step_size = 1e-4
         while is_interior:
             interior_pt += step_size * random_direction
@@ -44,3 +45,12 @@ def compute_samples_from_contact_set(
         assert contact_manifold.PointInSet(interior_pt)
         samples.append(interior_pt)
     return samples
+
+
+def project_manipuland_to_contacts(
+    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
+) -> List[RigidTransform]:
+    samples = compute_samples_from_contact_set(p, CF_d, num_samples=num_samples)
+    projections = [RigidTransform(p.X_WM.rotation(), sample) for sample in samples]
+    projections = [projection.multiply(p.X_GM.inverse()) for projection in projections]
+    return projections

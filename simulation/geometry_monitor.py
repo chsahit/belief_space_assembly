@@ -40,8 +40,6 @@ class GeometryMonitor(LeafSystem):
                 frame_id_local = inspector.GetFrameId(g_id)
                 body = self.plant.GetBodyFromFrameId(frame_id_local)
                 frame_id_body = self.plant.GetBodyFrameIdOrThrow(body.index())
-                # parent = inspector.GetParentFrame(frame_id_body)
-                f_id_b2 = self.plant.GetFrameByName("base_link").index()
                 polyhedron = HPolyhedron(
                     VPolytope(query_obj, g_id, reference_frame=frame_id_body),
                 )

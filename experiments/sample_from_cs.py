@@ -10,6 +10,8 @@ import visualize
 from planning import search
 from simulation import generate_contact_set, ik_solver
 
+calls = 0
+
 
 def init(X_GM_x: float = 0.0) -> state.Particle:
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0])
@@ -53,12 +55,20 @@ ft_n = set(
         ("big_fixed_puzzle::b3", "block::b4"),
     )
 )
+it = set(
+    (
+        ("big_fixed_puzzle::b3", "block::b3"),
+        ("big_fixed_puzzle::b2", "block::b3"),
+    )
+)
 
 
 def test_sampler():
+    global calls
+    calls += 1
     p = init()
     R_WM = p.X_WM.rotation()
-    sample = generate_contact_set.compute_samples_from_contact_set(p, top_touch_n)[0]
+    sample = generate_contact_set.compute_samples_from_contact_set(p, it)[0]
     X_WM = RigidTransform(R_WM, sample)
     # TODO: rotation of polyhedron might be funky, since its based around body frame
     X_WG = X_WM.multiply(p.X_GM.inverse())
@@ -67,7 +77,9 @@ def test_sampler():
     new_p = p.deepcopy()
     new_p.q_r = q_r
     print(utils.rt_to_str(new_p.X_WG))
-    visualize.show_particle(new_p)
+    wca = visualize.show_particle(new_p)
+    if wca < -0.014 and calls <= 100:
+        test_sampler()
     input()
 
 
@@ -82,4 +94,4 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    test_ik()
+    test_sampler()

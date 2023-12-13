@@ -52,7 +52,15 @@ def show_particle(p: state.Particle):
     meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
     meshcat_vis.StartRecording()
     simulator.AdvanceTo(0.1)
+    worst_collision_amt = float("inf")
+    wc = None
+    for k, v in p.sdf.items():
+        if v < worst_collision_amt:
+            worst_collision_amt = v
+            wc = k
+    print(f"{wc=}, {worst_collision_amt=}")
     meshcat_vis.PublishRecording()
+    return worst_collision_amt
 
 
 def plot_motion_sets(sets: List[HPolyhedron]):
