@@ -104,6 +104,8 @@ def refine_p(
     X_GC = RigidTransform([0.0, 0.0, 0.15])
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
+    if np.linalg.norm(K - components.stiff) < 1e-3 and ("b1" in str(CF_d)):
+        dynamics.simulate(p, motions[0], vis=True)
     P_next = dynamics.f_cspace(p, motions)
     U = []
     for i, p_next in enumerate(P_next):

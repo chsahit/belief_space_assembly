@@ -4,6 +4,7 @@ from pydrake.all import RigidTransform
 import components
 import contact_defs
 import dynamics
+import puzzle_contact_defs
 import state
 import utils
 import visualize
@@ -22,8 +23,8 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
         q_r_0,
         X_GM,
         X_WO,
-        "assets/big_fixed_puzzle_div.sdf",
-        "assets/moving_puzzle_div.sdf",
+        "assets/big_fixed_puzzle.sdf",
+        "assets/moving_puzzle.sdf",
         mu=0.6,
     )
     return p0
@@ -38,46 +39,6 @@ def init_pih(X_GM_x: float = 0.0, X_GM_p: float = 0.0) -> RigidTransform:
         q_r_0, X_GM, X_WO, "assets/big_chamfered_hole.sdf", "assets/peg.urdf", mu=0.6
     )
     return p_0
-
-
-"""
-top_touch = set((("big_fixed_puzzle::b3", "block::201"),))
-ft = set(
-    (
-        ("big_fixed_puzzle::b3", "block::300"),
-        ("big_fixed_puzzle::b3", "block::302"),
-    )
-)
-
-top_touch_n = set((("big_fixed_puzzle::b3", "block::b4"),))
-ft_n = set(
-    (
-        ("big_fixed_puzzle::b3", "block::b4"),
-        ("big_fixed_puzzle::b3", "block::b4"),
-    )
-)
-it = set(
-    (
-        ("big_fixed_puzzle::b3", "block::b3"),
-        ("big_fixed_puzzle::b2", "block::b3"),
-    )
-)
-it3 = set((("big_fixed_puzzle::b4", "block::b5"),))
-it2 = set((("big_fixed_puzzle::b4", "block::b3"),))
-
-tt2 = set((("big_fixed_puzzle::b4", "block::b5"),))
-"""
-
-bt = set((("big_fixed_puzzle::b4_in", "block::b5"),))
-bottom = set((("big_fixed_puzzle::b1_top", "block::b3"),))
-side = set((("big_fixed_puzzle::b2_inside", "block::b2_inside"),))
-
-goal = set(
-    (
-        ("big_fixed_puzzle::b1_top", "block::b3"),
-        ("big_fixed_puzzle::b2_inside", "block::b2_inside"),
-    )
-)
 
 
 def test_sampler():
@@ -101,7 +62,7 @@ def test_sampler():
 
 def ts2():
     p = init()
-    X_WG = generate_contact_set.project_manipuland_to_contacts(p, bottom)[0]
+    X_WG = generate_contact_set.project_manipuland_to_contacts(p, puzzle_contact_defs.bottom)[0]
     q_r = ik_solver.gripper_to_joint_states(X_WG)
     new_p = p.deepcopy()
     new_p.q_r = q_r

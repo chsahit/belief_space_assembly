@@ -1,3 +1,4 @@
+import numpy as np
 from pydrake.all import (
     AbstractValue,
     EventStatus,
@@ -36,6 +37,9 @@ class GeometryMonitor(LeafSystem):
             if ("bin_model" in name) or ("fixed_puzzle" in name):
                 polyhedron = HPolyhedron(VPolytope(query_obj, g_id))
                 self.constraints[name] = (polyhedron.A(), polyhedron.b())
+                self.aa_compute_fine_geometries(
+                    name, self.constraints, polyhedron.A(), polyhedron.b()
+                )
             if "block" in name and (not name[-3:].isnumeric()):
                 frame_id_local = inspector.GetFrameId(g_id)
                 body = self.plant.GetBodyFromFrameId(frame_id_local)
@@ -45,6 +49,9 @@ class GeometryMonitor(LeafSystem):
                 )
                 # breakpoint()
                 self.manip_poly[name] = (polyhedron.A(), polyhedron.b())
+                self.aa_compute_fine_geometries(
+                    name, self.manip_poly, polyhedron.A(), polyhedron.b()
+                )
         if self.manip_poly is None:
             print("warning, manipulator geometry not cached")
 
@@ -74,3 +81,34 @@ class GeometryMonitor(LeafSystem):
         self._set_constraints(query_obj, inspector)
         self._set_contacts(query_obj, inspector)
         return EventStatus.Succeeded()
+
+    def aa_compute_fine_geometries(self, name: str, mapping_dict, A, b):
+        x_hat = np.array([1, 0, 0])
+        y_hat = np.array([0, 1, 0])
+        z_hat = np.array([0, 0, 1])
+        descriptors = []
+        for i, n in enumerate([x_hat, y_hat, z_hat]):
+            for sgn in [1, -1]:
+                normal = sgn * n
+                for j in range(A.shape[0]):
+                    if np.linalg.norm(A[j] - normal) < 1e-5:
+                        descriptors.append(b[j])
+
+        dirs = {
+            "front": (1, 0, -1),  # x_min should become x_max - epsilon
+            "back": (0, 1, 1),
+            "right": (3, 2, -1),
+            "left": (2, 3, 1),  # y_max should become y_min + epsilon
+            "top": (5, 4, -1),
+            "bottom": (4, 5, 1),
+        }
+
+        A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
+        for direction, mods in dirs.items():
+            local_name = name + "_" + direction
+            b_local = np.copy(np.array(descriptors))
+            b_local[mods[i]] = b_local[mods[1]] + (mods[2] * 0.001)
+            mapping_dict[local_name] = (A_local, b_local)
+
+    def general_compute_fine_geometries(self, name: str, mapping_dict, A, b):
+        pass

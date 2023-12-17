@@ -52,7 +52,7 @@ def compute_samples_from_contact_set(
     return samples
 
 
-def project_manipuland_to_contacts(
+def _project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[RigidTransform]:
     projections = []
@@ -68,6 +68,15 @@ def project_manipuland_to_contacts(
         if depth > -0.01 or True:
             projections.append(X_WG)
 
+    return projections
+
+
+def project_manipuland_to_contacts(
+    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
+) -> List[RigidTransform]:
+    offset = RigidTransform([0, 0, 0.005])
+    projections_pre = _project_manipuland_to_contacts(p, CF_d, num_samples=num_samples)
+    projections = [p.multiply(offset) for p in projections_pre]
     return projections
 
 
