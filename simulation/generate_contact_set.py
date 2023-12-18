@@ -26,6 +26,7 @@ def compute_samples_from_contact_set(
         A_env, b_env = constraints[env_poly]
         env_geometry = HPolyhedron(A_env, b_env)
         A_manip, b_manip = p._manip_poly[manip_poly_name]
+        # breakpoint()
         A_manip = -1 * A_manip
         manip_geometry = HPolyhedron(A_manip, b_manip)
         minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
@@ -42,7 +43,7 @@ def compute_samples_from_contact_set(
         # random_direction[0] = abs(random_direction[0])
         random_direction = random_direction / np.linalg.norm(random_direction)
         # print(f"{random_direction=}")
-        step_size = 1e-4
+        step_size = 5e-5
         while is_interior:
             interior_pt += step_size * random_direction
             is_interior = contact_manifold.PointInSet(interior_pt)
@@ -65,8 +66,7 @@ def _project_manipuland_to_contacts(
         new_p = p.deepcopy()
         new_p.q_r = q_r
         depth = collision_depth(new_p)
-        if depth > -0.01 or True:
-            projections.append(X_WG)
+        projections.append(X_WG)
 
     return projections
 

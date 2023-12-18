@@ -86,29 +86,34 @@ class GeometryMonitor(LeafSystem):
         x_hat = np.array([1, 0, 0])
         y_hat = np.array([0, 1, 0])
         z_hat = np.array([0, 0, 1])
-        descriptors = []
+        descriptors = []  # (x+, x-, y+, y-, z+, z-)
         for i, n in enumerate([x_hat, y_hat, z_hat]):
             for sgn in [1, -1]:
                 normal = sgn * n
                 for j in range(A.shape[0]):
                     if np.linalg.norm(A[j] - normal) < 1e-5:
-                        descriptors.append(b[j])
+                        descriptors.append(sgn * b[j])
 
         dirs = {
+            "top": (5, 4, -1),
+            "bottom": (4, 5, 1),
             "front": (1, 0, -1),  # x_min should become x_max - epsilon
             "back": (0, 1, 1),
             "right": (3, 2, -1),
             "left": (2, 3, 1),  # y_max should become y_min + epsilon
-            "top": (5, 4, -1),
-            "bottom": (4, 5, 1),
         }
 
         A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
+        # breakpoint()
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
             b_local = np.copy(np.array(descriptors))
-            b_local[mods[i]] = b_local[mods[1]] + (mods[2] * 0.001)
+            b_local[mods[0]] = b_local[mods[1]] + (mods[2] * 1e-3)
             mapping_dict[local_name] = (A_local, b_local)
+            # convert <= inequalities to >= inequalities for mins
+            b_local[1] *= -1
+            b_local[3] *= -1
+            b_local[5] *= -1
 
     def general_compute_fine_geometries(self, name: str, mapping_dict, A, b):
         pass
