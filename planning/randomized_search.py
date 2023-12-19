@@ -22,6 +22,17 @@ else:
 print(f"{compliance_samples=}, {refinement_samples=}")
 
 
+def relax_CF(CF_d: components.ContactState) -> components.ContactState:
+    relaxed_CF_d = set()
+    for env_contact, manip_contact in CF_d:
+        e_u = env_contact.rfind("_")
+        r_ec = env_contact[:e_u]
+        e_m = manip_contact.rfind("_")
+        r_mc = manip_contact[:e_m]
+        relaxed_CF_d.add((r_ec, r_mc))
+    return relaxed_CF_d
+
+
 def generate_targets(
     nominal: RigidTransform,
     count: int = 50,
@@ -42,12 +53,6 @@ def generate_targets(
 def solve_for_compliance(
     p: state.Particle, CF_d: components.ContactState
 ) -> np.ndarray:
-    """
-    X_WG = p.X_WG
-    targets = generate_targets(
-        p.X_WG, r_bound=0.1, t_bound=0.03, count=compliance_samples
-    )
-    """
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=compliance_samples
     )
@@ -89,27 +94,22 @@ def refine_p(
     targets: List[RigidTransform] = None,
 ) -> List[components.CompliantMotion]:
     nominal = p.X_WG
-    # nominal = ik_solver.project_manipuland_to_contacts(p, CF_d)
     if targets is None:
         targets = generate_contact_set.project_manipuland_to_contacts(
             p, CF_d, num_samples=refinement_samples
         )
 
-        """
-        targets = generate_targets(
-            nominal, r_bound=0.1, t_bound=0.03, count=refinement_samples
-        )
-        """
-
     X_GC = RigidTransform([0.0, 0.0, 0.15])
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
-    if np.linalg.norm(K - components.stiff) < 1e-3 and ("b1" in str(CF_d)):
+    # if np.linalg.norm(K - components.stiff) < 1e-3 and ("b3" in str(CF_d)):
+    if abs(K[1] - 10) < 1e-3 and ("b3" in str(CF_d)):
         dynamics.simulate(p, motions[0], vis=True)
     P_next = dynamics.f_cspace(p, motions)
     U = []
+    relaxed_CF_d = relax_CF(CF_d)
     for i, p_next in enumerate(P_next):
-        if p_next.satisfies_contact(CF_d):
+        if p_next.satisfies_contact(relaxed_CF_d):
             U.append(motions[i])
     return U
 
@@ -163,8 +163,9 @@ def refine_b(
         breakpoint()
     P1_next = dynamics.f_cspace(b.particles[1], U0)
     U = []
+    relaxed_CF_d = relax_CF(CF_d)
     for i, p1_next in enumerate(P1_next):
-        if p1_next.satisfies_contact(CF_d):
+        if p1_next.satisfies_contact(relaxed_CF_d):
             U.append(U0[i])
     if len(U) == 0:
         print("no intersect")

@@ -2,9 +2,12 @@ from typing import List
 
 import numpy as np
 from pydrake.all import (
+    ConvexSet,
     HPolyhedron,
+    Hyperrectangle,
     Intersection,
     MinkowskiSum,
+    RandomGenerator,
     RigidTransform,
     Simulator,
 )
@@ -14,6 +17,21 @@ import state
 from simulation import annotate_geoms, ik_solver
 
 gen = np.random.default_rng(1)
+drake_rng = RandomGenerator()
+
+
+def sample_from_cvx_set(
+    cvx_set: ConvexSet, hyper_rect: Hyperrectangle = None, max_samples=100
+) -> np.ndarray:
+    if hyper_rect is None:
+        hyper_rect = Hyperrectangle.MaybeCalcAxisAlignedBoundingBox()
+    samples = 0
+    while samples < max_samples:
+        rect_sample = hyper_rect.UniformSample(drake_rng)
+        if cvx_set.PointInSet(rect_sample):
+            return rect_sample
+
+    return cvx_set.MaybeGetFeasiblePoint()
 
 
 def compute_samples_from_contact_set(
@@ -35,8 +53,9 @@ def compute_samples_from_contact_set(
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
     assert not contact_manifold.IsEmpty()
+    cm_hyper_rect = Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(contact_manifold)
     for sample_id in range(num_samples):
-        interior_pt = contact_manifold.MaybeGetFeasiblePoint()
+        interior_pt = sample_from_cvx_set(contact_manifold, cm_hyper_rect)
         is_interior = True
         random_direction = gen.uniform(low=-1, high=1, size=3)
         # random_direction = np.array([1.0, -0.0, 0.0])
@@ -75,6 +94,7 @@ def project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[RigidTransform]:
     offset = RigidTransform([0, 0, 0.005])
+    offset = RigidTransform([0, 0, 0.000])
     projections_pre = _project_manipuland_to_contacts(p, CF_d, num_samples=num_samples)
     projections = [p.multiply(offset) for p in projections_pre]
     return projections

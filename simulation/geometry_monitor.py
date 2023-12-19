@@ -104,16 +104,17 @@ class GeometryMonitor(LeafSystem):
         }
 
         A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
-        # breakpoint()
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
+            # if ("b4_front" in local_name) or ("b5_back" in local_name):
+            # breakpoint()
             b_local = np.copy(np.array(descriptors))
             b_local[mods[0]] = b_local[mods[1]] + (mods[2] * 1e-3)
-            mapping_dict[local_name] = (A_local, b_local)
             # convert <= inequalities to >= inequalities for mins
             b_local[1] *= -1
             b_local[3] *= -1
             b_local[5] *= -1
+            mapping_dict[local_name] = (A_local, b_local)
 
     def general_compute_fine_geometries(self, name: str, mapping_dict, A, b):
         pass

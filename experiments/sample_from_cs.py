@@ -63,7 +63,7 @@ def test_sampler():
 def ts2():
     p = init()
     X_WG = generate_contact_set.project_manipuland_to_contacts(
-        p, puzzle_contact_defs.bottom
+        p, puzzle_contact_defs.bt3
     )[0]
     q_r = ik_solver.gripper_to_joint_states(X_WG)
     new_p = p.deepcopy()

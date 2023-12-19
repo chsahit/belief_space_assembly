@@ -20,8 +20,8 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
         q_r_0,
         X_GM,
         X_WO,
-        "assets/big_fixed_puzzle_div.sdf",
-        "assets/moving_puzzle_div.sdf",
+        "assets/big_fixed_puzzle.sdf",
+        "assets/moving_puzzle.sdf",
         mu=0.6,
     )
     return p0
@@ -45,7 +45,7 @@ def try_refine_b():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     curr = state.Belief([p_a, p_b])
-    modes = [top_touch, bt, bottom, side, goal]
+    modes = [top_touch, bt3, bottom, goal]
     for mode in modes:
         curr = b_r(curr, mode)
     input()

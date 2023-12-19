@@ -9,7 +9,6 @@ from pydrake.all import (
     RotationMatrix,
     VPolytope,
 )
-from sklearn.decomposition import PCA
 
 import components
 import dynamics
@@ -18,6 +17,9 @@ import state
 import utils
 import visualize
 from simulation import ik_solver
+
+# from sklearn.decomposition import PCA
+
 
 
 def find_nearest_valid_target(
@@ -151,7 +153,8 @@ def _project_down(vertices: List[List[np.ndarray]]):
     ub = min(6, len(vertices_all))
     vertices_all = np.array(vertices_all)
     for n_components in range(ub, 1, -1):
-        pca = PCA(n_components=n_components)
+        raise NotImplementedError("deprecated PCA!")
+        pca = None  # PCA(n_components=n_components)
         low_dim_vertices = pca.fit_transform(vertices_all)
         curr_idx = 0
         polys = []
