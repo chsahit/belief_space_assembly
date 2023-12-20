@@ -45,7 +45,7 @@ def try_refine_b():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     curr = state.Belief([p_a, p_b])
-    modes = [top_touch, top_touch2, bt4, mid_depth, bottom, goal]
+    modes = [top_touch2, bt, bt4, bottom, goal]
     for mode in modes:
         curr = b_r(curr, mode)
     input()

@@ -8,6 +8,9 @@ from pydrake.all import RigidTransform
 import components
 import dynamics
 import mr
+import puzzle_contact_defs
+
+print("Warning, hardcoded dependency on puzzle_contact_defs")
 import state
 from simulation import generate_contact_set, ik_solver
 
@@ -23,6 +26,9 @@ print(f"{compliance_samples=}, {refinement_samples=}")
 
 
 def relax_CF(CF_d: components.ContactState) -> components.ContactState:
+    relaxation = puzzle_contact_defs.relaxations.get(frozenset(CF_d), None)
+    if relaxation is not None:
+        return relaxation
     relaxed_CF_d = set()
     for env_contact, manip_contact in CF_d:
         e_u = env_contact.rfind("_")
@@ -31,6 +37,17 @@ def relax_CF(CF_d: components.ContactState) -> components.ContactState:
         r_mc = manip_contact[:e_m]
         relaxed_CF_d.add((r_ec, r_mc))
     return relaxed_CF_d
+
+
+def apply_noise(targets: List[RigidTransform]) -> List[RigidTransform]:
+    noised_targets = []
+    for X in targets:
+        r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+        t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
+        random_vel = np.concatenate((r_vel, t_vel))
+        X_noise = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
+        noised_targets.append(X.multiply(X_noise))
+    return noised_targets
 
 
 def generate_targets(
@@ -56,15 +73,20 @@ def solve_for_compliance(
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=compliance_samples
     )
+    targets = apply_noise(targets)
 
     K_opt = np.copy(components.stiff)
     succ_count = len(refine_p(p, CF_d, K_opt, targets=targets))
     print(f"{K_opt=}, {succ_count=}")
+    if succ_count == len(targets):
+        return K_opt
     for i in range(6):
         K_curr = np.copy(K_opt)
         K_curr[i] = components.soft[i]
         curr_succ_count = len(refine_p(p, CF_d, K_curr, targets=targets))
         print(f"{K_curr=}, {curr_succ_count=}")
+        if curr_succ_count == len(targets):
+            return K_curr
         if curr_succ_count > succ_count:
             succ_count = curr_succ_count
             K_opt = K_curr
@@ -98,12 +120,13 @@ def refine_p(
         targets = generate_contact_set.project_manipuland_to_contacts(
             p, CF_d, num_samples=refinement_samples
         )
+        targets = apply_noise(targets)
 
     X_GC = RigidTransform([0.0, 0.0, 0.15])
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     # if np.linalg.norm(K - components.stiff) < 1e-3 and ("b3" in str(CF_d)):
-    if abs(K[1] - 10) < 1e-3 and ("b3" in str(CF_d)):
+    if abs(K[1] - 10) < 1e-3 and ("b3" in str(CF_d)) and False:
         dynamics.simulate(p, motions[0], vis=True)
     P_next = dynamics.f_cspace(p, motions)
     U = []
@@ -156,12 +179,13 @@ def _refine_b(
 def refine_b(
     b: state.Belief, CF_d: components.CompliantMotion
 ) -> components.CompliantMotion:
-    K_star = solve_for_compliance(b.particles[0], CF_d)
-    U0 = refine_p(b.particles[0], CF_d, K_star)
+    p_idx = 0
+    K_star = solve_for_compliance(b.particles[p_idx], CF_d)
+    U0 = refine_p(b.particles[p_idx], CF_d, K_star)
     print(f"{len(U0)=}")
     if len(U0) == 0:
         breakpoint()
-    P1_next = dynamics.f_cspace(b.particles[1], U0)
+    P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
     U = []
     relaxed_CF_d = relax_CF(CF_d)
     for i, p1_next in enumerate(P1_next):

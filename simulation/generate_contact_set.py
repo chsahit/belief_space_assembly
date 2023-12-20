@@ -9,6 +9,7 @@ from pydrake.all import (
     MinkowskiSum,
     RandomGenerator,
     RigidTransform,
+    RotationMatrix,
     Simulator,
 )
 
@@ -79,7 +80,7 @@ def _project_manipuland_to_contacts(
     print(f"{CF_d=}")
     while len(projections) < num_samples:
         sample = compute_samples_from_contact_set(p, CF_d)[0]
-        projection = RigidTransform(p.X_WM.rotation(), sample)
+        projection = RigidTransform(RotationMatrix(), sample)
         X_WG = projection.multiply(p.X_GM.inverse())
         q_r = ik_solver.gripper_to_joint_states(X_WG)
         new_p = p.deepcopy()

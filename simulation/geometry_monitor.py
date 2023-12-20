@@ -76,33 +76,6 @@ class GeometryMonitor(LeafSystem):
             if contact_relevant:
                 sdf[(name_A, name_B)] = dist.distance
 
-        def is_fake_geom(gname: str) -> bool:
-            plane_names = ["top", "bottom", "left", "right", "front", "back"]
-            return any([pname in gname for pname in plane_names])
-
-        def base_name(gname: str) -> str:
-            return gname[: gname.rfind("_")]
-
-        def poly_to_homogeneous(
-            A: np.ndarray, b: np.ndarray, X: RigidTransform
-        ) -> HPolyhedron:
-            A_X = A @ X.GetAsMatrix34()
-            b_X = np.append(b, np.array([1]))
-            return HPolyhedron(A_X, b_X)
-
-        for mpoly, meqs in self.manip_poly.items():
-            for epoly, eeqs in self.constraints.items():
-                if is_fake_geom(mpoly) and is_fake_geom(epoly):
-                    # TODO: dont get the pose every loop
-                    g_id = self.name_to_gid[base_name(mpoly)]
-                    X_WM = query_obj.GetPoseInWorld(g_id)
-                    mHp = poly_to_homogeneous(*meqs, X_WM)
-                    eHp = HPolyhedron(*eeqs, RigidTransform())
-                    mHp = mHp.Scale(1 + 1e-6)
-                    contact_surface = mHp.Intersection(eHp)
-                    if not contact_surface.IsEmpty():
-                        sdf[(mpoly, epoly)] = -1.0
-
         self.contacts = frozenset(contact_state)
         self.sdf = sdf
 
@@ -137,8 +110,6 @@ class GeometryMonitor(LeafSystem):
         A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
-            # if ("b4_front" in local_name) or ("b5_back" in local_name):
-            # breakpoint()
             b_local = np.copy(np.array(descriptors))
             b_local[mods[0]] = b_local[mods[1]] + (mods[2] * 1e-3)
             # convert <= inequalities to >= inequalities for mins

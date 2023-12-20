@@ -9,13 +9,22 @@ top_touch2 = set(
     )
 )
 # bt = set((("big_fixed_puzzle::b4_bottom", "block::b5_top"),))
-bt = set((("big_fixed_puzzle::b4_front", "block::b5_back"),))
-bt4 = set(
+# bt = set((("big_fixed_puzzle::b4_front", "block::b5_back"),))
+bt = set(
     (
         ("big_fixed_puzzle::b4_front", "block::b5_back"),
         ("big_fixed_puzzle::b2_left", "block::b5_right"),
     )
 )
+
+bt4 = set(
+    (
+        ("big_fixed_puzzle::b4_front", "block::b5_top"),
+        ("big_fixed_puzzle::b5_right", "block::b4_left"),
+    )
+)
+
+bt4_check = set((("big_fixed_puzzle::b4", "block::301"),))
 mid_depth = set(
     (
         ("big_fixed_puzzle::b4_front", "block::b3_back"),
@@ -32,6 +41,8 @@ bottom = set(
         ("big_fixed_puzzle::b1_front", "block::b4_back"),
     )
 )
+s_bottom = set((("big_fixed_puzzle::b1_top", "block::b3_bottom"),))
+
 # side = set((("big_fixed_puzzle::b2_inside", "block::b2"),))
 goal = set(
     (
@@ -40,3 +51,5 @@ goal = set(
         ("big_fixed_puzzle::b2_left", "block::b2_right"),
     )
 )
+
+relaxations = {frozenset(bt4): bt4_check}
