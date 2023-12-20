@@ -21,7 +21,6 @@ from simulation import ik_solver
 # from sklearn.decomposition import PCA
 
 
-
 def find_nearest_valid_target(
     p: state.Particle, CF_d: components.ContactState, vis: bool = False
 ) -> RigidTransform:

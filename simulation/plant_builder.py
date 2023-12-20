@@ -175,7 +175,7 @@ def _construct_diagram(
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
-    plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+    # plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
     plant.set_contact_model(contact_model)
     plant.set_penetration_allowance(0.0005)
 

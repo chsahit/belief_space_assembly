@@ -49,6 +49,7 @@ def n_motions():
     X_WG_d0 = utils.xyz_rpy_deg([0.53, 0.0, 0.26], [180, 0, 0])
     u0 = components.CompliantMotion(RigidTransform(), X_WG_d0, components.stiff)
     p1 = dynamics.simulate(p, u0, vis=True)
+    print(p1.sdf)
     print("sim 1")
     X_WC_d1 = utils.xyz_rpy_deg([0.49, 0.0, 0.08], [180, 0, 0])
     X_WC_d1 = utils.xyz_rpy_deg([0.46, 0.0, 0.23], [180, 0, 0])
