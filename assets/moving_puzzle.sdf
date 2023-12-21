@@ -15,6 +15,9 @@
 		<geometry>
 			<box><size>0.05 0.03 0.04</size></box>
                 </geometry>
+                <material>
+                    <diffuse>1 0 0 1</diffuse>
+                </material>
 	</visual>
 	<collision name="b1">
 		<pose>0.0 0.0 -0.02 0.0 0.0 0.0</pose>
@@ -31,6 +34,9 @@
 		<geometry>
 			<box><size>0.05 0.015 0.02</size></box>
                 </geometry>
+                <material>
+                    <diffuse>1 0 0 1</diffuse>
+                </material>
 	</visual>
 	<collision name="b2">
 		<pose>0.0 -0.0075 -0.05 0.0 0.0 0.0</pose>
@@ -47,7 +53,10 @@
 		<geometry>
 			<box><size>0.05 0.03 0.04</size></box>
                 </geometry>
-       	</visual>
+                <material>
+                    <diffuse>1 0 0 1</diffuse>
+                </material>
+	</visual>
 	<collision name="b3">
 		<pose>0.0 0.0 -0.08 0.0 0.0 0.0</pose>
 		<geometry>
@@ -63,6 +72,9 @@
 		<geometry>
 			<box><size>0.01 0.03 0.02</size></box>
                 </geometry>
+                <material>
+                    <diffuse>1 0 0 1</diffuse>
+                </material>
        	</visual>
 	<collision name="b4">
 		<pose>0.02 0.0 -0.11 0.0 0.0 0.0</pose>
@@ -79,6 +91,9 @@
 		<geometry>
 			<box><size>0.01 0.03 0.02</size></box>
                 </geometry>
+                <material>
+                    <diffuse>1 0 0 1</diffuse>
+                </material>
        	</visual>
 	<collision name="b5">
 		<pose>-0.02 0.0 -0.11 0.0 0.0 0.0</pose>

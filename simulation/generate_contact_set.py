@@ -85,7 +85,7 @@ def _project_manipuland_to_contacts(
         q_r = ik_solver.gripper_to_joint_states(X_WG)
         new_p = p.deepcopy()
         new_p.q_r = q_r
-        depth = collision_depth(new_p)
+        # depth = collision_depth(new_p)
         projections.append(X_WG)
 
     return projections
