@@ -7,12 +7,13 @@ import components
 import dynamics
 import state
 import utils
+import visualize
 from simulation import ik_solver
 
 
-def init(X_WG_0_z: float = 0.3, mu=0.0):
+def init(X_WG_0_z: float = 0.3, X_GM_x: float = 0.0, mu: float = 0.0):
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, X_WG_0_z], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.09], [180, 0, 0])
+    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.09], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
@@ -41,6 +42,21 @@ def test_simulate():
     tT = time.time()
     print(f"{p_2.epsilon_contacts()=}")
     print(f"sim time={tT - t0}")
+    input()
+
+
+def test_parallel_sim():
+    p0 = init(X_GM_x=0.005)
+    p1 = init(X_GM_x=0.005)
+    b = state.Belief([p0, p1])
+    U = [
+        components.CompliantMotion(
+            RigidTransform(),
+            utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0]),
+            components.stiff,
+        )
+    ]
+    visualize.play_motions_on_belief(b, U)
     input()
 
 
@@ -106,4 +122,4 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    n_motions()
+    test_parallel_sim()

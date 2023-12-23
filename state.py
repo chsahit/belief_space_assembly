@@ -34,7 +34,9 @@ class Particle:
         self._manip_poly = None
         self.trajectory = []
 
-    def make_plant(self, vis: bool = False, collision: bool = False) -> System:
+    def make_plant(
+        self, vis: bool = False, collision: bool = False, meshcat_instance=None
+    ) -> System:
         return plant_builder.make_plant(
             self.q_r,
             self.X_GM,
@@ -44,6 +46,7 @@ class Particle:
             vis=vis,
             collision_check=collision,
             mu=self.mu,
+            meshcat_instance=meshcat_instance,
         )
 
     def _update_contact_data(self):

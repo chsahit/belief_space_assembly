@@ -9,13 +9,18 @@ import mr
 
 
 class ControllerSystem(LeafSystem):
-    def __init__(self, plant):
+    def __init__(self, plant, panda_name: str, block_name: str):
         LeafSystem.__init__(self)
         self.plant = plant
-        self.panda = plant.GetModelInstanceByName("panda")
+        self.panda = plant.GetModelInstanceByName(panda_name)
+        self.block = plant.GetModelInstanceByName(block_name)
         self.plant_context = plant.CreateDefaultContext()
-        self.panda_start_pos = plant.GetJointByName("panda_joint1").position_start()
-        self.panda_end_pos = plant.GetJointByName("panda_joint7").position_start()
+        self.panda_start_pos = plant.GetJointByName(
+            "panda_joint1", self.panda
+        ).position_start()
+        self.panda_end_pos = plant.GetJointByName(
+            "panda_joint7", self.panda
+        ).position_start()
 
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
         self.DeclareVectorOutputPort("joint_torques", BasicVector(9), self.CalcOutput)
@@ -60,7 +65,7 @@ class ControllerSystem(LeafSystem):
         self.plant.SetPositionsAndVelocities(self.plant_context, self.panda, q)
 
         W = self.plant.world_frame()
-        G = self.plant.GetBodyByName("panda_hand").body_frame()
+        G = self.plant.GetBodyByName("panda_hand", self.panda).body_frame()
         X_WG = self.plant.CalcRelativeTransform(
             self.plant_context, self.plant.world_frame(), G
         )
@@ -83,7 +88,7 @@ class ControllerSystem(LeafSystem):
         assert J_g.shape == (6, 7)
         tau_g = self.plant.CalcGravityGeneralizedForces(self.plant_context)[:7]
         block_velocity = self.plant.EvalBodySpatialVelocityInWorld(
-            self.plant_context, self.plant.GetBodyByName("base_link")
+            self.plant_context, self.plant.GetBodyByName("base_link", self.block)
         )
         block_velocity = np.concatenate(
             (block_velocity.rotational(), block_velocity.translational())
