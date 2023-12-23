@@ -2,12 +2,135 @@ from typing import List
 
 import numpy as np
 from PIL import Image
-from pydrake.all import HPolyhedron, Simulator, VPolytope
+from pydrake.all import (
+    AddMultibodyPlantSceneGraph,
+    CollisionFilterDeclaration,
+    ContactVisualizer,
+    DiagramBuilder,
+    HPolyhedron,
+    IllustrationProperties,
+    Meshcat,
+    MeshcatVisualizer,
+    MeshcatVisualizerParams,
+    Parser,
+    Role,
+    RoleAssign,
+    Simulator,
+    VPolytope,
+)
 
 import components
 import dynamics
 import state
-from simulation import plant_builder
+from simulation import controller, plant_builder
+
+
+# yoinked from https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
+def set_transparency_of_models(plant, model_instances, alpha, scene_graph):
+    """Sets the transparency of the given models."""
+    inspector = scene_graph.model_inspector()
+    for model in model_instances:
+        for body_id in plant.GetBodyIndices(model):
+            frame_id = plant.GetBodyFrameIdOrThrow(body_id)
+            for geometry_id in inspector.GetGeometries(frame_id, Role.kIllustration):
+                properties = inspector.GetIllustrationProperties(geometry_id)
+                try:
+                    phong = properties.GetProperty("phong", "diffuse")
+                    phong.set(phong.r(), phong.g(), phong.b(), alpha)
+                    properties.UpdateProperty("phong", "diffuse", phong)
+                    scene_graph.AssignRole(
+                        plant.get_source_id(),
+                        geometry_id,
+                        properties,
+                        RoleAssign.kReplace,
+                    )
+                    print("set transparency")
+                except Exception as e:
+                    pass
+
+
+def _make_combined_plant(b: state.Belief):
+    meshcat = Meshcat()
+    builder = DiagramBuilder()
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0005)
+    parser = Parser(plant)
+    parser.package_map().Add("assets", "assets/")
+    instance_list = list()
+
+    for i, p in enumerate(b.particles):
+        panda = parser.AddModels("assets/panda_arm_hand.urdf")[0]
+        plant.RenameModelInstance(panda, "panda_" + str(i))
+        env_geometry = parser.AddModels(p.env_geom)[0]
+        plant.RenameModelInstance(env_geometry, "obj_" + str(i))
+        manipuland = parser.AddModels(p.manip_geom)[0]
+        plant.RenameModelInstance(manipuland, "block_" + str(i))
+        plant_builder._weld_geometries(
+            plant, p.X_GM, p.X_WO, panda, manipuland, env_geometry
+        )
+        plant_builder._set_frictions(
+            plant, scene_graph, [env_geometry, manipuland], p.mu
+        )
+        instance_list.append((panda, env_geometry, manipuland))
+    plant.Finalize()
+
+    for i, p in enumerate(b.particles):
+        P, O, M = instance_list[i]
+        set_transparency_of_models(plant, [P, O, M], 0.5, scene_graph)
+        plant.SetDefaultPositions(P, p.q_r)
+        compliant_controller = builder.AddNamedSystem(
+            "controller_" + str(i),
+            controller.ControllerSystem(plant, "panda_" + str(i), "block_" + str(i)),
+        )
+        builder.Connect(
+            plant.get_state_output_port(P), compliant_controller.GetInputPort("state")
+        )
+        builder.Connect(
+            compliant_controller.get_output_port(), plant.get_actuation_input_port(P)
+        )
+    meshcat_vis = MeshcatVisualizer.AddToBuilder(
+        builder, scene_graph, meshcat, MeshcatVisualizerParams()
+    )
+    diagram = builder.Build()
+    manager = scene_graph.collision_filter_manager()
+    for p_idx_i in range(len(b.particles)):
+        P_i, O_i, M_i = instance_list[p_idx_i]
+        P_i_bodies = plant.GetBodyIndices(P_i)
+        O_i_bodies = plant.GetBodyIndices(O_i)
+        M_i_bodies = plant.GetBodyIndices(M_i)
+        geom_set_i = plant.CollectRegisteredGeometries(
+            [plant.get_body(b_idx) for b_idx in (P_i_bodies + O_i_bodies + M_i_bodies)]
+        )
+        for p_idx_j in range(p_idx_i + 1, len(b.particles)):
+            P_j, O_j, M_j = instance_list[p_idx_j]
+            P_j_bodies = plant.GetBodyIndices(P_j)
+            O_j_bodies = plant.GetBodyIndices(O_j)
+            M_j_bodies = plant.GetBodyIndices(M_j)
+            geom_set_j = plant.CollectRegisteredGeometries(
+                [
+                    plant.get_body(b_idx)
+                    for b_idx in (P_j_bodies + O_j_bodies + M_j_bodies)
+                ]
+            )
+            declaration = CollisionFilterDeclaration().ExcludeBetween(
+                geom_set_i, geom_set_j
+            )
+            manager.Apply(declaration)
+
+    return diagram
+
+
+def play_motions_on_belief(b: state.Belief, U: List[components.CompliantMotion]):
+    diagram = _make_combined_plant(b)
+    simulator = Simulator(diagram)
+    visualizer = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
+    visualizer.StartRecording()
+    T = 0.0
+    for u in U:
+        T += u.timeout
+        for i in range(len(b.particles)):
+            diagram.GetSubsystemByName("controller_" + str(i)).motion = u
+        simulator.AdvanceTo(T)
+    visualizer.PublishRecording()
 
 
 def _merge_images(images) -> Image:

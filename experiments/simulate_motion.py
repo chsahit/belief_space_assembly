@@ -11,9 +11,9 @@ import visualize
 from simulation import ik_solver
 
 
-def init():
+def init(X_GM_x: float = 0.0):
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([0.0, 0.0, 0.155], [0, 0, 0])
+    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.155], [0, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
@@ -32,6 +32,22 @@ def test_simulate():
     tT = time.time()
     print(f"{p_1.contacts=}")
     print(f"sim time={tT - t0}")
+    input()
+
+
+def test_parallel_sim():
+    p0 = init(X_GM_x=-0.00)
+    p1 = init(X_GM_x=0.00)
+    b = state.Belief([p0])
+    U = [
+        components.CompliantMotion(
+            RigidTransform(),
+            utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0]),
+            components.stiff,
+        )
+    ]
+    visualize.play_motions_on_belief(b, U)
+    input()
 
 
 def test_motion_set():
@@ -96,6 +112,6 @@ def funny_rcc():
 
 
 if __name__ == "__main__":
-    test_simulate()
+    test_parallel_sim()
     # funny_rcc()
     # test_vis()

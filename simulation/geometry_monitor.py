@@ -108,6 +108,8 @@ class GeometryMonitor(LeafSystem):
         }
 
         A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
+        if A.shape[0] < 6:
+            return None
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
             b_local = np.copy(np.array(descriptors))

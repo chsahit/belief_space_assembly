@@ -43,20 +43,27 @@ timestep = 0.0005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
-def _weld_geometries(plant: MultibodyPlant, X_GM: RigidTransform, X_WO: RigidTransform):
+def _weld_geometries(
+    plant: MultibodyPlant,
+    X_GM: RigidTransform,
+    X_WO: RigidTransform,
+    panda_instance: ModelInstanceIndex,
+    block_instance: ModelInstanceIndex,
+    obj_instance: ModelInstanceIndex,
+):
     plant.WeldFrames(
         frame_on_parent_F=plant.world_frame(),
-        frame_on_child_M=plant.GetFrameByName("panda_link0"),
+        frame_on_child_M=plant.GetFrameByName("panda_link0", panda_instance),
         X_FM=utils.xyz_rpy_deg([0, 0, 0], [0, 0, 0]),
     )
     plant.WeldFrames(
         frame_on_parent_F=plant.world_frame(),
-        frame_on_child_M=plant.GetFrameByName("bin_base"),
+        frame_on_child_M=plant.GetFrameByName("bin_base", obj_instance),
         X_FM=X_WO,
     )
     plant.WeldFrames(
-        frame_on_parent_F=plant.GetFrameByName("panda_hand"),
-        frame_on_child_M=plant.GetFrameByName("base_link"),
+        frame_on_parent_F=plant.GetFrameByName("panda_hand", panda_instance),
+        frame_on_child_M=plant.GetFrameByName("base_link", block_instance),
         X_FM=X_GM,
     )
 
@@ -70,6 +77,7 @@ def make_plant(
     collision_check: bool = False,
     vis: bool = False,
     mu: float = 0.0,
+    meshcat_instance=None,
 ) -> Tuple[Diagram, Meshcat]:
     builder, _, _, meshcat = _construct_diagram(
         q_r,
@@ -80,6 +88,7 @@ def make_plant(
         collision_check=collision_check,
         vis=vis,
         mu=mu,
+        meshcat_instance=meshcat_instance,
     )
     diagram = builder.Build()
     return diagram, meshcat
@@ -170,6 +179,7 @@ def _construct_diagram(
     collision_check: bool = False,
     vis: bool = False,
     mu: float = 0.0,
+    meshcat_instance=None,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
 
     # Plant hyperparameters
@@ -183,6 +193,8 @@ def _construct_diagram(
     parser = Parser(plant)
     parser.package_map().Add("assets", "assets/")
     panda = parser.AddModels("assets/panda_arm_hand.urdf")[0]
+    panda_name = "panda"
+    plant.RenameModelInstance(panda, panda_name)
     env_geometry = parser.AddModels(env_geom)[0]
     # manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
     manipuland = parser.AddModels(manip_geom)[0]
@@ -194,7 +206,7 @@ def _construct_diagram(
             plant.RegisterCollisionGeometry(
                 manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
             )
-    _weld_geometries(plant, X_GM, X_WO)
+    _weld_geometries(plant, X_GM, X_WO, panda, manipuland, env_geometry)
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
     # assert False
     # finger_l = plant.GetJointByName("")
@@ -219,7 +231,12 @@ def _construct_diagram(
 
     # connect controller
     compliant_controller = builder.AddNamedSystem(
-        "controller", controller.ControllerSystem(plant)
+        "controller",
+        controller.ControllerSystem(
+            plant,
+            panda_name,
+            "block",
+        ),
     )
     builder.Connect(
         plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
@@ -227,9 +244,10 @@ def _construct_diagram(
     builder.Connect(
         compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
     )
-    meshcat = None
+    meshcat = meshcat_instance
     if vis:
-        meshcat = Meshcat()
+        if meshcat is None:
+            meshcat = Meshcat()
         meshcat_vis = MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )
