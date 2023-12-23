@@ -5,6 +5,7 @@ from PIL import Image
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
     CollisionFilterDeclaration,
+    ContactVisualizer,
     DiagramBuilder,
     HPolyhedron,
     Meshcat,
@@ -60,6 +61,8 @@ def _make_combined_plant(b: state.Belief):
     meshcat_vis = MeshcatVisualizer.AddToBuilder(
         builder, scene_graph, meshcat, MeshcatVisualizerParams()
     )
+    # ContactVisualizer.AddToBuilder(builder, plant, meshcat)
+    diagram = builder.Build()
     manager = scene_graph.collision_filter_manager()
     for p_idx_i in range(len(b.particles)):
         P_i, O_i, M_i = instance_list[p_idx_i]
@@ -85,15 +88,15 @@ def _make_combined_plant(b: state.Belief):
             )
             manager.Apply(declaration)
 
-    diagram = builder.Build()
     return diagram
 
 
 def play_motions_on_belief(b: state.Belief, U: List[components.CompliantMotion]):
     diagram = _make_combined_plant(b)
-    # diagram.GetSubsystemByName("controller").motion = U[0]
     simulator = Simulator(diagram)
     visualizer = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
+    for i in range(len(b.particles)):
+        diagram.GetSubsystemByName("controller_"+str(i)).motion=U[0]
     visualizer.StartRecording()
     simulator.AdvanceTo(U[0].timeout)
     visualizer.PublishRecording()

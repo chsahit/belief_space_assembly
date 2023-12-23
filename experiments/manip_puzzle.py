@@ -47,7 +47,7 @@ def test_simulate():
 
 def test_parallel_sim():
     p0 = init(X_GM_x=0.005)
-    p1 = init(X_GM_x=0.005)
+    p1 = init(X_GM_x=-0.005)
     b = state.Belief([p0, p1])
     U = [
         components.CompliantMotion(

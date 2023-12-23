@@ -86,7 +86,8 @@ class ControllerSystem(LeafSystem):
         )
         J_g = J_g[:, self.panda_start_pos : self.panda_end_pos + 1]
         assert J_g.shape == (6, 7)
-        tau_g = self.plant.CalcGravityGeneralizedForces(self.plant_context)[:7]
+        tau_g = self.plant.CalcGravityGeneralizedForces(self.plant_context)
+        tau_g = self.plant.GetVelocitiesFromArray(self.panda, tau_g)[:7]
         block_velocity = self.plant.EvalBodySpatialVelocityInWorld(
             self.plant_context, self.plant.GetBodyByName("base_link", self.block)
         )
