@@ -54,7 +54,12 @@ def test_parallel_sim():
             RigidTransform(),
             utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0]),
             components.stiff,
-        )
+        ),
+        components.CompliantMotion(
+            RigidTransform(),
+            utils.xyz_rpy_deg([0.51, 0.0, 0.20], [180, 0, 0]),
+            components.stiff,
+        ),
     ]
     visualize.play_motions_on_belief(b, U)
     input()

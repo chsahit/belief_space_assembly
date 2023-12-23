@@ -41,7 +41,6 @@ from simulation import annotate_geoms, controller, geometry_monitor, image_logge
 # timestep = 0
 timestep = 0.0005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
-num_arms = 0
 
 
 def _weld_geometries(
@@ -183,7 +182,6 @@ def _construct_diagram(
     meshcat_instance=None,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
 
-    global num_arms
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
@@ -195,8 +193,7 @@ def _construct_diagram(
     parser = Parser(plant)
     parser.package_map().Add("assets", "assets/")
     panda = parser.AddModels("assets/panda_arm_hand.urdf")[0]
-    panda_name = "arm" + str(num_arms)
-    num_arms += 1
+    panda_name = "panda"
     plant.RenameModelInstance(panda, panda_name)
     env_geometry = parser.AddModels(env_geom)[0]
     # manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
@@ -234,7 +231,12 @@ def _construct_diagram(
 
     # connect controller
     compliant_controller = builder.AddNamedSystem(
-        "controller", controller.ControllerSystem(plant, panda_name)
+        "controller",
+        controller.ControllerSystem(
+            plant,
+            panda_name,
+            "block",
+        ),
     )
     builder.Connect(
         plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
@@ -244,6 +246,8 @@ def _construct_diagram(
     )
     meshcat = meshcat_instance
     if vis:
+        if meshcat is None:
+            meshcat = Meshcat()
         meshcat_vis = MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )

@@ -8,10 +8,13 @@ from pydrake.all import (
     ContactVisualizer,
     DiagramBuilder,
     HPolyhedron,
+    IllustrationProperties,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
     Parser,
+    Role,
+    RoleAssign,
     Simulator,
     VPolytope,
 )
@@ -20,6 +23,30 @@ import components
 import dynamics
 import state
 from simulation import controller, plant_builder
+
+
+# yoinked from https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
+def set_transparency_of_models(plant, model_instances, alpha, scene_graph):
+    """Sets the transparency of the given models."""
+    inspector = scene_graph.model_inspector()
+    for model in model_instances:
+        for body_id in plant.GetBodyIndices(model):
+            frame_id = plant.GetBodyFrameIdOrThrow(body_id)
+            for geometry_id in inspector.GetGeometries(frame_id, Role.kIllustration):
+                properties = inspector.GetIllustrationProperties(geometry_id)
+                try:
+                    phong = properties.GetProperty("phong", "diffuse")
+                    phong.set(phong.r(), phong.g(), phong.b(), alpha)
+                    properties.UpdateProperty("phong", "diffuse", phong)
+                    scene_graph.AssignRole(
+                        plant.get_source_id(),
+                        geometry_id,
+                        properties,
+                        RoleAssign.kReplace,
+                    )
+                    print("set transparency")
+                except Exception as e:
+                    pass
 
 
 def _make_combined_plant(b: state.Belief):
@@ -45,8 +72,10 @@ def _make_combined_plant(b: state.Belief):
         )
         instance_list.append((panda, env_geometry, manipuland))
     plant.Finalize()
+
     for i, p in enumerate(b.particles):
         P, O, M = instance_list[i]
+        set_transparency_of_models(plant, [P, O, M], 0.5, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
         compliant_controller = builder.AddNamedSystem(
             "controller_" + str(i),
@@ -61,7 +90,6 @@ def _make_combined_plant(b: state.Belief):
     meshcat_vis = MeshcatVisualizer.AddToBuilder(
         builder, scene_graph, meshcat, MeshcatVisualizerParams()
     )
-    # ContactVisualizer.AddToBuilder(builder, plant, meshcat)
     diagram = builder.Build()
     manager = scene_graph.collision_filter_manager()
     for p_idx_i in range(len(b.particles)):
@@ -95,10 +123,13 @@ def play_motions_on_belief(b: state.Belief, U: List[components.CompliantMotion])
     diagram = _make_combined_plant(b)
     simulator = Simulator(diagram)
     visualizer = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
-    for i in range(len(b.particles)):
-        diagram.GetSubsystemByName("controller_"+str(i)).motion=U[0]
     visualizer.StartRecording()
-    simulator.AdvanceTo(U[0].timeout)
+    T = 0.0
+    for u in U:
+        T += u.timeout
+        for i in range(len(b.particles)):
+            diagram.GetSubsystemByName("controller_" + str(i)).motion = u
+        simulator.AdvanceTo(T)
     visualizer.PublishRecording()
 
 
