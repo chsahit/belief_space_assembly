@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 from pydrake.all import RigidTransform
 
@@ -36,6 +38,8 @@ def try_refine_p():
 
 def b_r(b, mode):
     u_star = randomized_search.refine_b(b, mode)
+    if u_star is None:
+        return b, None
     dynamics.simulate(b.particles[0], u_star, vis=True)
     dynamics.simulate(b.particles[1], u_star, vis=True)
     posterior = dynamics.f_bel(b, u_star)
@@ -55,5 +59,42 @@ def try_refine_b():
     input()
 
 
+def nested_refine(
+    b: state.Belief,
+    CF_d: components.ContactState,
+    modes: List[components.ContactState],
+    max_attempts: int = 3,
+) -> List[components.CompliantMotion]:
+    for attempt in range(max_attempts):
+        print(f"{attempt=}")
+        curr = b
+        traj = []
+        for mode in modes:
+            u_star = randomized_search.refine_b(curr, mode)
+            if u_star is None:
+                break
+            traj.append(u_star)
+            curr = dynamics.f_bel(curr, u_star)
+        if curr.satisfies_contact(randomized_search.relax_CF(goal)):
+            return traj
+    return None
+
+
+def explore_x_preimg():
+    stats = []
+    deviations = np.linspace(0.002, 0.011, 1).tolist()
+    for deviation in deviations:
+        p_a = init(X_GM_x=-deviation)
+        p_b = init(X_GM_x=deviation)
+        b0 = state.Belief([p_a, p_b])
+        modes = [top_touch2, bt, bt4, bottom, goal]
+        traj = nested_refine(b0, goal, modes)
+        if traj is not None:
+            stats.append(f"{deviation=} success")
+        else:
+            stats.append(f"{deviation=} failed")
+    print(stats)
+
+
 if __name__ == "__main__":
-    try_refine_b()
+    explore_x_preimg()

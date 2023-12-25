@@ -184,6 +184,7 @@ def refine_b(
     U0 = refine_p(b.particles[p_idx], CF_d, K_star)
     print(f"{len(U0)=}")
     if len(U0) == 0:
+        return None
         breakpoint()
     P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
     U = []
