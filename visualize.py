@@ -5,6 +5,7 @@ from PIL import Image
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
     CollisionFilterDeclaration,
+    ContactModel,
     ContactVisualizer,
     DiagramBuilder,
     HPolyhedron,
@@ -26,7 +27,7 @@ from simulation import controller, plant_builder
 
 
 # yoinked from https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
-def set_transparency_of_models(plant, model_instances, alpha, scene_graph):
+def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph):
     """Sets the transparency of the given models."""
     inspector = scene_graph.model_inspector()
     for model in model_instances:
@@ -36,7 +37,10 @@ def set_transparency_of_models(plant, model_instances, alpha, scene_graph):
                 properties = inspector.GetIllustrationProperties(geometry_id)
                 try:
                     phong = properties.GetProperty("phong", "diffuse")
-                    phong.set(phong.r(), phong.g(), phong.b(), alpha)
+                    if color is not None:
+                        phong.set(*color, alpha)
+                    else:
+                        phong.set(phong.r(), phong.g(), phong.b(), alpha)
                     properties.UpdateProperty("phong", "diffuse", phong)
                     scene_graph.AssignRole(
                         plant.get_source_id(),
@@ -44,15 +48,24 @@ def set_transparency_of_models(plant, model_instances, alpha, scene_graph):
                         properties,
                         RoleAssign.kReplace,
                     )
-                    print("set transparency")
                 except Exception as e:
                     pass
+
+
+def _drop_reflected_inertia(plant, panda):
+    ja_indices = plant.GetJointActuatorIndices(panda)
+    for ja_idx in ja_indices:
+        ja = plant.get_joint_actuator(ja_idx)
+        ja.set_default_rotor_inertia(0.0)
+        ja.set_default_gear_ratio(0.0)
 
 
 def _make_combined_plant(b: state.Belief):
     meshcat = Meshcat()
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0005)
+    plant.set_contact_model(ContactModel.kPoint)
+    plant.set_penetration_allowance(0.0005)
     parser = Parser(plant)
     parser.package_map().Add("assets", "assets/")
     instance_list = list()
@@ -73,9 +86,11 @@ def _make_combined_plant(b: state.Belief):
         instance_list.append((panda, env_geometry, manipuland))
     plant.Finalize()
 
+    colors = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
     for i, p in enumerate(b.particles):
         P, O, M = instance_list[i]
-        set_transparency_of_models(plant, [P, O, M], 0.5, scene_graph)
+        _drop_reflected_inertia(plant, P)
+        set_transparency_of_models(plant, [P, O, M], colors[i % 3], 0.5, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
         compliant_controller = builder.AddNamedSystem(
             "controller_" + str(i),

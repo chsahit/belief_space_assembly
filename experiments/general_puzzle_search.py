@@ -6,6 +6,7 @@ import contact_defs
 import dynamics
 import state
 import utils
+import visualize
 from planning import randomized_search
 from puzzle_contact_defs import *
 from simulation import ik_solver
@@ -38,7 +39,7 @@ def b_r(b, mode):
     dynamics.simulate(b.particles[0], u_star, vis=True)
     dynamics.simulate(b.particles[1], u_star, vis=True)
     posterior = dynamics.f_bel(b, u_star)
-    return posterior
+    return posterior, u_star
 
 
 def try_refine_b():
@@ -46,8 +47,11 @@ def try_refine_b():
     p_b = init(X_GM_x=0.005)
     curr = state.Belief([p_a, p_b])
     modes = [top_touch2, bt, bt4, bottom, goal]
+    traj = []
     for mode in modes:
-        curr = b_r(curr, mode)
+        curr, u_star = b_r(curr, mode)
+        traj.append(u_star)
+    visualize.play_motions_on_belief(state.Belief([p_a, p_b]), traj)
     input()
 
 
