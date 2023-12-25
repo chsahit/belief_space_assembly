@@ -76,37 +76,44 @@ def solve_for_compliance(
     targets = apply_noise(targets)
 
     K_opt = np.copy(components.stiff)
-    succ_count = len(refine_p(p, CF_d, K_opt, targets=targets))
+    validated_samples = refine_p(p, CF_d, K_opt, targets=targets)
+    succ_count = len(validated_samples)
     print(f"{K_opt=}, {succ_count=}")
     if succ_count == len(targets):
         return K_opt
     for i in range(6):
         K_curr = np.copy(K_opt)
         K_curr[i] = components.soft[i]
-        curr_succ_count = len(refine_p(p, CF_d, K_curr, targets=targets))
-        print(f"{K_curr=}, {curr_succ_count=}")
+        curr_validated_samples = refine_p(p, CF_d, K_curr, targets=targets)
+        curr_succ_count = len(curr_validated_samples)
         if curr_succ_count == len(targets):
-            return K_curr
+            print(f"K_opt={K_curr}")
+            return K_curr, curr_validated_samples
         if curr_succ_count > succ_count:
             succ_count = curr_succ_count
+            validated_samples = curr_validated_samples
             K_opt = K_curr
+            print(f"{K_opt=}, {succ_count=}")
 
     if succ_count == 0:
         K_opt_soft = np.copy(components.soft)
-        succ_count_soft = len(refine_p(p, CF_d, K_opt_soft, targets=targets))
+        validated_samples_soft = refine_p(p, CF_d, K_opt_soft, targets=targets)
+        succ_count_soft = len(validated_samples_soft)
         print(f"{K_opt_soft=}, {succ_count_soft=}")
         for i in range(6):
             K_curr = np.copy(K_opt_soft)
             K_curr[i] = components.stiff[i]
-            curr_succ_count_soft = len(refine_p(p, CF_d, K_curr, targets=targets))
-            print(f"{K_curr=}, {curr_succ_count_soft=}")
+            curr_validated_samples_soft = refine_p(p, CF_d, K_opt_soft, targets=targets)
+            curr_succ_count_soft = len(curr_validated_samples_soft)
             if curr_succ_count_soft > succ_count_soft:
                 succ_count_soft = curr_succ_count_soft
                 K_opt_soft = K_curr
+                validated_samples_soft = curr_validated_samples_soft
+                print(f"{K_opt_soft=}, {succ_count_soft=}")
         if succ_count_soft > succ_count:
             K_opt = K_opt_soft
-    print(f"{K_opt=}")
-    return K_opt
+            validated_samples = validated_samples_soft
+    return K_opt, validated_samples
 
 
 def refine_p(
@@ -137,63 +144,28 @@ def refine_p(
     return U
 
 
-def _refine_b(
-    b: state.Belief, CF_d: components.CompliantMotion
+def score_tree_root(
+    b: state.Belief,
+    CF_d: components.CompliantMotion,
+    K_star: np.ndarray,
+    p_idx: int = 0,
+    validated_samples=[],
 ) -> components.CompliantMotion:
-    K_star = solve_for_compliance(b.particles[0], CF_d)
-    U0 = refine_p(b.particles[0], CF_d, K_star)
-    print(f"{len(U0)=}")
-    if len(U0) > 0:
-        P1_next = dynamics.f_cspace(b.particles[1], U0)
-    else:
-        P1_next = []
-    for i, p1_next in enumerate(P1_next):
-        if p1_next.satisfies_contact(CF_d):
-            return U0[i]
-    U1 = refine_p(b.particles[1], CF_d, K_star)
-    print(f"{len(U1)=}")
-    if len(U1) > 0:
-        P0_next = dynamics.f_cspace(b.particles[0], U1)
-    else:
-        P0_next = []
-    for i, p0_next in enumerate(P0_next):
-        if p0_next.satisfies_contact(CF_d):
-            return U1[i]
-    uncert_reduction_targets = generate_targets(b.particles[0].X_WG)
-    uncert_reduction_candidates = [
-        components.CompliantMotion(RigidTransform(), target, K_star)
-        for target in uncert_reduction_targets
-    ]
-    lowest_uncert_u = uncert_reduction_candidates[0]
-    cert_lb = 0
-    for candidate in uncert_reduction_candidates:
-        posterior = dynamics.f_bel(b, candidate)
-        certainty = len(posterior.contact_state())
-        if certainty > cert_lb:
-            cert_lb = certainty
-            lowest_uncert_u = candidate
-    print(f"returning candidate motion with {cert_lb=}")
-    return lowest_uncert_u
-
-
-def refine_b(
-    b: state.Belief, CF_d: components.CompliantMotion
-) -> components.CompliantMotion:
-    p_idx = 0
-    K_star = solve_for_compliance(b.particles[p_idx], CF_d)
     U0 = refine_p(b.particles[p_idx], CF_d, K_star)
+    U0 = U0 + validated_samples
     print(f"{len(U0)=}")
     if len(U0) == 0:
-        return None
-        breakpoint()
+        return None, float("-inf"), False
     P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
     U = []
+    success = True
     relaxed_CF_d = relax_CF(CF_d)
     for i, p1_next in enumerate(P1_next):
         if p1_next.satisfies_contact(relaxed_CF_d):
             U.append(U0[i])
     if len(U) == 0:
         print("no intersect")
+        success = False
         U = U0
     best_u = None
     most_certainty = float("-inf")
@@ -204,4 +176,26 @@ def refine_b(
             most_certainty = certainty
             best_u = u
     print(f"{most_certainty=}")
-    return best_u
+    return best_u, most_certainty, success
+
+
+def refine_b(
+    b: state.Belief, CF_d: components.ContactState
+) -> components.CompliantMotion:
+    print(f"{CF_d=}")
+    K_star, samples = solve_for_compliance(b.particles[0], CF_d)
+    best_u_0, certainty_0, success = score_tree_root(
+        b, CF_d, K_star, p_idx=0, validated_samples=samples
+    )
+    if success:
+        return best_u_0
+    best_u_1, certainty_1, success = score_tree_root(b, CF_d, K_star, p_idx=1)
+    if success:
+        return best_u_1
+    if best_u_0 is None and best_u_1 is None:
+        return None
+    assert certainty_0 >= 0 or certainty_1 >= 0
+    if certainty_0 >= certainty_1:
+        return best_u_0
+    else:
+        return best_u_1

@@ -77,7 +77,6 @@ def _project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[RigidTransform]:
     projections = []
-    print(f"{CF_d=}")
     while len(projections) < num_samples:
         sample = compute_samples_from_contact_set(p, CF_d)[0]
         projection = RigidTransform(RotationMatrix(), sample)
