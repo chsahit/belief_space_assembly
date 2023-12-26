@@ -80,7 +80,7 @@ def solve_for_compliance(
     succ_count = len(validated_samples)
     print(f"{K_opt=}, {succ_count=}")
     if succ_count == len(targets):
-        return K_opt
+        return K_opt, validated_samples
     for i in range(6):
         K_curr = np.copy(K_opt)
         K_curr[i] = components.soft[i]

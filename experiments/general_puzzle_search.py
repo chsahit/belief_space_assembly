@@ -89,7 +89,7 @@ def explore_x_preimg():
         p_b = init(X_GM_x=deviation)
         b0 = state.Belief([p_a, p_b])
         modes = [top_touch2, bt, bt4, bottom, goal]
-        traj = nested_refine(b0, goal, modes)
+        traj = nested_refine(b0, goal, modes, max_attempts=5)
         if traj is not None:
             stats.append(f"{deviation=} success")
         else:
