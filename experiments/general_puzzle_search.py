@@ -83,13 +83,16 @@ def nested_refine(
 def explore_x_preimg():
     stats = []
     deviations = np.linspace(0.002, 0.01, 4).tolist()
+    max_attempts = 5
+    deviations = [0.0466666]
+    max_attempts = 3
     for deviation in deviations:
         print(f"{deviation=}")
         p_a = init(X_GM_x=-deviation)
         p_b = init(X_GM_x=deviation)
         b0 = state.Belief([p_a, p_b])
         modes = [top_touch2, bt, bt4, bottom, goal]
-        traj = nested_refine(b0, goal, modes, max_attempts=5)
+        traj = nested_refine(b0, goal, modes, max_attempts=max_attempts)
         if traj is not None:
             stats.append(f"{deviation=} success")
         else:
