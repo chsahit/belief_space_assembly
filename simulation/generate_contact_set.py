@@ -4,13 +4,14 @@ import numpy as np
 from pydrake.all import (
     ConvexSet,
     HPolyhedron,
-    Hyperrectangle,
     Intersection,
+    MathematicalProgram,
     MinkowskiSum,
     RandomGenerator,
     RigidTransform,
     RotationMatrix,
     Simulator,
+    Solve,
 )
 
 import components
@@ -21,17 +22,39 @@ gen = np.random.default_rng(1)
 drake_rng = RandomGenerator()
 
 
+def CalcAxisAlignedBoundingBox(cvx_set: ConvexSet) -> HPolyhedron:
+    def make_prog(inside_pt, cvx_set, axis, direction):
+        prog = MathematicalProgram()
+        pt = prog.NewContinuousVariables(3, "pt")
+        prog.SetInitialGuess(pt, inside_pt)
+        prog.AddCost(direction * pt[axis])
+        cvx_set.AddPointInSetConstraints(prog, pt)
+        prog.AddBoundingBoxConstraint(-10.0, 10.0, pt)
+        return prog
+
+    init_pt = cvx_set.MaybeGetFeasiblePoint()
+    bounds = [[0, 0, 0], [0, 0, 0]]
+    for direction_idx, direction in enumerate([1, -1]):
+        for axis in [0, 1, 2]:
+            m_prog = make_prog(init_pt, cvx_set, axis, direction)
+            soln = Solve(m_prog)
+            soln_pt = soln.GetSolution()
+            bounds[direction_idx][axis] = soln_pt[axis]
+    return HPolyhedron.MakeBox(np.array(bounds[0]), np.array(bounds[1]))
+
+
 def sample_from_cvx_set(
-    cvx_set: ConvexSet, hyper_rect: Hyperrectangle = None, max_samples=100
+    cvx_set: ConvexSet, hyper_rect: HPolyhedron= None, max_samples=100
 ) -> np.ndarray:
     if hyper_rect is None:
-        hyper_rect = Hyperrectangle.MaybeCalcAxisAlignedBoundingBox()
+        hyper_rect = CalcAxisAlignedBoundingBox(cvx_set)
     samples = 0
+    rect_sample = hyper_rect.UniformSample(drake_rng)
     while samples < max_samples:
-        rect_sample = hyper_rect.UniformSample(drake_rng)
+        rect_sample = hyper_rect.UniformSample(drake_rng, rect_sample)
         if cvx_set.PointInSet(rect_sample):
             return rect_sample
-
+    print("rejection sampling failed")
     return cvx_set.MaybeGetFeasiblePoint()
 
 
@@ -54,7 +77,7 @@ def compute_samples_from_contact_set(
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
     assert not contact_manifold.IsEmpty()
-    cm_hyper_rect = Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(contact_manifold)
+    cm_hyper_rect = CalcAxisAlignedBoundingBox(contact_manifold)
     for sample_id in range(num_samples):
         interior_pt = sample_from_cvx_set(contact_manifold, cm_hyper_rect)
         is_interior = True
