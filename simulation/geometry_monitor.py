@@ -148,7 +148,7 @@ class GeometryMonitor(LeafSystem):
                 m_poly_A = m_poly_A @ X_WO.rotation().inverse().matrix()
                 m_poly_A = -1 * m_poly_A
                 env_poly = HPolyhedron(*self.constraints[env_poly_name])
-                env_poly = env_poly.Scale(1.005)
+                env_poly = env_poly.Scale(1.1)
                 minkowski_sum = MinkowskiSum(env_poly, HPolyhedron(m_poly_A, m_poly_b))
                 if minkowski_sum.PointInSet(X_WO.translation()):
                     cspace_sdf[(env_poly_name, m_poly_name)] = -1

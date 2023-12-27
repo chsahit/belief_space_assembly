@@ -47,8 +47,8 @@ def b_r(b, mode):
 
 
 def try_refine_b():
-    p_a = init(X_GM_x=-0.005)
-    p_b = init(X_GM_x=0.005)
+    p_a = init(X_GM_x=-0.0046666666)
+    p_b = init(X_GM_x=0.004666666666)
     curr = state.Belief([p_a, p_b])
     modes = [top_touch2, bt, bt4, bottom, goal]
     traj = []
@@ -88,12 +88,14 @@ def explore_x_preimg():
     # max_attempts = 3
     for deviation in deviations:
         print(f"{deviation=}")
+        fn = "full_plan_"+str(deviation)[2:6]+".html"
         p_a = init(X_GM_x=-deviation)
         p_b = init(X_GM_x=deviation)
         b0 = state.Belief([p_a, p_b])
         modes = [top_touch2, bt, bt4, bottom, goal]
         traj = nested_refine(b0, goal, modes, max_attempts=max_attempts)
         if traj is not None:
+            visualize.play_motions_on_belief(b0, traj, fname=fn)
             stats.append(f"{deviation=} success")
         else:
             stats.append(f"{deviation=} failed")
@@ -102,4 +104,4 @@ def explore_x_preimg():
 
 
 if __name__ == "__main__":
-    try_refine_b()
+    explore_x_preimg()

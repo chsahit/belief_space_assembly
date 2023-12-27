@@ -60,8 +60,7 @@ def _drop_reflected_inertia(plant, panda):
         ja.set_default_gear_ratio(0.0)
 
 
-def _make_combined_plant(b: state.Belief):
-    meshcat = Meshcat()
+def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0005)
     plant.set_contact_model(ContactModel.kPoint)
@@ -134,8 +133,9 @@ def _make_combined_plant(b: state.Belief):
     return diagram
 
 
-def play_motions_on_belief(b: state.Belief, U: List[components.CompliantMotion]):
-    diagram = _make_combined_plant(b)
+def play_motions_on_belief(b: state.Belief, U: List[components.CompliantMotion], fname: str = None):
+    meshcat = Meshcat()
+    diagram = _make_combined_plant(b, meshcat)
     simulator = Simulator(diagram)
     visualizer = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
     visualizer.StartRecording()
@@ -146,6 +146,9 @@ def play_motions_on_belief(b: state.Belief, U: List[components.CompliantMotion])
             diagram.GetSubsystemByName("controller_" + str(i)).motion = u
         simulator.AdvanceTo(T)
     visualizer.PublishRecording()
+    if fname is not None:
+        with open(fname, "w") as f:
+            f.write(meshcat.StaticHtml())
 
 
 def _merge_images(images) -> Image:
