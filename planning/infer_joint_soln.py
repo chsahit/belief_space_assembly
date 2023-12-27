@@ -32,11 +32,16 @@ def GP(X1, y1, X2, kernel_func):
 
 # end yoink
 
-def infer(samples_a: List[components.CompliantMotion], scores_a: List[float], samples_b: List[components.CompliantMotion]) -> components.CompliantMotion:
+
+def infer(
+    samples_a: List[components.CompliantMotion],
+    scores_a: List[float],
+    samples_b: List[components.CompliantMotion],
+) -> components.CompliantMotion:
     all_samples = samples_a + samples_b
     all_scores = np.array(scores_a + scores_b)
     mu_as = np.mean(all_scores)
-    sigma_as_inv = 1.0/np.std(all_scores)
+    sigma_as_inv = 1.0 / np.std(all_scores)
     all_scores = sigma_as_inv * (all_scores - mu_as)
     # project all samples to 6d tangent space vectors
 
