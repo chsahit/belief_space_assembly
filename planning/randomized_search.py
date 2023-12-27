@@ -161,7 +161,7 @@ def score_tree_root(
     U0 = U0 + validated_samples
     print(f"{len(U0)=}")
     if len(U0) == 0:
-        return None, float("-inf"), False, []
+        return None, float("-inf"), False, ([], [])
     P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
     U = []
     success = True
@@ -199,10 +199,9 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
             if certainty > max_certainty:
                 max_certainty = certainty
                 best_u = new_samples[np_i]
-            print(f"{certainty=}")
             if new_posterior.satisfies_contact(relaxed_CF_d):
                 print("returning from GP")
-                return u_gp, certainty
+                return u_gp, certainty, True
             if new_posterior.particles[0].satisfies_contact(relaxed_CF_d):
                 scores.append(1)
             elif new_posterior.particles[1].satisfies_contact(relaxed_CF_d):
@@ -210,9 +209,8 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
             else:
                 scores.append(0)
         print(f"{scores=}")
-        data_a[0] = data_a[0] + new_samples
-        data_a[1] = data_a[1] + scores
-    return best_u, max_certainty
+        data_a = (data_a[0] + new_samples, data_a[1] + scores)
+    return best_u, max_certainty, False
 
 
 def refine_b(
@@ -230,8 +228,11 @@ def refine_b(
         return best_u_1
     if best_u_0 is None and best_u_1 is None:
         return None
-    u_gp, certainty_gp = iterative_gp(data_a, data_b, b, CF_d)
+    u_gp, certainty_gp, success_gp = iterative_gp(data_a, data_b, b, CF_d)
+    if success_gp:
+        return u_gp
     if certainty_gp > certainty_0 and certainty_gp > certainty_1:
+        print("max likelihood generated from gp")
         return u_gp
     assert certainty_0 >= 0 or certainty_1 >= 0
     if certainty_0 >= certainty_1:

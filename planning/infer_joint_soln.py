@@ -47,7 +47,7 @@ def infer(
     scores_a: List[float],
     samples_b: List[components.CompliantMotion],
     scores_b: List[float],
-) -> components.CompliantMotion:
+) -> List[components.CompliantMotion]:
 
     all_samples = samples_a + samples_b
     all_scores = np.array(scores_a + scores_b)

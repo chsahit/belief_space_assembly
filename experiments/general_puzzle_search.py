@@ -84,8 +84,8 @@ def explore_x_preimg():
     stats = []
     deviations = np.linspace(0.002, 0.01, 4).tolist()
     max_attempts = 5
-    deviations = [0.00466666]
-    max_attempts = 3
+    # deviations = [0.00466666]
+    # max_attempts = 3
     for deviation in deviations:
         print(f"{deviation=}")
         p_a = init(X_GM_x=-deviation)
