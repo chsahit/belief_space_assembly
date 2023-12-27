@@ -126,6 +126,25 @@ def f_bel(
     return state.Belief(posterior_particles)
 
 
+def parallel_f_bel(
+    b: state.Belief, U: List[components.CompliantMotion]
+) -> List[state.Belief]:
+    jobs = []
+    for u in U:
+        for p in b.particles:
+            jobs.append((p, u))
+    job_results = _parallel_simulate(jobs)
+    beliefs = []
+    i_start = 0
+    for idx in range(len(U)):
+        i_end = i_start + len(b.particles)
+        beliefs.append(state.Belief(job_results[i_start:i_end]))
+        i_start = i_end
+        assert len(beliefs[-1].particles) == len(b.particles)
+    assert len(beliefs) == len(U)
+    return beliefs
+
+
 def visualize_trajectory(
     p: state.Particle,
     U: List[components.CompliantMotion],

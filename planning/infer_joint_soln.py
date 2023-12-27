@@ -1,5 +1,14 @@
+import random
+from typing import List
+
 import numpy as np
-import scipy.linalg
+import scipy.spatial
+from pydrake.all import RigidTransform
+
+import components
+import mr
+
+gen_infer = np.random.default_rng(0)
 
 # Yoinked from https://peterroelants.github.io/posts/gaussian-process-tutorial/
 def exponentiated_quadratic(xa, xb):
@@ -37,20 +46,52 @@ def infer(
     samples_a: List[components.CompliantMotion],
     scores_a: List[float],
     samples_b: List[components.CompliantMotion],
+    scores_b: List[float],
 ) -> components.CompliantMotion:
+
     all_samples = samples_a + samples_b
     all_scores = np.array(scores_a + scores_b)
     mu_as = np.mean(all_scores)
     sigma_as_inv = 1.0 / np.std(all_scores)
     all_scores = sigma_as_inv * (all_scores - mu_as)
+
     # project all samples to 6d tangent space vectors
+    nominal = all_samples[0]
+    all_samples_r6 = []
+    for sample in all_samples:
+        diff = nominal.X_WCd.InvertAndCompose(sample.X_WCd)
+        t = diff.translation()
+        r = mr.so3ToVec(mr.MatrixLog3(diff.rotation().matrix()))
+        all_samples_r6.append(np.concatenate((r, t)))
 
     # compute test_points
-    test_points = np.array()
+    num_test_points = 100
+    test_points = []
+    for i in range(num_test_points):
+        base = np.array(random.choice(all_samples_r6))
+        noise = gen_infer.uniform(low=-0.02, high=0.02, size=6)
+        test_points.append(base + noise)
+
+    test_points = np.array(test_points)
+    all_samples_r6 = np.array(all_samples_r6)
 
     # do regression
-    test_points_out = GP(all_samples, all_scores, test_points, exponentiated_quadratic)
+    K = 16
+    test_points_out, _ = GP(
+        all_samples_r6, all_scores, test_points, exponentiated_quadratic
+    )
+    ind = np.argpartition(test_points_out, -K)[-K:]
+    top_n = test_points[ind]
 
     # threshold and convert to compliant motion
+    U = []
+    for pt_idx in range(top_n.shape[0]):
+        pt = top_n[pt_idx]
+        X = RigidTransform(mr.MatrixExp6(mr.VecTose3(pt)))
+        U.append(
+            components.CompliantMotion(
+                nominal.X_GC, nominal.X_WCd.multiply(X), nominal.K
+            )
+        )
 
-    # validate
+    return U

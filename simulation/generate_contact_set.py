@@ -44,7 +44,7 @@ def CalcAxisAlignedBoundingBox(cvx_set: ConvexSet) -> HPolyhedron:
 
 
 def sample_from_cvx_set(
-    cvx_set: ConvexSet, hyper_rect: HPolyhedron= None, max_samples=100
+    cvx_set: ConvexSet, hyper_rect: HPolyhedron = None, max_samples=100
 ) -> np.ndarray:
     if hyper_rect is None:
         hyper_rect = CalcAxisAlignedBoundingBox(cvx_set)

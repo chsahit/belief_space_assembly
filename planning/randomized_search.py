@@ -12,6 +12,7 @@ import puzzle_contact_defs
 
 print("Warning, hardcoded dependency on puzzle_contact_defs")
 import state
+from planning import infer_joint_soln
 from simulation import generate_contact_set, ik_solver
 
 gen = np.random.default_rng(0)
@@ -76,7 +77,7 @@ def solve_for_compliance(
     targets = apply_noise(targets)
 
     K_opt = np.copy(components.stiff)
-    validated_samples = refine_p(p, CF_d, K_opt, targets=targets)
+    validated_samples, _ = refine_p(p, CF_d, K_opt, targets=targets)
     succ_count = len(validated_samples)
     print(f"{K_opt=}, {succ_count=}")
     if succ_count == len(targets):
@@ -84,7 +85,7 @@ def solve_for_compliance(
     for i in range(6):
         K_curr = np.copy(K_opt)
         K_curr[i] = components.soft[i]
-        curr_validated_samples = refine_p(p, CF_d, K_curr, targets=targets)
+        curr_validated_samples, _ = refine_p(p, CF_d, K_curr, targets=targets)
         curr_succ_count = len(curr_validated_samples)
         if curr_succ_count == len(targets):
             print(f"K_opt={K_curr}")
@@ -97,13 +98,15 @@ def solve_for_compliance(
 
     if succ_count == 0:
         K_opt_soft = np.copy(components.soft)
-        validated_samples_soft = refine_p(p, CF_d, K_opt_soft, targets=targets)
+        validated_samples_soft, _ = refine_p(p, CF_d, K_opt_soft, targets=targets)
         succ_count_soft = len(validated_samples_soft)
         print(f"{K_opt_soft=}, {succ_count_soft=}")
         for i in range(6):
             K_curr = np.copy(K_opt_soft)
             K_curr[i] = components.stiff[i]
-            curr_validated_samples_soft = refine_p(p, CF_d, K_opt_soft, targets=targets)
+            curr_validated_samples_soft, _ = refine_p(
+                p, CF_d, K_opt_soft, targets=targets
+            )
             curr_succ_count_soft = len(curr_validated_samples_soft)
             if curr_succ_count_soft > succ_count_soft:
                 succ_count_soft = curr_succ_count_soft
@@ -122,6 +125,7 @@ def refine_p(
     K: np.ndarray,
     targets: List[RigidTransform] = None,
 ) -> List[components.CompliantMotion]:
+    scores = []
     nominal = p.X_WG
     if targets is None:
         targets = generate_contact_set.project_manipuland_to_contacts(
@@ -132,7 +136,6 @@ def refine_p(
     X_GC = RigidTransform([0.0, 0.0, 0.15])
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
-    # if np.linalg.norm(K - components.stiff) < 1e-3 and ("b3" in str(CF_d)):
     if abs(K[1] - 10) < 1e-3 and ("b3" in str(CF_d)) and False:
         dynamics.simulate(p, motions[0], vis=True)
     P_next = dynamics.f_cspace(p, motions)
@@ -141,7 +144,10 @@ def refine_p(
     for i, p_next in enumerate(P_next):
         if p_next.satisfies_contact(relaxed_CF_d):
             U.append(motions[i])
-    return U
+            scores.append(1)
+        else:
+            scores.append(0)
+    return U, (motions, scores)
 
 
 def score_tree_root(
@@ -151,11 +157,11 @@ def score_tree_root(
     p_idx: int = 0,
     validated_samples=[],
 ) -> components.CompliantMotion:
-    U0 = refine_p(b.particles[p_idx], CF_d, K_star)
+    U0, data = refine_p(b.particles[p_idx], CF_d, K_star)
     U0 = U0 + validated_samples
     print(f"{len(U0)=}")
     if len(U0) == 0:
-        return None, float("-inf"), False
+        return None, float("-inf"), False, []
     P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
     U = []
     success = True
@@ -169,14 +175,44 @@ def score_tree_root(
         U = U0
     best_u = None
     most_certainty = float("-inf")
-    for u in U:
-        posterior = dynamics.f_bel(b, u)
+    posteriors = dynamics.parallel_f_bel(b, U)
+    for p_i, posterior in enumerate(posteriors):
         certainty = len(posterior.contact_state())
         if certainty > most_certainty:
             most_certainty = certainty
-            best_u = u
+            best_u = U[p_i]
     print(f"{most_certainty=}")
-    return best_u, most_certainty, success
+    return best_u, most_certainty, success, data
+
+
+def iterative_gp(data_a, data_b, b, CF_d, iters=3):
+    relaxed_CF_d = relax_CF(CF_d)
+    max_certainty = float("-inf")
+    best_u = None
+    for idx in range(iters):
+        print(f"iteration={idx}")
+        new_samples = infer_joint_soln.infer(*data_a, *data_b)
+        posteriors = dynamics.parallel_f_bel(b, new_samples)
+        scores = []
+        for np_i, new_posterior in enumerate(posteriors):
+            certainty = len(new_posterior.contact_state())
+            if certainty > max_certainty:
+                max_certainty = certainty
+                best_u = new_samples[np_i]
+            print(f"{certainty=}")
+            if new_posterior.satisfies_contact(relaxed_CF_d):
+                print("returning from GP")
+                return u_gp, certainty
+            if new_posterior.particles[0].satisfies_contact(relaxed_CF_d):
+                scores.append(1)
+            elif new_posterior.particles[1].satisfies_contact(relaxed_CF_d):
+                scores.append(1)
+            else:
+                scores.append(0)
+        print(f"{scores=}")
+        data_a[0] = data_a[0] + new_samples
+        data_a[1] = data_a[1] + scores
+    return best_u, max_certainty
 
 
 def refine_b(
@@ -184,16 +220,19 @@ def refine_b(
 ) -> components.CompliantMotion:
     print(f"{CF_d=}")
     K_star, samples = solve_for_compliance(b.particles[0], CF_d)
-    best_u_0, certainty_0, success = score_tree_root(
+    best_u_0, certainty_0, success, data_a = score_tree_root(
         b, CF_d, K_star, p_idx=0, validated_samples=samples
     )
     if success:
         return best_u_0
-    best_u_1, certainty_1, success = score_tree_root(b, CF_d, K_star, p_idx=1)
+    best_u_1, certainty_1, success, data_b = score_tree_root(b, CF_d, K_star, p_idx=1)
     if success:
         return best_u_1
     if best_u_0 is None and best_u_1 is None:
         return None
+    u_gp, certainty_gp = iterative_gp(data_a, data_b, b, CF_d)
+    if certainty_gp > certainty_0 and certainty_gp > certainty_1:
+        return u_gp
     assert certainty_0 >= 0 or certainty_1 >= 0
     if certainty_0 >= certainty_1:
         return best_u_0
