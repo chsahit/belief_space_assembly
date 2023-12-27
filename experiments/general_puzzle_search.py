@@ -114,7 +114,7 @@ def explore_z_preimg():
         p_a = init(X_GM_z=-deviation)
         p_b = init(X_GM_z=deviation)
         b0 = state.Belief([p_a, p_b])
-        modes = [s_bottom, goal]
+        modes = [top_touch2, bt, bt4, bottom, goal]
         traj = nested_refine(b0, goal, modes, max_attempts=max_attempts)
         if traj is not None:
             visualize.play_motions_on_belief(b0, traj, fname=fn)
