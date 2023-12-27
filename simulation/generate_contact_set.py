@@ -1,6 +1,7 @@
 import random
 from typing import List
 
+import matplotlib.pyplot as plt
 import numpy as np
 from pydrake.all import (
     ConvexSet,
@@ -43,10 +44,22 @@ def CalcAxisAlignedBoundingBox(cvx_set: ConvexSet):
             soln_pt = soln.GetSolution()
             bounds[direction_idx][axis] = soln_pt[axis]
 
-    return HPolyhedron.MakeBox(np.array(bounds[0]), np.array(bounds[1]))
+    return HPolyhedron.MakeBox(np.array(bounds[0]), np.array(bounds[1])), bounds
 
 
-def sample_from_cvx_set(
+def rejection_sample(cvx_set: ConvexSet, bounds, num_samples=1):
+    mixing_amount = 400  # can just be num samples
+    valid_samples = []
+    while len(valid_samples) < num_samples:
+        sample = gen.uniform(bounds[0], bounds[1])
+        if cvx_set.PointInSet(sample):
+            # plt.scatter(sample[0], sample[1])
+            valid_samples.append(sample)
+    # plt.show()
+    return valid_samples[:num_samples]
+
+
+def hit_and_run_sample(
     cvx_set: ConvexSet, hyper_rect: HPolyhedron, num_samples: int = 1
 ) -> np.ndarray:
     rect_sample = hyper_rect.UniformSample(drake_rng)
@@ -54,11 +67,13 @@ def sample_from_cvx_set(
     valid_samples = []
     while len(valid_samples) < mixing_amount:
         rect_sample = hyper_rect.UniformSample(drake_rng, rect_sample)
+        plt.scatter(rect_sample[0], rect_sample[1])
         if cvx_set.PointInSet(rect_sample):
             valid_samples.append(rect_sample)
     subsamples = []
     for i in range(num_samples):
         subsamples.append(random.choice(valid_samples))
+    plt.show()
     return subsamples
 
 
@@ -81,10 +96,9 @@ def compute_samples_from_contact_set(
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
     assert not contact_manifold.IsEmpty()
-    cm_hyper_rect = CalcAxisAlignedBoundingBox(contact_manifold)
-    interior_pts = sample_from_cvx_set(
-        contact_manifold, cm_hyper_rect, num_samples=num_samples
-    )
+    cm_hyper_rect, bounds = CalcAxisAlignedBoundingBox(contact_manifold)
+    # interior_pts = hit_and_run_sample(contact_manifold, cm_hyper_rect, num_samples=num_samples)
+    interior_pts = rejection_sample(contact_manifold, bounds, num_samples=num_samples)
     for interior_pt in interior_pts:
         is_interior = True
         random_direction = gen.uniform(low=-1, high=1, size=3)

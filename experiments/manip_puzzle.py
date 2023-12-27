@@ -5,6 +5,7 @@ from pydrake.all import RigidTransform
 
 import components
 import dynamics
+import puzzle_contact_defs
 import state
 import utils
 import visualize
@@ -13,7 +14,7 @@ from simulation import ik_solver
 
 def init(X_WG_0_z: float = 0.3, X_GM_x: float = 0.0, mu: float = 0.0):
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, X_WG_0_z], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.09], [180, 0, 0])
+    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.086], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
@@ -28,12 +29,14 @@ def init(X_WG_0_z: float = 0.3, X_GM_x: float = 0.0, mu: float = 0.0):
 
 
 def test_simulate():
-    p_0 = init()
+    p_0 = init(mu=0.6)
     t0 = time.time()
-    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.2], [180, 0, 0])
-    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.21], [180, 0, 7.8e-4])
-    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
+    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.19], [180, 0, 0])
+    X_WG_d = utils.xyz_rpy_deg([0.52, 0.0, 0.20], [180, 0, 7.8e-4])
+    K = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 600.0])
+    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, K)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
+    print(p_1.satisfies_contact(puzzle_contact_defs.s_bottom))
     print(f"{p_1.epsilon_contacts()=}")
     X_WG_d1 = utils.xyz_rpy_deg([0.5, 0.03, 0.2], [180, 0, 0])
     K_l = np.array([100.0, 100.0, 100.0, 100.0, 600.0, 100.0])

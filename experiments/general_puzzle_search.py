@@ -14,9 +14,10 @@ from puzzle_contact_defs import *
 from simulation import ik_solver
 
 
-def init(X_GM_x: float = 0.0) -> state.Particle:
+def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
+    z = 0.09 + X_GM_z
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.09], [180, 0, 0])
+    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, z], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p0 = state.Particle(
@@ -88,7 +89,7 @@ def explore_x_preimg():
     # max_attempts = 3
     for deviation in deviations:
         print(f"{deviation=}")
-        fn = "full_plan_"+str(deviation)[2:6]+".html"
+        fn = "full_plan_" + str(deviation)[2:6] + ".html"
         p_a = init(X_GM_x=-deviation)
         p_b = init(X_GM_x=deviation)
         b0 = state.Belief([p_a, p_b])
@@ -103,5 +104,26 @@ def explore_x_preimg():
     print(stats)
 
 
+def explore_z_preimg():
+    stats = []
+    deviations = np.linspace(0.001, 0.0075, 4).tolist()
+    max_attempts = 5
+    for deviation in deviations:
+        print(f"{deviation=}")
+        fn = "z_full_plan_" + str(deviation)[2:6] + ".html"
+        p_a = init(X_GM_z=-deviation)
+        p_b = init(X_GM_z=deviation)
+        b0 = state.Belief([p_a, p_b])
+        modes = [s_bottom, goal]
+        traj = nested_refine(b0, goal, modes, max_attempts=max_attempts)
+        if traj is not None:
+            visualize.play_motions_on_belief(b0, traj, fname=fn)
+            stats.append(f"{deviation=} success")
+        else:
+            stats.append(f"{deviation=} failed")
+    print("-----------")
+    print(stats)
+
+
 if __name__ == "__main__":
-    explore_x_preimg()
+    explore_z_preimg()

@@ -133,7 +133,9 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     return diagram
 
 
-def play_motions_on_belief(b: state.Belief, U: List[components.CompliantMotion], fname: str = None):
+def play_motions_on_belief(
+    b: state.Belief, U: List[components.CompliantMotion], fname: str = None
+):
     meshcat = Meshcat()
     diagram = _make_combined_plant(b, meshcat)
     simulator = Simulator(diagram)
