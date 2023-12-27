@@ -203,6 +203,7 @@ def _construct_diagram(
         sphere_map = annotate_geoms.annotate(manip_geom)
         manipuland_body = plant.get_body(plant.GetBodyIndices(manipuland)[0])
         for (name, rt) in sphere_map.items():
+            continue
             plant.RegisterCollisionGeometry(
                 manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
             )

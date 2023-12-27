@@ -74,7 +74,6 @@ def solve_for_compliance(
         p, CF_d, num_samples=compliance_samples
     )
     targets = apply_noise(targets)
-
     K_opt = np.copy(components.stiff)
     validated_samples, _ = refine_p(p, CF_d, K_opt, targets=targets)
     succ_count = len(validated_samples)
@@ -176,7 +175,7 @@ def score_tree_root(
     most_certainty = float("-inf")
     posteriors = dynamics.parallel_f_bel(b, U)
     for p_i, posterior in enumerate(posteriors):
-        certainty = len(posterior.contact_state())
+        certainty = posterior.partial_sat_score(CF_d)
         if certainty > most_certainty:
             most_certainty = certainty
             best_u = U[p_i]
@@ -194,7 +193,7 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
         posteriors = dynamics.parallel_f_bel(b, new_samples)
         scores = []
         for np_i, new_posterior in enumerate(posteriors):
-            certainty = len(new_posterior.contact_state())
+            certainty = new_posterior.partial_sat_score(CF_d)
             p0_sat = new_posterior.particles[0].satisfies_contact(relaxed_CF_d)
             p1_sat = new_posterior.particles[1].satisfies_contact(relaxed_CF_d)
             is_partially_satisfiying = p0_sat or p1_sat

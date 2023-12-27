@@ -42,7 +42,7 @@ def init_pih(X_GM_x: float = 0.0, X_GM_p: float = 0.0) -> RigidTransform:
 def ts2():
     p = init()
     X_WG = generate_contact_set.project_manipuland_to_contacts(
-        p, puzzle_contact_defs.top_touch3
+        p, puzzle_contact_defs.top_touch
     )[0]
     q_r = ik_solver.gripper_to_joint_states(X_WG)
     new_p = p.deepcopy()

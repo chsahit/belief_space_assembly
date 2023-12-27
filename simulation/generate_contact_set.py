@@ -82,7 +82,9 @@ def compute_samples_from_contact_set(
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
     assert not contact_manifold.IsEmpty()
     cm_hyper_rect = CalcAxisAlignedBoundingBox(contact_manifold)
-    interior_pts = sample_from_cvx_set(contact_manifold, cm_hyper_rect)
+    interior_pts = sample_from_cvx_set(
+        contact_manifold, cm_hyper_rect, num_samples=num_samples
+    )
     for interior_pt in interior_pts:
         is_interior = True
         random_direction = gen.uniform(low=-1, high=1, size=3)
