@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 import numpy as np
@@ -18,11 +19,12 @@ import components
 import state
 from simulation import annotate_geoms, ik_solver
 
+random.seed(0)
 gen = np.random.default_rng(1)
 drake_rng = RandomGenerator()
 
 
-def CalcAxisAlignedBoundingBox(cvx_set: ConvexSet) -> HPolyhedron:
+def CalcAxisAlignedBoundingBox(cvx_set: ConvexSet):
     def make_prog(inside_pt, cvx_set, axis, direction):
         prog = MathematicalProgram()
         pt = prog.NewContinuousVariables(3, "pt")
@@ -40,22 +42,24 @@ def CalcAxisAlignedBoundingBox(cvx_set: ConvexSet) -> HPolyhedron:
             soln = Solve(m_prog)
             soln_pt = soln.GetSolution()
             bounds[direction_idx][axis] = soln_pt[axis]
+
     return HPolyhedron.MakeBox(np.array(bounds[0]), np.array(bounds[1]))
 
 
 def sample_from_cvx_set(
-    cvx_set: ConvexSet, hyper_rect: HPolyhedron = None, max_samples=100
+    cvx_set: ConvexSet, hyper_rect: HPolyhedron, num_samples: int = 1
 ) -> np.ndarray:
-    if hyper_rect is None:
-        hyper_rect = CalcAxisAlignedBoundingBox(cvx_set)
-    samples = 0
     rect_sample = hyper_rect.UniformSample(drake_rng)
-    while samples < max_samples:
+    mixing_amount = 300
+    valid_samples = []
+    while len(valid_samples) < mixing_amount:
         rect_sample = hyper_rect.UniformSample(drake_rng, rect_sample)
         if cvx_set.PointInSet(rect_sample):
-            return rect_sample
-    print("rejection sampling failed")
-    return cvx_set.MaybeGetFeasiblePoint()
+            valid_samples.append(rect_sample)
+    subsamples = []
+    for i in range(num_samples):
+        subsamples.append(random.choice(valid_samples))
+    return subsamples
 
 
 def compute_samples_from_contact_set(
@@ -78,8 +82,8 @@ def compute_samples_from_contact_set(
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
     assert not contact_manifold.IsEmpty()
     cm_hyper_rect = CalcAxisAlignedBoundingBox(contact_manifold)
-    for sample_id in range(num_samples):
-        interior_pt = sample_from_cvx_set(contact_manifold, cm_hyper_rect)
+    interior_pts = sample_from_cvx_set(contact_manifold, cm_hyper_rect)
+    for interior_pt in interior_pts:
         is_interior = True
         random_direction = gen.uniform(low=-1, high=1, size=3)
         # random_direction = np.array([1.0, -0.0, 0.0])
@@ -100,8 +104,8 @@ def _project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[RigidTransform]:
     projections = []
-    while len(projections) < num_samples:
-        sample = compute_samples_from_contact_set(p, CF_d)[0]
+    samples = compute_samples_from_contact_set(p, CF_d, num_samples=num_samples)
+    for sample in samples:
         projection = RigidTransform(RotationMatrix(), sample)
         X_WG = projection.multiply(p.X_GM.inverse())
         q_r = ik_solver.gripper_to_joint_states(X_WG)

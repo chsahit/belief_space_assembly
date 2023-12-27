@@ -9,7 +9,6 @@ import components
 import dynamics
 import mr
 import puzzle_contact_defs
-
 import state
 from planning import infer_joint_soln
 from simulation import generate_contact_set, ik_solver

@@ -50,7 +50,7 @@ def try_refine_b():
     p_a = init(X_GM_x=-0.005)
     p_b = init(X_GM_x=0.005)
     curr = state.Belief([p_a, p_b])
-    modes = [top_touch2, bt, bt4, bottom, goal]
+    modes = [top_touch3, bt0, s_bottom, goal]
     traj = []
     for mode in modes:
         curr, u_star = b_r(curr, mode)
@@ -102,4 +102,4 @@ def explore_x_preimg():
 
 
 if __name__ == "__main__":
-    explore_x_preimg()
+    try_refine_b()

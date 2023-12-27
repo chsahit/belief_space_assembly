@@ -7,8 +7,17 @@ top_touch2 = set(
         ("big_fixed_puzzle::b3_top", "block::b4_bottom"),
     )
 )
+top_touch3 = set(
+    (
+        ("big_fixed_puzzle::b3_top", "block::b4_left"),
+        ("big_fixed_puzzle::b3_top", "block::b4_right"),
+        ("big_fixed_puzzle::b3_top", "block::b4_bottom"),
+    )
+)
+
 # bt = set((("big_fixed_puzzle::b4_bottom", "block::b5_top"),))
-# bt = set((("big_fixed_puzzle::b4_front", "block::b5_back"),))
+bt0 = set((("big_fixed_puzzle::b4_front", "block::b5_back"),))
+bt5 = set((("big_fixed_puzzle::b4_front", "block::b5_bottom"),))
 bt = set(
     (
         ("big_fixed_puzzle::b4_front", "block::b5_back"),
