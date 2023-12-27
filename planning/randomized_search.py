@@ -10,7 +10,6 @@ import dynamics
 import mr
 import puzzle_contact_defs
 
-print("Warning, hardcoded dependency on puzzle_contact_defs")
 import state
 from planning import infer_joint_soln
 from simulation import generate_contact_set, ik_solver
@@ -27,6 +26,7 @@ print(f"{compliance_samples=}, {refinement_samples=}")
 
 
 def relax_CF(CF_d: components.ContactState) -> components.ContactState:
+    return CF_d
     relaxation = puzzle_contact_defs.relaxations.get(frozenset(CF_d), None)
     if relaxation is not None:
         return relaxation
@@ -196,15 +196,16 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
         scores = []
         for np_i, new_posterior in enumerate(posteriors):
             certainty = len(new_posterior.contact_state())
-            if certainty > max_certainty:
+            p0_sat = new_posterior.particles[0].satisfies_contact(relaxed_CF_d)
+            p1_sat = new_posterior.particles[1].satisfies_contact(relaxed_CF_d)
+            is_partially_satisfiying = p0_sat or p1_sat
+            if certainty > max_certainty and is_partially_satisfiying:
                 max_certainty = certainty
                 best_u = new_samples[np_i]
             if new_posterior.satisfies_contact(relaxed_CF_d):
                 print("returning from GP")
                 return u_gp, certainty, True
-            if new_posterior.particles[0].satisfies_contact(relaxed_CF_d):
-                scores.append(1)
-            elif new_posterior.particles[1].satisfies_contact(relaxed_CF_d):
+            if is_partially_satisfiying:
                 scores.append(1)
             else:
                 scores.append(0)

@@ -116,7 +116,6 @@ def _project_manipuland_to_contacts(
 def project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[RigidTransform]:
-    offset = RigidTransform([0, 0, 0.005])
     offset = RigidTransform([0, 0, 0.000])
     projections_pre = _project_manipuland_to_contacts(p, CF_d, num_samples=num_samples)
     projections = [p.multiply(offset) for p in projections_pre]

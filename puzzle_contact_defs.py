@@ -1,7 +1,6 @@
 top_touch = set((("big_fixed_puzzle::b3_top", "block::b4_bottom"),))
 top_touch2 = set(
     (
-        # ("big_fixed_puzzle::b3_back", "block::b4_back"),
         ("big_fixed_puzzle::b3_back", "block::b4_bottom"),
         ("big_fixed_puzzle::b3_back", "block::b4_left"),
         ("big_fixed_puzzle::b3_back", "block::b4_right"),

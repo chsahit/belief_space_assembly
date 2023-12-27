@@ -151,7 +151,6 @@ class GeometryMonitor(LeafSystem):
                 env_poly = env_poly.Scale(1.01)
                 minkowski_sum = MinkowskiSum(HPolyhedron(m_poly_A, m_poly_b), env_poly)
                 if minkowski_sum.PointInSet(X_WO.translation()):
-                    print(f"contact in pair {(env_poly_name, m_poly_name)}")
                     cspace_sdf[(env_poly_name, m_poly_name)] = -1
         for key in cspace_sdf.keys():
             self.sdf[key] = cspace_sdf[key]
