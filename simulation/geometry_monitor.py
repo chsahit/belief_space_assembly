@@ -122,7 +122,7 @@ class GeometryMonitor(LeafSystem):
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
             b_local = np.copy(np.array(descriptors))
-            b_local[mods[0]] = b_local[mods[1]] + (mods[2] * 1e-3)
+            b_local[mods[0]] = b_local[mods[1]] + (mods[2] * 1e-4)
             # convert <= inequalities to >= inequalities for mins
             b_local[1] *= -1
             b_local[3] *= -1
@@ -145,11 +145,11 @@ class GeometryMonitor(LeafSystem):
                     self.plant.GetBodyByName("base_link").body_frame(),
                 )
                 m_poly_A, m_poly_b = self.manip_poly[m_poly_name]
-                m_poly_A = m_poly_A @ X_WO.rotation().matrix()
+                m_poly_A = m_poly_A @ X_WO.rotation().inverse().matrix()
                 m_poly_A = -1 * m_poly_A
                 env_poly = HPolyhedron(*self.constraints[env_poly_name])
-                env_poly = env_poly.Scale(1.01)
-                minkowski_sum = MinkowskiSum(HPolyhedron(m_poly_A, m_poly_b), env_poly)
+                env_poly = env_poly.Scale(1.005)
+                minkowski_sum = MinkowskiSum(env_poly, HPolyhedron(m_poly_A, m_poly_b))
                 if minkowski_sum.PointInSet(X_WO.translation()):
                     cspace_sdf[(env_poly_name, m_poly_name)] = -1
         for key in cspace_sdf.keys():

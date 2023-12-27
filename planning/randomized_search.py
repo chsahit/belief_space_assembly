@@ -25,6 +25,8 @@ print(f"{compliance_samples=}, {refinement_samples=}")
 
 
 def relax_CF(CF_d: components.ContactState) -> components.ContactState:
+    if CF_d == puzzle_contact_defs.goal:
+        return puzzle_contact_defs.side
     return CF_d
     relaxation = puzzle_contact_defs.relaxations.get(frozenset(CF_d), None)
     if relaxation is not None:
@@ -202,7 +204,7 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
                 best_u = new_samples[np_i]
             if new_posterior.satisfies_contact(relaxed_CF_d):
                 print("returning from GP")
-                return u_gp, certainty, True
+                return new_samples[np_i], certainty, True
             if is_partially_satisfiying:
                 scores.append(1)
             else:

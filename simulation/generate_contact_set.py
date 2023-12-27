@@ -50,7 +50,7 @@ def sample_from_cvx_set(
     cvx_set: ConvexSet, hyper_rect: HPolyhedron, num_samples: int = 1
 ) -> np.ndarray:
     rect_sample = hyper_rect.UniformSample(drake_rng)
-    mixing_amount = 300
+    mixing_amount = 400
     valid_samples = []
     while len(valid_samples) < mixing_amount:
         rect_sample = hyper_rect.UniformSample(drake_rng, rect_sample)

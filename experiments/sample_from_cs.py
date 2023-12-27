@@ -41,13 +41,14 @@ def init_pih(X_GM_x: float = 0.0, X_GM_p: float = 0.0) -> RigidTransform:
 
 def ts2():
     p = init()
-    X_WG = generate_contact_set.project_manipuland_to_contacts(
-        p, puzzle_contact_defs.top_touch
-    )[0]
-    q_r = ik_solver.gripper_to_joint_states(X_WG)
-    new_p = p.deepcopy()
-    new_p.q_r = q_r
-    visualize.show_particle(new_p)
+    X_WGs = generate_contact_set.project_manipuland_to_contacts(
+        p, puzzle_contact_defs.goal, num_samples = 6
+    )
+    for X_WG in X_WGs:
+        q_r = ik_solver.gripper_to_joint_states(X_WG)
+        new_p = p.deepcopy()
+        new_p.q_r = q_r
+        visualize.show_particle(new_p)
     input()
 
 
@@ -62,6 +63,5 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    for i in range(6):
-        ts2()
-        print("\n")
+    ts2()
+    print("\n")

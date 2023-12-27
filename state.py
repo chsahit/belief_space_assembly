@@ -150,11 +150,12 @@ class Belief:
         return True
 
     def partial_sat_score(self, CF_d) -> float:
-        score = 0
+        score = 0.0
         for p in self.particles:
             for contact in CF_d:
-                if p.satisfies_contact(contact):
+                if p.satisfies_contact(set((contact,))):
                     score += 1.0 / len(CF_d)
+        return score
 
     def contact_state(self, epsilon=0.001) -> components.ContactState:
         assert len(self.particles) > 0
