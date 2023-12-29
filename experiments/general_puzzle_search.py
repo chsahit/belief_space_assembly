@@ -12,7 +12,7 @@ import utils
 import visualize
 from planning import randomized_search
 from puzzle_contact_defs import *
-from simulation import ik_solver
+from simulation import diagram_factory, ik_solver
 
 
 def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
@@ -121,6 +121,7 @@ def explore_z_preimg():
         p_a = init(X_GM_z=-deviation)
         p_b = init(X_GM_z=deviation)
         b0 = state.Belief([p_a, p_b])
+        diagram_factory.initialize_factory(b0.particles)
         modes = [top_touch2, bt, bt4, bottom, goal]
         traj, tet, st = nested_refine(b0, goal, modes, max_attempts=max_attempts)
         print(f"{tet=}, sim_time={st}")

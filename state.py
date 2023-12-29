@@ -8,7 +8,7 @@ import numpy as np
 from pydrake.all import HPolyhedron, RigidTransform, Simulator, System, VPolytope
 
 import components
-from simulation import plant_builder
+from simulation import diagram_factory, plant_builder
 
 
 class Particle:
@@ -33,10 +33,15 @@ class Particle:
         self._X_WG = None
         self._manip_poly = None
         self.trajectory = []
+        self._sim_id = None
 
     def make_plant(
         self, vis: bool = False, collision: bool = False, meshcat_instance=None
     ) -> System:
+        if (self._sim_id is not None) and (not vis):
+            if collision:
+                return diagram_factory.collision_diagrams[self._sim_id], None
+            return diagram_factory.sim_diagrams[self._sim_id], None
         return plant_builder.make_plant(
             self.q_r,
             self.X_GM,
@@ -51,10 +56,14 @@ class Particle:
 
     def _update_contact_data(self):
         diagram, _ = self.make_plant(collision=True)
-        geom_monitor = diagram.GetSubsystemByName("geom_monitor")
-        geom_monitor.ForcedPublish(
-            geom_monitor.GetMyContextFromRoot(diagram.CreateDefaultContext())
+        diagram_context = diagram.CreateDefaultContext()
+        plant = diagram.GetSubsystemByName("plant")
+        plant_context = plant.GetMyContextFromRoot(diagram_context)
+        plant.SetPositions(
+            plant_context, plant.GetModelInstanceByName("panda"), self.q_r
         )
+        geom_monitor = diagram.GetSubsystemByName("geom_monitor")
+        geom_monitor.ForcedPublish(geom_monitor.GetMyContextFromRoot(diagram_context))
         self._contacts = geom_monitor.contacts
         self._sdf = geom_monitor.sdf
         self._constraints = geom_monitor.constraints
@@ -109,6 +118,7 @@ class Particle:
         )
         new_p._constraints = self._constraints
         new_p._manip_poly = self._manip_poly
+        new_p._sim_id = self._sim_id
         return new_p
 
     def satisfies_contact(self, CF_d: components.ContactState, epsilon=0.001) -> bool:
