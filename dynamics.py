@@ -60,6 +60,8 @@ def simulate(
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
     plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
+    plant.SetPositions(plant_context, plant.GetModelInstanceByName("panda"), p.q_r)
+
     controller = diagram.GetSubsystemByName("controller")
     controller.motion = motion
     simulator.Initialize()

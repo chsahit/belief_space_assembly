@@ -182,6 +182,7 @@ def _construct_diagram(
     meshcat_instance=None,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
 
+    print("building")
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
@@ -228,6 +229,10 @@ def _construct_diagram(
         builder.Connect(
             scene_graph.get_query_output_port(),
             geom_monitor.GetInputPort("geom_query"),
+        )
+        builder.Connect(
+            plant.get_state_output_port(panda),
+            geom_monitor.GetInputPort("state"),
         )
 
     # connect controller

@@ -35,7 +35,7 @@ class GeometryMonitor(LeafSystem):
         self._geom_port = self.DeclareAbstractInputPort(
             "geom_query", AbstractValue.Make(QueryObject())
         )
-        # self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
+        self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
         self.DeclareForcedPublishEvent(self.inspect_geometry)
 
     def _set_constraints(self, query_obj: QueryObject, inspector: SceneGraphInspector):
@@ -87,8 +87,8 @@ class GeometryMonitor(LeafSystem):
 
     def inspect_geometry(self, context):
         query_obj = self._geom_port.Eval(context)
-        # q = self._state_port.Eval(context)
-        # self.plant.SetPositionsAndVelocities(self.plant_context, q)
+        q = self._state_port.Eval(context)
+        self.plant.SetPositionsAndVelocities(self.plant_context, q)
         inspector = query_obj.inspector()
         self._set_constraints(query_obj, inspector)
         self._set_contacts(query_obj, inspector)
@@ -132,8 +132,8 @@ class GeometryMonitor(LeafSystem):
     def _compute_cspace_contacts(self, context):
         dirs = ["top", "bottom", "front", "back", "right", "left"]
         cspace_sdf = dict()
-        X_WO = self.plant.CalcRelativeTransform(
-            context,
+        X_WM = self.plant.CalcRelativeTransform(
+            self.plant_context,
             self.plant.world_frame(),
             self.plant.GetBodyByName("base_link").body_frame(),
         )
@@ -143,14 +143,14 @@ class GeometryMonitor(LeafSystem):
             for direction_b in dirs:
                 m_poly_name = r_mc + "_" + direction_b
                 m_poly_A, m_poly_b = self.manip_poly[m_poly_name]
-                m_poly_A = m_poly_A @ X_WO.rotation().inverse().matrix()
+                m_poly_A = m_poly_A @ X_WM.rotation().inverse().matrix()
                 m_poly_A = -1 * m_poly_A
                 m_poly = HPolyhedron(m_poly_A, m_poly_b)
                 for direction_a in dirs:
                     env_poly_name = r_ec + "_" + direction_a
                     env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.1)
                     minkowski_sum = MinkowskiSum(env_poly, m_poly)
-                    if minkowski_sum.PointInSet(X_WO.translation()):
+                    if minkowski_sum.PointInSet(X_WM.translation()):
                         cspace_sdf[(env_poly_name, m_poly_name)] = -1
         self.sdf.update(cspace_sdf)
 

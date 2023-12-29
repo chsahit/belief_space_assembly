@@ -9,7 +9,7 @@ import puzzle_contact_defs
 import state
 import utils
 import visualize
-from simulation import ik_solver
+from simulation import diagram_factory, ik_solver
 
 
 def init(X_WG_0_z: float = 0.3, X_GM_x: float = 0.0, mu: float = 0.0):
@@ -30,6 +30,7 @@ def init(X_WG_0_z: float = 0.3, X_GM_x: float = 0.0, mu: float = 0.0):
 
 def test_simulate():
     p_0 = init(mu=0.6)
+    diagram_factory.initialize_factory([p_0])
     t0 = time.time()
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.19], [180, 0, 0])
     X_WG_d = utils.xyz_rpy_deg([0.52, 0.0, 0.20], [180, 0, 7.8e-4])
