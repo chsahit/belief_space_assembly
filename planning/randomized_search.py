@@ -1,5 +1,6 @@
 # IK solving is bad, this exists now
 import os
+import time
 from typing import List
 
 import numpy as np
@@ -14,6 +15,13 @@ from planning import infer_joint_soln
 from simulation import generate_contact_set, ik_solver
 
 gen = np.random.default_rng(0)
+scoring_time = 0.0
+
+
+def reset_time():
+    global scoring_time
+    scoring_time = 0.0
+
 
 if os.uname()[1] == "londonsystem":
     compliance_samples = 16
@@ -125,6 +133,7 @@ def refine_p(
     K: np.ndarray,
     targets: List[RigidTransform] = None,
 ) -> List[components.CompliantMotion]:
+    global scoring_time
     scores = []
     nominal = p.X_WG
     if targets is None:
@@ -141,12 +150,14 @@ def refine_p(
     P_next = dynamics.f_cspace(p, motions)
     U = []
     relaxed_CF_d = relax_CF(CF_d)
+    s_time = time.time()
     for i, p_next in enumerate(P_next):
         if p_next.satisfies_contact(relaxed_CF_d):
             U.append(motions[i])
             scores.append(1)
         else:
             scores.append(0)
+    scoring_time += time.time() - s_time
     return U, (motions, scores)
 
 
@@ -157,6 +168,7 @@ def score_tree_root(
     p_idx: int = 0,
     validated_samples=[],
 ) -> components.CompliantMotion:
+    global scoring_time
     U0, data = refine_p(b.particles[p_idx], CF_d, K_star)
     U0 = U0 + validated_samples
     print(f"{len(U0)=}")
@@ -175,13 +187,17 @@ def score_tree_root(
         U = U0
     best_u = None
     most_certainty = float("-inf")
+    best_u = U[0]
+    most_certainty = 0
     posteriors = dynamics.parallel_f_bel(b, U)
+    s_time = time.time()
     for p_i, posterior in enumerate(posteriors):
         certainty = posterior.partial_sat_score(CF_d)
         if certainty > most_certainty:
             most_certainty = certainty
             best_u = U[p_i]
     print(f"{most_certainty=}")
+    scoring_time += time.time() - s_time
     return best_u, most_certainty, success, data
 
 

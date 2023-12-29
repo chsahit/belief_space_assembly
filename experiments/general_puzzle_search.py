@@ -1,3 +1,4 @@
+import time
 from typing import List
 
 import numpy as np
@@ -66,6 +67,7 @@ def nested_refine(
     modes: List[components.ContactState],
     max_attempts: int = 3,
 ) -> List[components.CompliantMotion]:
+    start_time = time.time()
     for attempt in range(max_attempts):
         print(f"{attempt=}")
         curr = b
@@ -77,8 +79,12 @@ def nested_refine(
             traj.append(u_star)
             curr = dynamics.f_bel(curr, u_star)
         if curr.satisfies_contact(randomized_search.relax_CF(goal)):
-            return traj
-    return None
+            total_elapsed_time = time.time() - start_time
+            sim_time = dynamics.get_time()
+            dynamics.reset_time()
+            return traj, total_elapsed_time, sim_time
+    dynamics.reset_time()
+    return None, -1.0, -1.0
 
 
 def explore_x_preimg():
@@ -94,7 +100,7 @@ def explore_x_preimg():
         p_b = init(X_GM_x=deviation)
         b0 = state.Belief([p_a, p_b])
         modes = [top_touch2, bt, bt4, bottom, goal]
-        traj = nested_refine(b0, goal, modes, max_attempts=max_attempts)
+        traj, tet, st = nested_refine(b0, goal, modes, max_attempts=max_attempts)
         if traj is not None:
             visualize.play_motions_on_belief(b0, traj, fname=fn)
             stats.append(f"{deviation=} success")
@@ -107,20 +113,28 @@ def explore_x_preimg():
 def explore_z_preimg():
     stats = []
     deviations = np.linspace(0.001, 0.0075, 4).tolist()
+    deviations = [deviations[0]]
     max_attempts = 5
     for deviation in deviations:
-        print(f"{deviation=}")
+        print(f"\n{deviation=}")
         fn = "z_full_plan_" + str(deviation)[2:6] + ".html"
         p_a = init(X_GM_z=-deviation)
         p_b = init(X_GM_z=deviation)
         b0 = state.Belief([p_a, p_b])
         modes = [top_touch2, bt, bt4, bottom, goal]
-        traj = nested_refine(b0, goal, modes, max_attempts=max_attempts)
+        traj, tet, st = nested_refine(b0, goal, modes, max_attempts=max_attempts)
+        print(f"{tet=}, sim_time={st}")
+        print(f"{randomized_search.scoring_time=}")
+        randomized_search.reset_time()
         if traj is not None:
             visualize.play_motions_on_belief(b0, traj, fname=fn)
-            stats.append(f"{deviation=} success")
+            stats.append(
+                f"{deviation=} success, total_elapsed_time={tet}, sim_time={st}\n"
+            )
         else:
-            stats.append(f"{deviation=} failed")
+            stats.append(
+                f"{deviation=} failed, total_elapsed_time={tet}, sim_time={st}\n"
+            )
     print("-----------")
     print(stats)
 

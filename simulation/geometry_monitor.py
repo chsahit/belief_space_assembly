@@ -68,7 +68,7 @@ class GeometryMonitor(LeafSystem):
         sdf = dict()
         contact_state = []
         try:
-            sdf_data = query_obj.ComputeSignedDistancePairwiseClosestPoints(0.05)
+            sdf_data = query_obj.ComputeSignedDistancePairwiseClosestPoints(0.005)
         except Exception as e:  # sometimes GJK likes to crash :(
             print("GJK crash :(")
             sdf_data = []
@@ -130,30 +130,29 @@ class GeometryMonitor(LeafSystem):
             mapping_dict[local_name] = (A_local, b_local)
 
     def _compute_cspace_contacts(self, context):
-        def relevant(name: str) -> bool:
-            dirs = ["top", "bottom", "front", "back", "right", "left"]
-            return any([direc in name for direc in dirs])
-
+        dirs = ["top", "bottom", "front", "back", "right", "left"]
         cspace_sdf = dict()
-        for env_poly_name in self.constraints.keys():
-            for m_poly_name in self.manip_poly.keys():
-                if (not relevant(env_poly_name)) or (not relevant(m_poly_name)):
-                    continue
-                X_WO = self.plant.CalcRelativeTransform(
-                    context,
-                    self.plant.world_frame(),
-                    self.plant.GetBodyByName("base_link").body_frame(),
-                )
+        X_WO = self.plant.CalcRelativeTransform(
+            context,
+            self.plant.world_frame(),
+            self.plant.GetBodyByName("base_link").body_frame(),
+        )
+        for (r_ec, r_mc), dist in self.sdf.items():
+            if dist > 1e-3:
+                continue
+            for direction_b in dirs:
+                m_poly_name = r_mc + "_" + direction_b
                 m_poly_A, m_poly_b = self.manip_poly[m_poly_name]
                 m_poly_A = m_poly_A @ X_WO.rotation().inverse().matrix()
                 m_poly_A = -1 * m_poly_A
-                env_poly = HPolyhedron(*self.constraints[env_poly_name])
-                env_poly = env_poly.Scale(1.1)
-                minkowski_sum = MinkowskiSum(env_poly, HPolyhedron(m_poly_A, m_poly_b))
-                if minkowski_sum.PointInSet(X_WO.translation()):
-                    cspace_sdf[(env_poly_name, m_poly_name)] = -1
-        for key in cspace_sdf.keys():
-            self.sdf[key] = cspace_sdf[key]
+                m_poly = HPolyhedron(m_poly_A, m_poly_b)
+                for direction_a in dirs:
+                    env_poly_name = r_ec + "_" + direction_a
+                    env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.1)
+                    minkowski_sum = MinkowskiSum(env_poly, m_poly)
+                    if minkowski_sum.PointInSet(X_WO.translation()):
+                        cspace_sdf[(env_poly_name, m_poly_name)] = -1
+        self.sdf.update(cspace_sdf)
 
     def general_compute_fine_geometries(self, name: str, mapping_dict, A, b):
         pass

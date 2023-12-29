@@ -9,6 +9,22 @@ from pydrake.all import Simulator
 import components
 import state
 
+_time_in_sim = 0.0
+
+
+def reset_time():
+    global _time_in_sim
+    _time_in_sim = 0.0
+
+
+def get_time():
+    return _time_in_sim
+
+
+def add_time(delta):
+    global _time_in_sim
+    _time_in_sim += delta
+
 
 def AdvanceToWithTimeout(
     simulator: Simulator, sim_timeout: float, clock_timeout: float = 60.0
@@ -73,6 +89,7 @@ def simulate(
 def _parallel_simulate(
     simulation_args: List[Tuple[state.Particle, components.CompliantMotion]]
 ) -> List[state.Particle]:
+    p_sim_start = time.time()
     num_workers = min(multiprocessing.cpu_count(), len(simulation_args))
     # throw in a bunch of signal flags so the dump when I hit ctr+C is less messy
     p = multiprocessing.Pool(
@@ -87,6 +104,7 @@ def _parallel_simulate(
     except KeyboardInterrupt:
         print("f_cspace interrupted. Exiting")
         sys.exit()
+    add_time(time.time() - p_sim_start)
     return resulting_particles
 
 
