@@ -83,6 +83,7 @@ def simulate(
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
     p_next.trajectory = controller.history
+    p_next._update_contact_data()
     return p_next
 
 
