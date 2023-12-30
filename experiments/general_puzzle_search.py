@@ -5,7 +5,6 @@ import numpy as np
 from pydrake.all import RigidTransform
 
 import components
-import contact_defs
 import dynamics
 import state
 import utils

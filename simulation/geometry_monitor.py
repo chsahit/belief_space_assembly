@@ -142,12 +142,16 @@ class GeometryMonitor(LeafSystem):
                 continue
             for direction_b in dirs:
                 m_poly_name = r_mc + "_" + direction_b
+                if m_poly_name not in self.manip_poly.keys():
+                    continue
                 m_poly_A, m_poly_b = self.manip_poly[m_poly_name]
                 m_poly_A = m_poly_A @ X_WM.rotation().inverse().matrix()
                 m_poly_A = -1 * m_poly_A
                 m_poly = HPolyhedron(m_poly_A, m_poly_b)
                 for direction_a in dirs:
                     env_poly_name = r_ec + "_" + direction_a
+                    if env_poly_name not in self.constraints.keys():
+                        continue
                     env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.1)
                     minkowski_sum = MinkowskiSum(env_poly, m_poly)
                     if minkowski_sum.PointInSet(X_WM.translation()):

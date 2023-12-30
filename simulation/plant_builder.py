@@ -13,7 +13,7 @@ from pydrake.all import (
     DepthRenderCamera,
     Diagram,
     DiagramBuilder,
-    DiscreteContactSolver,
+    DiscreteContactApproximation,
     MakeRenderEngineGl,
     MakeRenderEngineVtk,
     Meshcat,
@@ -38,8 +38,8 @@ from pydrake.all import (
 import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 
-# timestep = 0
-timestep = 0.0005
+timestep = 0
+timestep = 0.0001
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
@@ -186,7 +186,7 @@ def _construct_diagram(
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
-    # plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+    plant.set_discrete_contact_approximation(DiscreteContactApproximation.kSap)
     plant.set_contact_model(contact_model)
     plant.set_penetration_allowance(0.0005)
 

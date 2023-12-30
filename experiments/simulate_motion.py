@@ -13,7 +13,7 @@ from simulation import ik_solver
 
 def init(X_GM_x: float = 0.0):
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.155], [0, 0, 0])
+    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.155], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
@@ -26,26 +26,29 @@ def test_simulate():
     p_0 = init()
     t0 = time.time()
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0])
-    mostly_stiff = np.array([10.0, 10.0, 10.0, 600.0, 600.0, 100.0])
-    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, mostly_stiff)
+    mostly_stiff = np.array([100.0, 100.0, 10.0, 600.0, 600.0, 600.0])
+    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
     tT = time.time()
-    print(f"{p_1.contacts=}")
-    print(f"sim time={tT - t0}")
+    # print(f"{p_1.contacts=}")
+    # print(f"sim time={tT - t0}")
     input()
 
 
 def test_parallel_sim():
-    p0 = init(X_GM_x=-0.00)
-    p1 = init(X_GM_x=0.00)
-    b = state.Belief([p0])
+    p0 = init(X_GM_x=-0.002)
+    mostly_stiff = np.array([100.0, 100.0, 15.0, 600.0, 600.0, 600.0])
+    p1 = init(X_GM_x=0.002)
+    b = state.Belief([p0, p1])
     U = [
         components.CompliantMotion(
             RigidTransform(),
-            utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0]),
+            utils.xyz_rpy_deg([0.5, 0.0, 0.22], [0, 0, 0]),
             components.stiff,
         )
     ]
+    p_out = dynamics.simulate(b.particles[0], U[0], vis=True)
+    print(f"{p_out.X_WG=}")
     visualize.play_motions_on_belief(b, U)
     input()
 
@@ -112,6 +115,6 @@ def funny_rcc():
 
 
 if __name__ == "__main__":
-    test_parallel_sim()
+    test_simulate()
     # funny_rcc()
     # test_vis()

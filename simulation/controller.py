@@ -23,7 +23,7 @@ class ControllerSystem(LeafSystem):
         ).position_start()
 
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
-        self.DeclareVectorOutputPort("joint_torques", BasicVector(9), self.CalcOutput)
+        self.DeclareVectorOutputPort("joint_torques", BasicVector(7), self.CalcOutput)
         self.contacts = frozenset()
         self.constraints = None
         self.sdf = dict()
@@ -50,7 +50,10 @@ class ControllerSystem(LeafSystem):
     ) -> np.ndarray:
         if self.motion is None:
             return -tau_g
+
+        # print(f"{block_vel=}")
         X_WC = X_WG.multiply(self.motion.X_GC)
+        block_vel_G = mr.Adjoint(X_WG.inverse().GetAsMatrix4()) @ block_vel
         err = self.compute_error(X_WC, self.motion.X_WCd)
         spring_force = np.multiply(self.motion.K, err)
         damping_force = np.multiply(self.motion.B, block_vel)
@@ -87,6 +90,7 @@ class ControllerSystem(LeafSystem):
         J_g = J_g[:, self.panda_start_pos : self.panda_end_pos + 1]
         assert J_g.shape == (6, 7)
         tau_g = self.plant.CalcGravityGeneralizedForces(self.plant_context)
+        # by convention, wrench vectors and twist vectors are ordered the same
         tau_g = self.plant.GetVelocitiesFromArray(self.panda, tau_g)[:7]
         block_velocity = self.plant.EvalBodySpatialVelocityInWorld(
             self.plant_context, self.plant.GetBodyByName("base_link", self.block)
@@ -94,6 +98,7 @@ class ControllerSystem(LeafSystem):
         block_velocity = np.concatenate(
             (block_velocity.rotational(), block_velocity.translational())
         )
+        # block_velocity = np.zeros((6, ))
         # block_velocity = J_g @ q[9:16]
         # block_velocity = q[9:16]
 
@@ -108,5 +113,5 @@ class ControllerSystem(LeafSystem):
                 pickle.dump(to_dump, f)
         """
         self.i += 1
-        tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))
+        # tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))
         output.SetFromVector(tau_controller)
