@@ -4,11 +4,16 @@
 <model name="moving_puzzle">
 <link name="base_link">
 	<inertial>
-		<mass>1.0</mass>
+		<pose>0 -0.00076531 -0.054898 0 0 0</pose>
+<mass>1</mass>
 		<inertia>
-			<ixx>1.0</ixx><ixy>0.0</ixy><ixz>0</ixz>
-			<iyy>1.0</iyy><iyz>0.0</iyz><izz>1.0</izz>
-		</inertia>
+<ixx>0.001194</ixx>
+<ixy>0</ixy>
+<ixz>0</ixz>
+<iyy>0.0013442</iyy>
+<iyz>3.7484e-06</iyz>
+<izz>0.00029907</izz>
+</inertia>
 	</inertial>
 	<visual name="b1">
 		<pose>0.0 0.0 -0.02 0.0 0.0 0.0</pose>

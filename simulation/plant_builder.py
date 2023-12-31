@@ -14,6 +14,7 @@ from pydrake.all import (
     Diagram,
     DiagramBuilder,
     DiscreteContactApproximation,
+    FirstOrderLowPassFilter,
     MakeRenderEngineGl,
     MakeRenderEngineVtk,
     Meshcat,
@@ -39,7 +40,7 @@ import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 
 timestep = 0
-timestep = 0.0001
+timestep = 0.001
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
@@ -186,7 +187,7 @@ def _construct_diagram(
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
-    plant.set_discrete_contact_approximation(DiscreteContactApproximation.kSap)
+    plant.set_discrete_contact_approximation(DiscreteContactApproximation.kLagged)
     plant.set_contact_model(contact_model)
     plant.set_penetration_allowance(0.0005)
 
@@ -244,12 +245,12 @@ def _construct_diagram(
             "block",
         ),
     )
+    lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
     builder.Connect(
         plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
     )
-    builder.Connect(
-        compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
-    )
+    builder.Connect(compliant_controller.get_output_port(), lowpass.get_input_port())
+    builder.Connect(lowpass.get_output_port(), plant.get_actuation_input_port(panda))
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:

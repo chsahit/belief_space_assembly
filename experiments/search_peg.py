@@ -31,7 +31,7 @@ def simple_down():
     bottom_faces = (("bin_model::bottom_top", "block::Box_bottom"),)
     modes = [frozenset(bottom_faces)]
     p0 = init()
-    b = state.Belief([p0])
+    b = state.Belief([p0, p0])
     diagram_factory.initialize_factory(b.particles)
     randomized_search.refine_b(b, modes[0])
 
