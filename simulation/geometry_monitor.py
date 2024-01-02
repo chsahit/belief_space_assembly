@@ -135,7 +135,7 @@ class GeometryMonitor(LeafSystem):
             mapping_dict[local_name] = (A_local, b_local)
 
     def _compute_cspace_contacts(self, context):
-        dirs = ["top", "bottom", "front", "back", "right", "left"]
+        dirs = ["top", "bottom", "front", "back", "right", "left", "inside"]
         cspace_sdf = dict()
         X_WM = self.plant.CalcRelativeTransform(
             self.plant_context,

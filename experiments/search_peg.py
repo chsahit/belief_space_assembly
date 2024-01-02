@@ -6,7 +6,7 @@ import dynamics
 import state
 import utils
 import visualize
-from planning import randomized_search
+from planning import randomized_search, refine_motion
 from simulation import diagram_factory, ik_solver
 
 
@@ -22,21 +22,35 @@ def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
         X_WO,
         "assets/big_chamfered_hole.sdf",
         "assets/peg.urdf",
-        mu=0.0,
+        mu=0.3,
     )
     return p0
 
 
 def simple_down():
     bottom_faces = (("bin_model::bottom_top", "block::Box_bottom"),)
-    modes = [frozenset(bottom_faces)]
+    bottom_faces = frozenset(bottom_faces)
+    chamfer_touch_2 = (
+        ("bin_model::front_chamfer_inside", "block::Box_bottom"),
+        ("bin_model::front_chamfer_inside", "block::Box_back"),
+    )
+    front_faces = (
+        ("bin_model::back_back", "block::Box_bottom"),
+        ("bin_model::back_back", "block::Box_front"),
+        ("bin_model::left_right", "block::Box_right"),
+    )
+    front_faces = frozenset(front_faces)
+    chamfer_touch = frozenset(chamfer_touch_2)
+
+    modes = [chamfer_touch_2, front_faces, bottom_faces]
     p0 = init()
     b = state.Belief([p0, p0])
     diagram_factory.initialize_factory(b.particles)
-    randomized_search.refine_b(b, modes[0])
+    traj, tet, st = refine_motion.refine_two_particles(b, modes)
+    if traj is not None:
+        visualize.play_motions_on_belief(state.Belief([p0, p0]), traj)
+    input()
 
-
-# TODO: nested refine logic should be refactored into planner/
 
 if __name__ == "__main__":
     simple_down()
