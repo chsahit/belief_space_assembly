@@ -15,6 +15,7 @@ from pydrake.all import (
     DiagramBuilder,
     DiscreteContactApproximation,
     FirstOrderLowPassFilter,
+    JointActuatorIndex,
     MakeRenderEngineGl,
     MakeRenderEngineVtk,
     Meshcat,
@@ -23,6 +24,7 @@ from pydrake.all import (
     ModelInstanceIndex,
     MultibodyPlant,
     Parser,
+    PdControllerGains,
     ProximityProperties,
     RenderCameraCore,
     RenderEngineGlParams,
@@ -79,6 +81,7 @@ def make_plant(
     vis: bool = False,
     mu: float = 0.0,
     meshcat_instance=None,
+    gains=None,
 ) -> Tuple[Diagram, Meshcat]:
     builder, _, _, meshcat = _construct_diagram(
         q_r,
@@ -90,6 +93,7 @@ def make_plant(
         vis=vis,
         mu=mu,
         meshcat_instance=meshcat_instance,
+        gains=gains,
     )
     diagram = builder.Build()
     return diagram, meshcat
@@ -181,6 +185,7 @@ def _construct_diagram(
     vis: bool = False,
     mu: float = 0.0,
     meshcat_instance=None,
+    gains=None,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
 
     print("building")
@@ -211,6 +216,13 @@ def _construct_diagram(
             )
     _weld_geometries(plant, X_GM, X_WO, panda, manipuland, env_geometry)
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
+    for i, ja_index in enumerate(list(range(7))): #enumerate(plant.GetJointActuatorIndices(panda)):
+        ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
+        # TODO: jacobian...
+        if gains is not None:
+            ja.set_controller_gains(
+                PdControllerGains(p=gains[i], d=4 * np.sqrt(gains[i]))
+            )
     # assert False
     # finger_l = plant.GetJointByName("")
     # finger_r = plant.GetJointByName("")
@@ -245,12 +257,15 @@ def _construct_diagram(
             "block",
         ),
     )
-    lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
-    builder.Connect(
-        plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
-    )
-    builder.Connect(compliant_controller.get_output_port(), lowpass.get_input_port())
-    builder.Connect(lowpass.get_output_port(), plant.get_actuation_input_port(panda))
+    if gains is None:
+        lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
+        builder.Connect(
+            plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
+        )
+        builder.Connect(compliant_controller.get_output_port(), lowpass.get_input_port())
+        builder.Connect(lowpass.get_output_port(), plant.get_actuation_input_port(panda))
+    else:
+        builder.Connect(compliant_controller.get_output_port(), plant.get_desired_state_input_port(panda))
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:

@@ -36,7 +36,7 @@ class Particle:
         self._sim_id = None
 
     def make_plant(
-        self, vis: bool = False, collision: bool = False, meshcat_instance=None
+        self, vis: bool = False, collision: bool = False, meshcat_instance=None, gains=None
     ) -> System:
         if (self._sim_id is not None) and (not vis):
             if collision:
@@ -52,6 +52,7 @@ class Particle:
             collision_check=collision,
             mu=self.mu,
             meshcat_instance=meshcat_instance,
+            gains=gains
         )
 
     def _update_contact_data(self):

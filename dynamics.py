@@ -56,7 +56,7 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
-    diagram, meshcat = p.make_plant(vis=vis)
+    diagram, meshcat = p.make_plant(vis=vis, gains=motion.K)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
     plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
