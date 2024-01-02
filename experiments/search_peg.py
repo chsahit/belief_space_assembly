@@ -10,10 +10,10 @@ from planning import randomized_search, refine_motion
 from simulation import diagram_factory, ik_solver
 
 
-def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
+def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0, pitch: float = 0.01) -> state.Particle:
     z = 0.155 + X_GM_z
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, z], [180, 0, 0])
+    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, z], [180, pitch, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p0 = state.Particle(
@@ -46,12 +46,13 @@ def simple_down():
     chamfer_touch = frozenset(chamfer_touch_2)
 
     modes = [chamfer_touch_2, front_faces, bottom_faces]
-    p0 = init()
-    b = state.Belief([p0, p0])
+    p0 = init(pitch=-3)
+    p1 = init(pitch=3)
+    b = state.Belief([p0, p1])
     diagram_factory.initialize_factory(b.particles)
     traj, tet, st = refine_motion.refine_two_particles(b, modes)
-    if traj is not None:
-        visualize.play_motions_on_belief(state.Belief([p0, p0]), traj)
+    if traj is not None and False:
+        visualize.play_motions_on_belief(state.Belief([p0, p1]), traj)
     input()
 
 
