@@ -18,6 +18,7 @@ class CompliantMotion:
     K: np.ndarray
     _B: np.ndarray = None
     timeout: float = 5.0
+    is_joint_space: bool = False
 
     @property
     def B(self) -> np.ndarray:

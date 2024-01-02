@@ -9,9 +9,10 @@ import mr
 
 
 class ControllerSystem(LeafSystem):
-    def __init__(self, plant, panda_name: str, block_name: str):
+    def __init__(self, plant, panda_name: str, block_name: str, out_size: int = 7):
         LeafSystem.__init__(self)
         self.plant = plant
+        self.out_size = out_size
         self.panda = plant.GetModelInstanceByName(panda_name)
         self.block = plant.GetModelInstanceByName(block_name)
         self.plant_context = plant.CreateDefaultContext()
@@ -23,11 +24,13 @@ class ControllerSystem(LeafSystem):
         ).position_start()
 
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
-        self.DeclareVectorOutputPort("joint_torques", BasicVector(14), self.CalcOutput)
         self.contacts = frozenset()
         self.constraints = None
         self.sdf = dict()
         self.motion = None
+        self.DeclareVectorOutputPort(
+            "joint_torques", BasicVector(out_size), self.CalcOutput
+        )
         self.i = 0
         self.history = []
         self.printed = False
@@ -103,7 +106,7 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
-        tau_controller = np.zeros((14, ))
+        tau_controller = np.zeros((self.out_size,))
         # self.history.append((context.get_time(), X_WG.translation()))
         """
         if self.i == 0:

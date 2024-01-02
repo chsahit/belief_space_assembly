@@ -1,10 +1,10 @@
 import multiprocessing
-import numpy as np
 import signal
 import sys
 import time
 from typing import List, Tuple
 
+import numpy as np
 from pydrake.all import Simulator
 
 import components
@@ -59,6 +59,7 @@ def simulate(
     """
     gains = (p.J.T) @ np.diag(motion.K) @ p.J
     print(f"{gains=}")
+    motion.is_joint_space = True
     diagram, meshcat = p.make_plant(vis=vis, gains=gains)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)

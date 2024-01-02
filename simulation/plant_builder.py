@@ -251,20 +251,20 @@ def _construct_diagram(
         )
 
     # connect controller
+    out_size = 7
+    if gains is not None:
+        out_size = 14
     compliant_controller = builder.AddNamedSystem(
         "controller",
-        controller.ControllerSystem(
-            plant,
-            panda_name,
-            "block",
-        ),
+        controller.ControllerSystem(plant, panda_name, "block", out_size=out_size),
     )
-    if gains is None and False:
+    builder.Connect(
+        plant.get_state_output_port(panda),
+        compliant_controller.GetInputPort("state"),
+    )
+
+    if gains is None:
         lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
-        builder.Connect(
-            plant.get_state_output_port(panda),
-            compliant_controller.GetInputPort("state"),
-        )
         builder.Connect(
             compliant_controller.get_output_port(), lowpass.get_input_port()
         )
