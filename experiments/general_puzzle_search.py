@@ -9,14 +9,14 @@ import dynamics
 import state
 import utils
 import visualize
-from planning import randomized_search
+from planning import randomized_search, refine_motion
 from puzzle_contact_defs import *
 from simulation import diagram_factory, ik_solver
 
 
 def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
     z = 0.09 + X_GM_z
-    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0])
+    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.32], [180, 0, 0])
     X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, z], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.01], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
@@ -51,12 +51,17 @@ def try_refine_b():
     p_a = init(X_GM_x=-0.0046666666)
     p_b = init(X_GM_x=0.004666666666)
     curr = state.Belief([p_a, p_b])
+    diagram_factory.initialize_factory(curr.particles)
     modes = [top_touch2, bt, bt4, bottom, goal]
+    traj, tet, st = refine_motion.refine_two_particles(curr, modes)
+    """
     traj = []
     for mode in modes:
         curr, u_star = b_r(curr, mode)
         traj.append(u_star)
-    visualize.play_motions_on_belief(state.Belief([p_a, p_b]), traj)
+    """
+    if traj is not None:
+        visualize.play_motions_on_belief(state.Belief([p_a, p_b]), traj)
     input()
 
 
@@ -140,4 +145,4 @@ def explore_z_preimg():
 
 
 if __name__ == "__main__":
-    explore_z_preimg()
+    try_refine_b()

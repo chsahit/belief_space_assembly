@@ -1,4 +1,5 @@
-from typing import Dict, Tuple
+import time
+from typing import Dict, List, Tuple
 
 import numpy as np
 from pydrake.all import (
@@ -14,7 +15,7 @@ import components
 import dynamics
 import state
 import utils
-from planning import directed_msets, motion_sets
+from planning import directed_msets, motion_sets, randomized_search
 from simulation import annotate_geoms
 
 
@@ -132,3 +133,26 @@ def refine(
             print(f"{posterior.contact_state()=}")
     print(f"returning partial soln with score {best_score}")
     return U_candidates[best_candidate], best_posterior
+
+
+def refine_two_particles(
+    b: state.Belief, modes: List[components.ContactState], max_attempts: int = 3
+) -> List[components.CompliantMotion]:
+    start_time = time.time()
+    for attempt in range(max_attempts):
+        print(f"{attempt=}")
+        curr = b
+        traj = []
+        for mode in modes:
+            u_star = randomized_search.refine_b(curr, mode)
+            if u_star is None:
+                break
+            traj.append(u_star)
+            curr = dynamics.f_bel(curr, u_star)
+        if curr.satisfies_contact(randomized_search.relax_CF(modes[-1])):
+            total_elapsed_time = time.time() - start_time
+            sim_time = dynamics.get_time()
+            dynamics.reset_time()
+            return traj, total_elapsed_time, sim_time
+    dynamics.reset_time()
+    return None, -1.0, -1.0

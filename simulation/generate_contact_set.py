@@ -7,44 +7,20 @@ from pydrake.all import (
     ConvexSet,
     HPolyhedron,
     Intersection,
-    MathematicalProgram,
     MinkowskiSum,
     RandomGenerator,
     RigidTransform,
     RotationMatrix,
     Simulator,
-    Solve,
 )
 
 import components
 import state
-from simulation import annotate_geoms, ik_solver
+from simulation import annotate_geoms, hyperrectangle, ik_solver
 
 random.seed(0)
 gen = np.random.default_rng(1)
 drake_rng = RandomGenerator()
-
-
-def CalcAxisAlignedBoundingBox(cvx_set: ConvexSet):
-    def make_prog(inside_pt, cvx_set, axis, direction):
-        prog = MathematicalProgram()
-        pt = prog.NewContinuousVariables(3, "pt")
-        prog.SetInitialGuess(pt, inside_pt)
-        prog.AddCost(direction * pt[axis])
-        cvx_set.AddPointInSetConstraints(prog, pt)
-        prog.AddBoundingBoxConstraint(-10.0, 10.0, pt)
-        return prog
-
-    init_pt = cvx_set.MaybeGetFeasiblePoint()
-    bounds = [[0, 0, 0], [0, 0, 0]]
-    for direction_idx, direction in enumerate([1, -1]):
-        for axis in [0, 1, 2]:
-            m_prog = make_prog(init_pt, cvx_set, axis, direction)
-            soln = Solve(m_prog)
-            soln_pt = soln.GetSolution()
-            bounds[direction_idx][axis] = soln_pt[axis]
-
-    return HPolyhedron.MakeBox(np.array(bounds[0]), np.array(bounds[1])), bounds
 
 
 def rejection_sample(cvx_set: ConvexSet, bounds, num_samples=1):
@@ -96,7 +72,7 @@ def compute_samples_from_contact_set(
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
     assert not contact_manifold.IsEmpty()
-    cm_hyper_rect, bounds = CalcAxisAlignedBoundingBox(contact_manifold)
+    cm_hyper_rect, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(contact_manifold)
     # interior_pts = hit_and_run_sample(contact_manifold, cm_hyper_rect, num_samples=num_samples)
     interior_pts = rejection_sample(contact_manifold, bounds, num_samples=num_samples)
     for interior_pt in interior_pts:

@@ -28,27 +28,40 @@ def init(X_GM_x: float = 0.0) -> state.Particle:
     return p0
 
 
-def init_pih(X_GM_x: float = 0.0, X_GM_p: float = 0.0) -> RigidTransform:
+def init_pih(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
+    z = 0.155 + X_GM_z
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.155], [0, X_GM_p, 0])
+    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, z], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
-    p_0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/big_chamfered_hole.sdf", "assets/peg.urdf", mu=0.6
+    p0 = state.Particle(
+        q_r_0,
+        X_GM,
+        X_WO,
+        "assets/big_chamfered_hole.sdf",
+        "assets/peg.urdf",
+        mu=0.0,
     )
-    return p_0
+    return p0
 
 
 def ts2():
-    p = init()
+    p = init_pih()
+    chamfer_touch = (("bin_model::front_chamfer_inside", "block::Box_bottom"),)
+    chamfer_touch_2 = (
+        ("bin_model::front_chamfer_inside", "block::Box_bottom"),
+        ("bin_model::front_chamfer_inside", "block::Box_back"),
+    )
+    chamfer_touch = frozenset(chamfer_touch_2)
     X_WGs = generate_contact_set.project_manipuland_to_contacts(
-        p, puzzle_contact_defs.s_bottom, num_samples=6
+        p, chamfer_touch, num_samples=6
     )
     for X_WG in X_WGs:
         q_r = ik_solver.gripper_to_joint_states(X_WG)
         new_p = p.deepcopy()
         new_p.q_r = q_r
         visualize.show_particle(new_p)
+    print("Done")
     input()
 
 

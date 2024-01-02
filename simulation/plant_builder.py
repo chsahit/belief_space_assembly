@@ -40,7 +40,7 @@ import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 
 timestep = 0
-timestep = 0.001
+timestep = 0.0002
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 

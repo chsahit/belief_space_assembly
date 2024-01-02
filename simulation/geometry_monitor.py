@@ -14,6 +14,7 @@ from pydrake.all import (
 )
 
 import utils
+from simulation import hyperrectangle
 
 
 class GeometryMonitor(LeafSystem):
@@ -96,6 +97,9 @@ class GeometryMonitor(LeafSystem):
         return EventStatus.Succeeded()
 
     def aa_compute_fine_geometries(self, name: str, mapping_dict, A, b):
+        if A.shape[0] < 6:
+            self.general_compute_fine_geometries(name, mapping_dict, A, b)
+            return None
         x_hat = np.array([1, 0, 0])
         y_hat = np.array([0, 1, 0])
         z_hat = np.array([0, 0, 1])
@@ -117,7 +121,8 @@ class GeometryMonitor(LeafSystem):
         }
 
         A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
-        if A.shape[0] < 6:
+        if len(descriptors) == 0:
+            print("no descriptors...")
             return None
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
@@ -159,4 +164,18 @@ class GeometryMonitor(LeafSystem):
         self.sdf.update(cspace_sdf)
 
     def general_compute_fine_geometries(self, name: str, mapping_dict, A, b):
-        pass
+        # chamfer logic
+        chamfer_name = name + "_inside"
+        face_A = None
+        face_b = None
+        for row_idx in range(A.shape[0]):
+            if np.linalg.norm(A[row_idx], ord=1) > 1.001:
+                face_A = np.copy(A[row_idx])
+                face_b = np.copy(b[row_idx])
+        assert (face_A is not None) and (face_b is not None)
+        face_b -= 1e-4
+        face_b *= -1
+        face_A *= -1
+        chamfer_face_A = np.vstack((A, face_A))
+        chamfer_face_b = np.append(b, np.array([face_b]))
+        mapping_dict[chamfer_name] = (chamfer_face_A, chamfer_face_b)
