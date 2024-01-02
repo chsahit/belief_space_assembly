@@ -4,6 +4,7 @@ from pydrake.all import (
     BasicVector,
     EventStatus,
     HPolyhedron,
+    JacobianWrtVariable,
     LeafSystem,
     MinkowskiSum,
     MultibodyPlant,
@@ -27,6 +28,7 @@ class GeometryMonitor(LeafSystem):
     def __init__(self, plant: MultibodyPlant):
         LeafSystem.__init__(self)
         self.plant = plant
+        self.panda = plant.GetModelInstanceByName("panda")
         self.plant_context = plant.CreateDefaultContext()
         self.constraints = None
         self.manip_poly = dict()
@@ -38,6 +40,7 @@ class GeometryMonitor(LeafSystem):
         )
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
         self.DeclareForcedPublishEvent(self.inspect_geometry)
+        self.J = None
 
     def _set_constraints(self, query_obj: QueryObject, inspector: SceneGraphInspector):
         self.constraints = dict()
@@ -90,6 +93,22 @@ class GeometryMonitor(LeafSystem):
         query_obj = self._geom_port.Eval(context)
         q = self._state_port.Eval(context)
         self.plant.SetPositionsAndVelocities(self.plant_context, q)
+        G = self.plant.GetBodyByName("panda_hand", self.panda).body_frame()
+        J = self.plant.CalcJacobianSpatialVelocity(
+            self.plant_context,
+            JacobianWrtVariable.kQDot,
+            G,
+            np.array([0, 0, 0]),
+            self.plant.world_frame(),
+            self.plant.world_frame(),
+        )
+        panda_start_pos = self.plant.GetJointByName(
+            "panda_joint1", self.panda
+        ).position_start()
+        panda_end_pos = self.plant.GetJointByName(
+            "panda_joint7", self.panda
+        ).position_start()
+        self.J = J[:, panda_start_pos : panda_end_pos + 1]
         inspector = query_obj.inspector()
         self._set_constraints(query_obj, inspector)
         self._set_contacts(query_obj, inspector)

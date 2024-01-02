@@ -34,9 +34,14 @@ class Particle:
         self._manip_poly = None
         self.trajectory = []
         self._sim_id = None
+        self._J = None
 
     def make_plant(
-        self, vis: bool = False, collision: bool = False, meshcat_instance=None, gains=None
+        self,
+        vis: bool = False,
+        collision: bool = False,
+        meshcat_instance=None,
+        gains=None,
     ) -> System:
         if (self._sim_id is not None) and (not vis):
             if collision:
@@ -52,7 +57,7 @@ class Particle:
             collision_check=collision,
             mu=self.mu,
             meshcat_instance=meshcat_instance,
-            gains=gains
+            gains=gains,
         )
 
     def _update_contact_data(self):
@@ -67,8 +72,15 @@ class Particle:
         geom_monitor.ForcedPublish(geom_monitor.GetMyContextFromRoot(diagram_context))
         self._contacts = geom_monitor.contacts
         self._sdf = geom_monitor.sdf
+        self._J = geom_monitor.J
         self._constraints = geom_monitor.constraints
         self._manip_poly = geom_monitor.manip_poly
+
+    @property
+    def J(self) -> np.ndarray:
+        if self._J is None:
+            self._update_contact_data()
+        return self._J
 
     @property
     def contacts(self) -> components.ContactState:

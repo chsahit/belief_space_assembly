@@ -23,7 +23,7 @@ class ControllerSystem(LeafSystem):
         ).position_start()
 
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
-        self.DeclareVectorOutputPort("joint_torques", BasicVector(7), self.CalcOutput)
+        self.DeclareVectorOutputPort("joint_torques", BasicVector(14), self.CalcOutput)
         self.contacts = frozenset()
         self.constraints = None
         self.sdf = dict()
@@ -103,6 +103,7 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
+        tau_controller = np.zeros((14, ))
         # self.history.append((context.get_time(), X_WG.translation()))
         """
         if self.i == 0:
