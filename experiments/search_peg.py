@@ -28,7 +28,10 @@ def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
 
 
 def simple_down():
-    bottom_faces = (("bin_model::bottom_top", "block::Box_bottom"),)
+    bottom_faces = (
+        ("bin_model::bottom_top", "block::Box_bottom"),
+        ("bin_model::front_front", "block::Box_back"),
+    )
     bottom_faces = frozenset(bottom_faces)
     chamfer_touch_2 = (
         ("bin_model::front_chamfer_inside", "block::Box_bottom"),
