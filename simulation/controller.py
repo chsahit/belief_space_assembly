@@ -6,6 +6,7 @@ from pydrake.all import BasicVector, JacobianWrtVariable, LeafSystem, RigidTrans
 
 import components
 import mr
+from simulation import ik_solver
 
 
 class ControllerSystem(LeafSystem):
@@ -106,7 +107,13 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
-        tau_controller = np.zeros((self.out_size,))
+        if self.out_size == 7:
+            tau_controller = np.zeros((self.out_size,))
+        elif self.motion is not None:
+            X_WGd = self.motion.X_WCd.multiply(X_GC.inverse())
+            q_rd = ik_solver.gripper_to_joint_states(X_WGd)
+            tau_controller = np.append(q_rd[:7], np.zeros((7,)))
+
         # self.history.append((context.get_time(), X_WG.translation()))
         """
         if self.i == 0:
