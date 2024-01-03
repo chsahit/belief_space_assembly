@@ -245,12 +245,15 @@ def _construct_diagram(
             "block",
         ),
     )
-    lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
+    # lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
     builder.Connect(
         plant.get_state_output_port(panda), compliant_controller.GetInputPort("state")
     )
-    builder.Connect(compliant_controller.get_output_port(), lowpass.get_input_port())
-    builder.Connect(lowpass.get_output_port(), plant.get_actuation_input_port(panda))
+    # builder.Connect(compliant_controller.get_output_port(), lowpass.get_input_port())
+    # builder.Connect(lowpass.get_output_port(), plant.get_actuation_input_port(panda))
+    builder.Connect(
+        compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
+    )
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:

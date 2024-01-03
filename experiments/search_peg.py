@@ -10,7 +10,9 @@ from planning import randomized_search, refine_motion
 from simulation import diagram_factory, ik_solver
 
 
-def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0, pitch: float = 0.01) -> state.Particle:
+def init(
+    X_GM_x: float = 0.0, X_GM_z: float = 0.0, pitch: float = 0.01
+) -> state.Particle:
     z = 0.155 + X_GM_z
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
     X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, z], [180, pitch, 0])
@@ -51,7 +53,7 @@ def simple_down():
     b = state.Belief([p0, p1])
     diagram_factory.initialize_factory(b.particles)
     traj, tet, st = refine_motion.refine_two_particles(b, modes)
-    if traj is not None and False:
+    if traj is not None:
         visualize.play_motions_on_belief(state.Belief([p0, p1]), traj)
     input()
 
