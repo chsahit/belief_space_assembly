@@ -51,7 +51,7 @@ def simple_down():
     p0 = init(pitch=-3)
     p1 = init(pitch=3)
     b = state.Belief([p0, p1])
-    diagram_factory.initialize_factory(b.particles)
+    # diagram_factory.initialize_factory(b.particles)
     traj, tet, st = refine_motion.refine_two_particles(b, modes, max_attempts=5)
     if traj is not None:
         visualize.play_motions_on_belief(

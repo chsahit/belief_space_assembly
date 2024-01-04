@@ -187,8 +187,6 @@ def _construct_diagram(
     meshcat_instance=None,
     gains=None,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
-
-    print("building")
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
@@ -221,7 +219,7 @@ def _construct_diagram(
         # print(f"{ja.name()=}")
         if gains is not None:
             ja.set_controller_gains(
-                PdControllerGains(p=gains[i, i], d=4 * np.sqrt(gains[i, i]))
+                PdControllerGains(p=gains[i, i], d=10 * np.sqrt(gains[i, i]))
             )
     # assert False
     plant.Finalize()
@@ -250,7 +248,6 @@ def _construct_diagram(
     out_size = 7
     if gains is not None:
         out_size = 14
-    print(f"{out_size=}")
     compliant_controller = builder.AddNamedSystem(
         "controller",
         controller.ControllerSystem(plant, panda_name, "block", out_size=out_size),
