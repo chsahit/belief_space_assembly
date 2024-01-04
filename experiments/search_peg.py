@@ -35,6 +35,11 @@ def simple_down():
         ("bin_model::front_front", "block::Box_back"),
     )
     bottom_faces = frozenset(bottom_faces)
+    bottom_faces_2 = (
+        ("bin_model::bottom_top", "block::Box_bottom"),
+    )
+    bottom_faces_2 = frozenset(bottom_faces)
+
     chamfer_touch_2 = (
         ("bin_model::front_chamfer_inside", "block::Box_bottom"),
         ("bin_model::front_chamfer_inside", "block::Box_back"),
@@ -47,7 +52,7 @@ def simple_down():
     front_faces = frozenset(front_faces)
     chamfer_touch = frozenset(chamfer_touch_2)
 
-    modes = [chamfer_touch_2, front_faces, bottom_faces]
+    modes = [chamfer_touch_2, front_faces, bottom_faces_2]
     p0 = init(pitch=-3)
     p1 = init(pitch=3)
     b = state.Belief([p0, p1])

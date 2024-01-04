@@ -36,6 +36,7 @@ class ControllerSystem(LeafSystem):
             self.DeclareVectorOutputPort("gravity_ff", BasicVector(7), self.CalcGravity)
         self.i = 0
         self.history = []
+        self.q_rd = None
         self.printed = False
 
     def compute_error(self, X_WC: RigidTransform, X_WCd: RigidTransform) -> np.ndarray:
@@ -85,6 +86,7 @@ class ControllerSystem(LeafSystem):
             self.printed = True
         else:
             X_GC = self.motion.X_GC
+        """
         J_g = self.plant.CalcJacobianSpatialVelocity(
             self.plant_context,
             JacobianWrtVariable.kQDot,
@@ -109,12 +111,14 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
+        """
         if self.out_size == 7:
             tau_controller = np.zeros((self.out_size,))
         elif self.motion is not None:
             X_WGd = self.motion.X_WCd.multiply(X_GC.inverse())
-            q_rd = ik_solver.gripper_to_joint_states(X_WGd)
-            tau_controller = np.append(q_rd[:7], np.zeros((7,)))
+            if self.q_rd is None:
+                self.q_rd = ik_solver.gripper_to_joint_states(X_WGd)
+            tau_controller = np.append(self.q_rd[:7], np.zeros((7,)))
 
         # self.history.append((context.get_time(), X_WG.translation()))
         """

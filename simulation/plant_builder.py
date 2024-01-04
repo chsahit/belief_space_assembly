@@ -219,7 +219,7 @@ def _construct_diagram(
         # print(f"{ja.name()=}")
         if gains is not None:
             ja.set_controller_gains(
-                PdControllerGains(p=gains[i, i], d=10 * np.sqrt(gains[i, i]))
+                PdControllerGains(p=gains[i, i], d=5 * np.sqrt(gains[i, i]))
             )
     # assert False
     plant.Finalize()
