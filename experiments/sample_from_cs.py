@@ -48,13 +48,28 @@ def init_pih(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
 def ts2():
     p = init_pih()
     chamfer_touch = (("bin_model::front_chamfer_inside", "block::Box_bottom"),)
+    """
+    chamfer_touch_2 = (
+        ("bin_model::back_chamfer_inside", "block::Box_bottom"),
+        ("bin_model::back_chamfer_inside", "block::Box_front"),
+    )
+    """
     chamfer_touch_2 = (
         ("bin_model::front_chamfer_inside", "block::Box_bottom"),
         ("bin_model::front_chamfer_inside", "block::Box_back"),
+        ("bin_model::left_chamfer_inside", "block::Box_bottom"),
+        ("bin_model::left_chamfer_inside", "block::Box_right"),
     )
     chamfer_touch = frozenset(chamfer_touch_2)
+    front_faces = (
+        ("bin_model::back_back", "block::Box_bottom"),
+        ("bin_model::back_back", "block::Box_front"),
+        ("bin_model::left_left", "block::Box_right"),
+    )
+    front_faces = frozenset(front_faces)
+
     X_WGs = generate_contact_set.project_manipuland_to_contacts(
-        p, chamfer_touch, num_samples=6
+        p, front_faces, num_samples=6
     )
     for X_WG in X_WGs:
         q_r = ik_solver.gripper_to_joint_states(X_WG)

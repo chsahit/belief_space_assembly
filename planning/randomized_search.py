@@ -146,8 +146,9 @@ def refine_p(
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     # if abs(K[1] - 10) < 1e-3 and ("b3" in str(CF_d)) and False:
-    # if np.linalg.norm(K - components.stiff) < 1e-3:
-    #     dynamics.simulate(p, motions[0], vis=True)
+    if np.linalg.norm(K - components.stiff) < 1e-3 and False:
+        p_out = dynamics.simulate(p, motions[0], vis=True)
+        print(f"{p_out.sdf=}")
     P_next = dynamics.f_cspace(p, motions)
     U = []
     relaxed_CF_d = relax_CF(CF_d)

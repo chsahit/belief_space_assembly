@@ -192,7 +192,7 @@ def _construct_diagram(
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
-    plant.set_discrete_contact_approximation(DiscreteContactApproximation.kLagged)
+    # plant.set_discrete_contact_approximation(DiscreteContactApproximation.kLagged)
     plant.set_contact_model(contact_model)
     plant.set_penetration_allowance(0.0005)
 
@@ -258,10 +258,7 @@ def _construct_diagram(
         "controller",
         controller.ControllerSystem(plant, panda_name, "block", out_size=out_size),
     )
-    builder.Connect(
-        plant.get_state_output_port(panda),
-        compliant_controller.GetInputPort("state"),
-    )
+    # lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
 
     if gains is None:
         lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
@@ -276,6 +273,13 @@ def _construct_diagram(
             compliant_controller.get_output_port(),
             plant.get_desired_state_input_port(panda),
         )
+    # builder.Connect(compliant_controller.get_output_port(), lowpass.get_input_port())
+    # builder.Connect(lowpass.get_output_port(), plant.get_actuation_input_port(panda))
+    """
+    builder.Connect(
+        compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
+    )
+    """
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:

@@ -62,7 +62,7 @@ def _drop_reflected_inertia(plant, panda):
 
 def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0005)
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, plant_builder.timestep)
     plant.set_contact_model(ContactModel.kPoint)
     plant.set_penetration_allowance(0.0005)
     parser = Parser(plant)
