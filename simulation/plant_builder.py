@@ -42,7 +42,7 @@ import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 
 # timestep = 0
-timestep = 0.0005
+timestep = 0.005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
@@ -192,7 +192,7 @@ def _construct_diagram(
     # Plant hyperparameters
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
-    # plant.set_discrete_contact_approximation(DiscreteContactApproximation.kLagged)
+    plant.set_discrete_contact_approximation(DiscreteContactApproximation.kLagged)
     plant.set_contact_model(contact_model)
     plant.set_penetration_allowance(0.0005)
 
@@ -228,7 +228,6 @@ def _construct_diagram(
     ja_indices = plant.GetJointActuatorIndices(panda)
     for ja_idx in ja_indices:
         ja = plant.get_joint_actuator(ja_idx)
-        print(f"{ja.get_controller_gains().p=}")
         ja.set_default_rotor_inertia(0.0)
         ja.set_default_gear_ratio(0.0)
 
@@ -270,7 +269,6 @@ def _construct_diagram(
             lowpass.get_output_port(), plant.get_actuation_input_port(panda)
         )
     else:
-        print("wiring...")
         builder.Connect(
             compliant_controller.GetOutputPort("joint_torques"),
             plant.get_desired_state_input_port(panda),
@@ -279,7 +277,6 @@ def _construct_diagram(
             compliant_controller.GetOutputPort("gravity_ff"),
             plant.get_actuation_input_port(panda),
         )
-    print(plant.get_desired_state_input_port(panda).GetFullDescription())
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:
