@@ -58,7 +58,6 @@ def simulate(
         with new robot joint angles corresponding to the result of the motion.
     """
     gains = (p.J.T) @ np.diag(motion.K) @ p.J
-    print(f"{gains=}")
     motion.is_joint_space = True
     diagram, meshcat = p.make_plant(vis=vis, gains=gains)
     plant = diagram.GetSubsystemByName("plant")
