@@ -41,8 +41,8 @@ from pydrake.all import (
 import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 
-timestep = 0
-timestep = 0.001
+# timestep = 0
+timestep = 0.0005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
 
 
@@ -216,22 +216,19 @@ def _construct_diagram(
             )
     _weld_geometries(plant, X_GM, X_WO, panda, manipuland, env_geometry)
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
-    for i, ja_index in enumerate(
-        list(range(7))
-    ):  # enumerate(plant.GetJointActuatorIndices(panda)):
+    for i, ja_index in enumerate(list(range(7))):
         ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
-        # TODO: jacobian...
+        # print(f"{ja.name()=}")
         if gains is not None:
             ja.set_controller_gains(
                 PdControllerGains(p=gains[i, i], d=4 * np.sqrt(gains[i, i]))
             )
     # assert False
-    # finger_l = plant.GetJointByName("")
-    # finger_r = plant.GetJointByName("")
     plant.Finalize()
     ja_indices = plant.GetJointActuatorIndices(panda)
     for ja_idx in ja_indices:
         ja = plant.get_joint_actuator(ja_idx)
+        print(f"{ja.get_controller_gains().p=}")
         ja.set_default_rotor_inertia(0.0)
         ja.set_default_gear_ratio(0.0)
 
@@ -254,11 +251,15 @@ def _construct_diagram(
     out_size = 7
     if gains is not None:
         out_size = 14
+    print(f"{out_size=}")
     compliant_controller = builder.AddNamedSystem(
         "controller",
         controller.ControllerSystem(plant, panda_name, "block", out_size=out_size),
     )
-    # lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
+    builder.Connect(
+        plant.get_state_output_port(panda),
+        compliant_controller.GetInputPort("state"),
+    )
 
     if gains is None:
         lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
@@ -269,17 +270,16 @@ def _construct_diagram(
             lowpass.get_output_port(), plant.get_actuation_input_port(panda)
         )
     else:
+        print("wiring...")
         builder.Connect(
-            compliant_controller.get_output_port(),
+            compliant_controller.GetOutputPort("joint_torques"),
             plant.get_desired_state_input_port(panda),
         )
-    # builder.Connect(compliant_controller.get_output_port(), lowpass.get_input_port())
-    # builder.Connect(lowpass.get_output_port(), plant.get_actuation_input_port(panda))
-    """
-    builder.Connect(
-        compliant_controller.get_output_port(), plant.get_actuation_input_port(panda)
-    )
-    """
+        builder.Connect(
+            compliant_controller.GetOutputPort("gravity_ff"),
+            plant.get_actuation_input_port(panda),
+        )
+    print(plant.get_desired_state_input_port(panda).GetFullDescription())
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:

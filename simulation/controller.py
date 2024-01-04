@@ -32,6 +32,10 @@ class ControllerSystem(LeafSystem):
         self.DeclareVectorOutputPort(
             "joint_torques", BasicVector(out_size), self.CalcOutput
         )
+        if out_size > 7:
+            self.DeclareVectorOutputPort(
+                "gravity_ff", BasicVector(7), self.CalcGravity
+            )
         self.i = 0
         self.history = []
         self.printed = False
@@ -68,6 +72,7 @@ class ControllerSystem(LeafSystem):
         return tau_controller
 
     def CalcOutput(self, context, output):
+        print("call")
         q = self._state_port.Eval(context)
         self.plant.SetPositionsAndVelocities(self.plant_context, self.panda, q)
 
@@ -108,11 +113,15 @@ class ControllerSystem(LeafSystem):
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
         if self.out_size == 7:
+            print("doing this")
             tau_controller = np.zeros((self.out_size,))
         elif self.motion is not None:
             X_WGd = self.motion.X_WCd.multiply(X_GC.inverse())
             q_rd = ik_solver.gripper_to_joint_states(X_WGd)
+            print(f"err={q_rd[:7] - q[:7]}")
             tau_controller = np.append(q_rd[:7], np.zeros((7,)))
+        else:
+            print("motion is none {self.motion} {self.out_size}")
 
         # self.history.append((context.get_time(), X_WG.translation()))
         """
@@ -126,3 +135,12 @@ class ControllerSystem(LeafSystem):
         self.i += 1
         # tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))
         output.SetFromVector(tau_controller)
+
+    def CalcGravity(self, context, output):
+        q = self._state_port.Eval(context)
+        self.plant.SetPositionsAndVelocities(self.plant_context, self.panda, q)
+        tau_g = self.plant.CalcGravityGeneralizedForces(self.plant_context)
+        # by convention, wrench vectors and twist vectors are ordered the same
+        tau_g = self.plant.GetVelocitiesFromArray(self.panda, tau_g)[:7]
+        output.SetFromVector(-tau_g)
+

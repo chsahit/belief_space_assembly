@@ -57,7 +57,9 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
-    gains = (p.J.T) @ np.diag(motion.K) @ p.J
+    # gains = (p.J.T) @ np.diag(motion.K) @ p.J
+    gains = 300 * np.eye(7)
+    print("done computing gains")
     motion.is_joint_space = True
     diagram, meshcat = p.make_plant(vis=vis, gains=gains)
     plant = diagram.GetSubsystemByName("plant")
@@ -88,7 +90,8 @@ def simulate(
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
     p_next.trajectory = controller.history
-    p_next._update_contact_data()
+    print("not computing contacts!")
+    # p_next._update_contact_data()
     return p_next
 
 

@@ -31,7 +31,7 @@ def test_simulate():
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
     tT = time.time()
     # print(f"{p_1.contacts=}")
-    # print(f"sim time={tT - t0}")
+    print(f"sim time={tT - t0}")
     input()
 
 
