@@ -43,13 +43,14 @@ def dump_traj(traj: List[components.CompliantMotion], fname: str = "traj_out.pkl
 def post_process_rt_pickle(fname: str = "traj_out.pkl"):
     processed = []
     with open(fname, "rb") as f:
-        data = pickle.load(fname)
+        data = pickle.load(f)
         for command in data:
             K = command[1]
             K = [K[3], K[4], K[5], K[0], K[1], K[2]]
             command_vec = RigidTfToVec(RigidTransform(command[0]))
             # w, x y, z -> x, y, z, w
             quat = [command_vec[1], command_vec[2], command_vec[3], command_vec[0]]
+            quat = [command_vec[0], command_vec[1], command_vec[2], command_vec[3]]
             processed.append((quat, command_vec[4:], K))
     with open(fname, "wb") as f:
         pickle.dump(processed, f)

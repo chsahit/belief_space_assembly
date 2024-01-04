@@ -24,7 +24,7 @@ def init(
         X_WO,
         "assets/big_chamfered_hole.sdf",
         "assets/peg.urdf",
-        mu=0.33,
+        mu=0.3,
     )
     return p0
 
@@ -48,11 +48,11 @@ def simple_down():
     chamfer_touch = frozenset(chamfer_touch_2)
 
     modes = [chamfer_touch_2, front_faces, bottom_faces]
-    p0 = init(pitch=-4)
-    p1 = init(pitch=4)
+    p0 = init(pitch=-3)
+    p1 = init(pitch=3)
     b = state.Belief([p0, p1])
     diagram_factory.initialize_factory(b.particles)
-    traj, tet, st = refine_motion.refine_two_particles(b, modes)
+    traj, tet, st = refine_motion.refine_two_particles(b, modes, max_attempts=5)
     if traj is not None:
         visualize.play_motions_on_belief(
             state.Belief([p0, p1]), traj, fname="four_deg_mu_33.html"
