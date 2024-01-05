@@ -10,10 +10,9 @@ from simulation import ik_solver
 
 
 class ControllerSystem(LeafSystem):
-    def __init__(self, plant, panda_name: str, block_name: str, out_size: int = 7):
+    def __init__(self, plant, panda_name: str, block_name: str):
         LeafSystem.__init__(self)
         self.plant = plant
-        self.out_size = out_size
         self.panda = plant.GetModelInstanceByName(panda_name)
         self.block = plant.GetModelInstanceByName(block_name)
         self.plant_context = plant.CreateDefaultContext()
@@ -29,14 +28,8 @@ class ControllerSystem(LeafSystem):
         self.constraints = None
         self.sdf = dict()
         self.motion = None
-        self.DeclareVectorOutputPort(
-            "joint_torques", BasicVector(out_size), self.CalcOutput
-        )
-        if out_size > 7:
-            self.DeclareVectorOutputPort("gravity_ff", BasicVector(7), self.CalcGravity)
+        self.DeclareVectorOutputPort("joint_torques", BasicVector(7), self.CalcOutput)
         self.i = 0
-        self.history = []
-        self.q_rd = None
         self.printed = False
 
     def compute_error(self, X_WC: RigidTransform, X_WCd: RigidTransform) -> np.ndarray:
@@ -80,13 +73,10 @@ class ControllerSystem(LeafSystem):
             self.plant_context, self.plant.world_frame(), G
         )
         if self.motion is None:
-            # if not self.printed:
-            # print("warning, X_GC is none")
             X_GC = RigidTransform()
             self.printed = True
         else:
             X_GC = self.motion.X_GC
-        """
         J_g = self.plant.CalcJacobianSpatialVelocity(
             self.plant_context,
             JacobianWrtVariable.kQDot,
@@ -111,32 +101,6 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
-        """
-        if self.out_size == 7:
-            tau_controller = np.zeros((self.out_size,))
-        elif self.motion is not None:
-            X_WGd = self.motion.X_WCd.multiply(X_GC.inverse())
-            if self.q_rd is None:
-                self.q_rd = ik_solver.gripper_to_joint_states(X_WGd)
-            tau_controller = np.append(self.q_rd[:7], np.zeros((7,)))
-
-        # self.history.append((context.get_time(), X_WG.translation()))
-        """
-        if self.i == 0:
-            from pydrake.all import MultibodyForces
-
-            to_dump = (J_g, tau_controller + tau_g)
-            with open("control_logs.pkl", "wb") as f:
-                pickle.dump(to_dump, f)
-        """
         self.i += 1
         # tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))
         output.SetFromVector(tau_controller)
-
-    def CalcGravity(self, context, output):
-        q = self._state_port.Eval(context)
-        self.plant.SetPositionsAndVelocities(self.plant_context, self.panda, q)
-        tau_g = self.plant.CalcGravityGeneralizedForces(self.plant_context)
-        # by convention, wrench vectors and twist vectors are ordered the same
-        tau_g = self.plant.GetVelocitiesFromArray(self.panda, tau_g)[:7]
-        output.SetFromVector(-tau_g)

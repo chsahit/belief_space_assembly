@@ -35,9 +35,7 @@ def simple_down():
         ("bin_model::front_front", "block::Box_back"),
     )
     bottom_faces = frozenset(bottom_faces)
-    bottom_faces_2 = (
-        ("bin_model::bottom_top", "block::Box_bottom"),
-    )
+    bottom_faces_2 = (("bin_model::bottom_top", "block::Box_bottom"),)
     bottom_faces_2 = frozenset(bottom_faces)
 
     chamfer_touch_2 = (

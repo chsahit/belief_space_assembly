@@ -52,21 +52,9 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
                     pass
 
 
-def _drop_reflected_inertia(plant, panda):
-    ja_indices = plant.GetJointActuatorIndices(panda)
-    for ja_idx in ja_indices:
-        ja = plant.get_joint_actuator(ja_idx)
-        ja.set_default_rotor_inertia(0.0)
-        ja.set_default_gear_ratio(0.0)
-
-
 def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, plant_builder.timestep)
-    plant.set_contact_model(ContactModel.kPoint)
-    plant.set_penetration_allowance(0.0005)
-    parser = Parser(plant)
-    parser.package_map().Add("assets", "assets/")
+    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=0)
     instance_list = list()
 
     for i, p in enumerate(b.particles):
@@ -88,7 +76,7 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     colors = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
     for i, p in enumerate(b.particles):
         P, O, M = instance_list[i]
-        _drop_reflected_inertia(plant, P)
+        plant_builder._drop_reflected_inertia(plant, P)
         set_transparency_of_models(plant, [P, O, M], colors[i % 3], 0.5, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
         compliant_controller = builder.AddNamedSystem(

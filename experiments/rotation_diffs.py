@@ -1,5 +1,5 @@
 import numpy as np
-from pydrake.all import RigidTransform, Quaternion, RotationMatrix
+from pydrake.all import Quaternion, RigidTransform, RotationMatrix
 
 import components
 import dynamics
@@ -7,6 +7,7 @@ import state
 import utils
 import visualize
 from simulation import ik_solver
+
 
 def init(X_GM_x: float = 0.0):
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
@@ -18,15 +19,17 @@ def init(X_GM_x: float = 0.0):
     )
     return p_0
 
+
 def do_sims():
     p0 = init()
     v = np.array([-0.01, 1, 0, 0])
-    rot1_d = Quaternion(v/np.linalg.norm(v))
+    rot1_d = Quaternion(v / np.linalg.norm(v))
     X_WG_d = RigidTransform(rot1_d, [0.55, 0.0, 0.36])
     u0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     dynamics.simulate(p0, u0, vis=True)
     print("done")
     input()
+
 
 if __name__ == "__main__":
     do_sims()

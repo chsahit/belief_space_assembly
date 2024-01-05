@@ -40,10 +40,73 @@ from pydrake.all import (
 
 import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
+from simulation import joint_impedance_controller as jc
 
-# timestep = 0
 timestep = 0.005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
+contact_approx = DiscreteContactApproximation.kLagged
+
+
+def init_plant(
+    builder,
+    timestep=0.005,
+    contact_model=ContactModel.kPoint,
+    contact_approx=DiscreteContactApproximation.kLagged,
+):
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
+    plant.set_contact_model(contact_model)
+    plant.set_penetration_allowance(0.0005)
+    if timestep > 0:
+        plant.set_discrete_contact_approximation(contact_approx)
+    parser = Parser(plant)
+    parser.package_map().Add("assets", "assets/")
+    return plant, scene_graph, parser
+
+
+def wire_controller(
+    is_cartesian: bool,
+    panda: ModelInstanceIndex,
+    controller_name: str,
+    panda_name: str,
+    block_name: str,
+    builder,
+    plant,
+):
+    compliant_controller = None
+    if is_cartesian:
+        compliant_controller = builder.AddNamedSystem(
+            controller_name, controller.ControllerSystem(plant, panda_name, block_name)
+        )
+        builder.Connect(
+            compliant_controller.get_output_port(),
+            plant.get_actuation_input_port(panda),
+        )
+    else:
+        compliant_controller = builder.AddNamedSystem(
+            controller_name, jc.JointImpedanceController(plant, panda_name)
+        )
+        builder.Connect(
+            compliant_controller.GetOutputPort("q_d"),
+            plant.get_desired_state_input_port(panda),
+        )
+        builder.Connect(
+            compliant_controller.GetOutputPort("gravity_ff"),
+            plant.get_actuation_input_port(panda),
+        )
+
+    builder.Connect(
+        plant.get_state_output_port(panda),
+        compliant_controller.GetInputPort("state"),
+    )
+    return compliant_controller
+
+
+def _drop_reflected_inertia(plant, panda):
+    ja_indices = plant.GetJointActuatorIndices(panda)
+    for ja_idx in ja_indices:
+        ja = plant.get_joint_actuator(ja_idx)
+        ja.set_default_rotor_inertia(0.0)
+        ja.set_default_gear_ratio(0.0)
 
 
 def _weld_geometries(
@@ -99,55 +162,6 @@ def make_plant(
     return diagram, meshcat
 
 
-def make_plant_with_cameras(
-    q_r: np.ndarray,
-    X_GM: RigidTransform,
-    X_WO: RigidTransform,
-    env_geom: str,
-    manip_geom: str,
-    vis: bool = False,
-) -> Diagram:
-    builder, plant, scene_graph, meshcat = _construct_diagram(
-        q_r, X_GM, X_WO, env_geom, manip_geom, vis=vis
-    )
-    from pyvirtualdisplay import Display
-
-    vd = Display(visible=0, size=(1400, 900))
-    vd.start()
-    scene_graph.AddRenderer("renderer", MakeRenderEngineVtk(RenderEngineVtkParams()))
-    depth_cam = DepthRenderCamera(
-        RenderCameraCore(
-            "renderer",
-            CameraInfo(width=1080, height=1080, fov_y=np.pi / 4),
-            ClippingRange(0.01, 10.0),
-            RigidTransform(),
-        ),
-        DepthRange(0.01, 10.0),
-    )
-    X_PB = utils.xyz_rpy_deg([2.0, 0, 0.1], [-90, 0, 90])
-    # X_PB = RigidTransform([0, 0, 0.15])
-    world_idx = plant.GetBodyFrameIdOrThrow(plant.world_body().index())
-    loc = plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("panda_hand").index())
-    sensor = RgbdSensor(
-        world_idx,
-        X_PB,
-        depth_camera=depth_cam,
-        show_window=False,
-    )
-    discrete_sensor = RgbdSensorDiscrete(sensor, 0.1, False)
-    discrete_sensor = builder.AddSystem(discrete_sensor)
-    builder.Connect(
-        scene_graph.get_query_output_port(), discrete_sensor.query_object_input_port()
-    )
-    cam_logger = builder.AddNamedSystem("camera_logger", image_logger.ImageLogger())
-
-    builder.Connect(
-        discrete_sensor.color_image_output_port(), cam_logger.GetInputPort("rbg_in")
-    )
-    diagram = builder.Build()
-    return diagram
-
-
 def _set_frictions(
     plant: MultibodyPlant,
     scene_graph: SceneGraph,
@@ -187,16 +201,10 @@ def _construct_diagram(
     meshcat_instance=None,
     gains=None,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
-    # Plant hyperparameters
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
-    plant.set_discrete_contact_approximation(DiscreteContactApproximation.kLagged)
-    plant.set_contact_model(contact_model)
-    plant.set_penetration_allowance(0.0005)
+    plant, scene_graph, parser = init_plant(builder)
 
     # load and add rigidbodies to plant
-    parser = Parser(plant)
-    parser.package_map().Add("assets", "assets/")
     panda = parser.AddModels("assets/panda_arm_hand.urdf")[0]
     panda_name = "panda"
     plant.RenameModelInstance(panda, panda_name)
@@ -204,31 +212,16 @@ def _construct_diagram(
     # manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
     manipuland = parser.AddModels(manip_geom)[0]
     plant.RenameModelInstance(manipuland, "block")
-    if collision_check:
-        sphere_map = annotate_geoms.annotate(manip_geom)
-        manipuland_body = plant.get_body(plant.GetBodyIndices(manipuland)[0])
-        for (name, rt) in sphere_map.items():
-            continue
-            plant.RegisterCollisionGeometry(
-                manipuland_body, rt, Sphere(1e-5), name[-3:], CoulombFriction(0.0, 0.0)
-            )
     _weld_geometries(plant, X_GM, X_WO, panda, manipuland, env_geometry)
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
     for i, ja_index in enumerate(list(range(7))):
         ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
-        # print(f"{ja.name()=}")
         if gains is not None:
             ja.set_controller_gains(
                 PdControllerGains(p=gains[i, i], d=5 * np.sqrt(gains[i, i]))
             )
-    # assert False
     plant.Finalize()
-    ja_indices = plant.GetJointActuatorIndices(panda)
-    for ja_idx in ja_indices:
-        ja = plant.get_joint_actuator(ja_idx)
-        ja.set_default_rotor_inertia(0.0)
-        ja.set_default_gear_ratio(0.0)
-
+    _drop_reflected_inertia(plant, panda)
     plant.SetDefaultPositions(panda, q_r)
 
     if collision_check:
@@ -245,35 +238,8 @@ def _construct_diagram(
         )
 
     # connect controller
-    out_size = 7
-    if gains is not None:
-        out_size = 14
-    compliant_controller = builder.AddNamedSystem(
-        "controller",
-        controller.ControllerSystem(plant, panda_name, "block", out_size=out_size),
-    )
-    builder.Connect(
-        plant.get_state_output_port(panda),
-        compliant_controller.GetInputPort("state"),
-    )
-
-    if gains is None:
-        lowpass = builder.AddSystem(FirstOrderLowPassFilter(0.005, size=7))
-        builder.Connect(
-            compliant_controller.get_output_port(), lowpass.get_input_port()
-        )
-        builder.Connect(
-            lowpass.get_output_port(), plant.get_actuation_input_port(panda)
-        )
-    else:
-        builder.Connect(
-            compliant_controller.GetOutputPort("joint_torques"),
-            plant.get_desired_state_input_port(panda),
-        )
-        builder.Connect(
-            compliant_controller.GetOutputPort("gravity_ff"),
-            plant.get_actuation_input_port(panda),
-        )
+    is_cartesian = gains is None
+    wire_controller(is_cartesian, panda, "controller", "panda", "block", builder, plant)
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:
