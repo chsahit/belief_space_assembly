@@ -79,16 +79,16 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
         plant_builder._drop_reflected_inertia(plant, P)
         set_transparency_of_models(plant, [P, O, M], colors[i % 3], 0.5, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
-        compliant_controller = builder.AddNamedSystem(
-            "controller_" + str(i),
-            controller.ControllerSystem(plant, "panda_" + str(i), "block_" + str(i)),
+        plant_builder.wire_controller(
+            True,
+            P,
+            f"controller_{str(i)}",
+            f"panda_{str(i)}",
+            f"block_{str(i)}",
+            builder,
+            plant,
         )
-        builder.Connect(
-            plant.get_state_output_port(P), compliant_controller.GetInputPort("state")
-        )
-        builder.Connect(
-            compliant_controller.get_output_port(), plant.get_actuation_input_port(P)
-        )
+
     meshcat_vis = MeshcatVisualizer.AddToBuilder(
         builder, scene_graph, meshcat, MeshcatVisualizerParams()
     )
