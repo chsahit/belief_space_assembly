@@ -134,6 +134,7 @@ def play_motions_on_belief(
         T += u.timeout
         for i in range(len(b.particles)):
             diagram.GetSubsystemByName("controller_" + str(i)).motion = u
+            diagram.GetSubsystemByName("controller_" + str(i)).K_q = None
         simulator.AdvanceTo(T)
     visualizer.PublishRecording()
     if fname is not None:

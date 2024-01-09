@@ -41,6 +41,7 @@ from pydrake.all import (
 import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 from simulation import joint_impedance_controller as jc
+from simulation import playback_controller
 
 timestep = 0.005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
@@ -75,7 +76,10 @@ def wire_controller(
     compliant_controller = None
     if is_cartesian:
         compliant_controller = builder.AddNamedSystem(
-            controller_name, controller.ControllerSystem(plant, panda_name, block_name)
+            controller_name,
+            playback_controller.PlaybackController(
+                plant, panda_name
+            ),  # controller.ControllerSystem(plant, panda_name, block_name)
         )
         builder.Connect(
             compliant_controller.get_output_port(),

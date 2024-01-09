@@ -131,4 +131,4 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    test_simulate()
+    test_parallel_sim()

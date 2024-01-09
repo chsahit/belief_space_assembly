@@ -31,5 +31,22 @@ def do_sims():
     input()
 
 
+def joint_cartesian_tf():
+    p0 = init()
+    for i in range(6):
+        init_K = np.copy(components.stiff)
+        init_K[i] = components.soft[i]
+        init_q_gains = np.diag((p0.J.T) @ np.diag(init_K) @ p0.J)
+        X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
+        u = components.CompliantMotion(RigidTransform(), X_WG_d, init_K)
+        p1 = dynamics.simulate(p0, u, vis=False)
+        final_K_gains = (
+            np.linalg.pinv(p1.J.T) @ np.diag(init_q_gains) @ np.linalg.pinv(p1.J)
+        )
+        print(f"{init_K=}")
+        print(f"{np.diag(final_K_gains)=}")
+    input()
+
+
 if __name__ == "__main__":
-    do_sims()
+    joint_cartesian_tf()
