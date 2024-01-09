@@ -104,7 +104,7 @@ def solve_for_compliance(
             K_opt = K_curr
             print(f"{K_opt=}, {succ_count=}")
 
-    if succ_count == 0:
+    if succ_count == 0 or True:
         K_opt_soft = np.copy(components.soft)
         validated_samples_soft, _ = refine_p(p, CF_d, K_opt_soft, targets=targets)
         succ_count_soft = len(validated_samples_soft)

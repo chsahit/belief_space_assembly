@@ -50,8 +50,8 @@ contact_approx = DiscreteContactApproximation.kSimilar
 
 def init_plant(
     builder,
-    timestep=0.001,
-    contact_model=ContactModel.kPoint,
+    timestep=0.005,
+    contact_model=ContactModel.kHydroelasticWithFallback,
     contact_approx=DiscreteContactApproximation.kLagged,
 ):
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
@@ -222,7 +222,7 @@ def _construct_diagram(
         ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
         if gains is not None:
             ja.set_controller_gains(
-                PdControllerGains(p=gains[i, i], d=5 * np.sqrt(gains[i, i]))
+                PdControllerGains(p=gains[i, i], d=2 * np.sqrt(gains[i, i]))
             )
     plant.Finalize()
     _drop_reflected_inertia(plant, panda)

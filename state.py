@@ -178,7 +178,7 @@ class Belief:
             for contact in CF_d:
                 if p.satisfies_contact(set((contact,))):
                     score += 1.0 / len(CF_d)
-        return score
+        return score + 0.001 * len(self.contact_state())
 
     def contact_state(self, epsilon=0.001) -> components.ContactState:
         assert len(self.particles) > 0
@@ -187,7 +187,7 @@ class Belief:
             cs = cs.intersection(self.particles[i].epsilon_contacts(epsilon))
         filtered_cs = []
         for c in cs:
-            if "Box" not in str(c):
+            if "Box" not in str(c) or True:
                 filtered_cs.append(c)
         filtered_cs = frozenset(filtered_cs)
         return filtered_cs

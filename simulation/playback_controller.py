@@ -35,7 +35,7 @@ class PlaybackController(LeafSystem):
             m.q_d = ik_solver.gripper_to_joint_states(X_WGd)[:7]
         if self.K_q is None:
             self.update_stiffness(self.motion.K, self.motion.X_GC)
-        B_q = 10 * np.sqrt(self.K_q)
+        B_q = 2 * np.sqrt(self.K_q)
         self.motion.q_d = self.motion.q_d[:7]
         F_spring = np.multiply(self.K_q, self.motion.q_d - q_r)
         F_damper = np.multiply(B_q, np.zeros((7,)) - q_r_dot)
@@ -49,12 +49,13 @@ class PlaybackController(LeafSystem):
             self.plant_context,
             JacobianWrtVariable.kQDot,
             self.plant.GetBodyByName("panda_hand", self.panda).body_frame(),
-            X_GC.translation(),
+            np.array([0, 0, 0]),
             self.plant.world_frame(),
             self.plant.world_frame(),
         )
         J_g = J_g[:, self.panda_start_pos : self.panda_end_pos + 1]
         self.K_q = np.diag(J_g.T @ np.diag(K_EE) @ J_g)
+        print(f"{K_EE=}")
         print(f"playback_controller, {self.K_q=}")
 
     def clip(self, torque):
