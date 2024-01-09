@@ -20,6 +20,7 @@ class PlaybackController(LeafSystem):
         self.plant_context = plant.CreateDefaultContext()
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
         self.DeclareVectorOutputPort("joint_torques", BasicVector(7), self.CalcOutput)
+        self.err = 0
 
     def CalcOutput(self, context, output):
         q = self._state_port.Eval(context)
@@ -34,11 +35,14 @@ class PlaybackController(LeafSystem):
             m.q_d = ik_solver.gripper_to_joint_states(X_WGd)[:7]
         if self.K_q is None:
             self.update_stiffness(self.motion.K, self.motion.X_GC)
-        B_q = 5 * np.sqrt(self.K_q)
+        B_q = 10 * np.sqrt(self.K_q)
+        self.motion.q_d = self.motion.q_d[:7]
         F_spring = np.multiply(self.K_q, self.motion.q_d - q_r)
         F_damper = np.multiply(B_q, np.zeros((7,)) - q_r_dot)
         tau_err = F_spring + F_damper
-        output.SetFromVector(tau_err - tau_g)
+        tau_net = self.clip(tau_err - tau_g)
+        self.err = tau_net
+        output.SetFromVector(tau_net)
 
     def update_stiffness(self, K_EE, X_GC):
         J_g = self.plant.CalcJacobianSpatialVelocity(
@@ -51,3 +55,8 @@ class PlaybackController(LeafSystem):
         )
         J_g = J_g[:, self.panda_start_pos : self.panda_end_pos + 1]
         self.K_q = np.diag(J_g.T @ np.diag(K_EE) @ J_g)
+        print(f"playback_controller, {self.K_q=}")
+
+    def clip(self, torque):
+        limits = np.array([87.0, 87, 87, 87, 12, 12, 12.0])
+        return np.clip(torque, -limits, limits)

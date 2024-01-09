@@ -221,7 +221,9 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
                 max_certainty = certainty
                 best_u = new_samples[np_i]
             if new_posterior.satisfies_contact(relaxed_CF_d):
-                print("returning from GP")
+                dynamics.simulate(b.particles[0], new_samples[np_i], vis=True)
+                dynamics.simulate(b.particles[1], new_samples[np_i], vis=True)
+                print(f"returning from GP, {certainty=}")
                 return new_samples[np_i], certainty, True
             if is_partially_satisfiying:
                 scores.append(1)

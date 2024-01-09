@@ -45,12 +45,12 @@ from simulation import playback_controller
 
 timestep = 0.005
 contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
-contact_approx = DiscreteContactApproximation.kLagged
+contact_approx = DiscreteContactApproximation.kSimilar
 
 
 def init_plant(
     builder,
-    timestep=0.005,
+    timestep=0.001,
     contact_model=ContactModel.kPoint,
     contact_approx=DiscreteContactApproximation.kLagged,
 ):

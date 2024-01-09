@@ -44,7 +44,7 @@ def test_parallel_sim():
     U = [
         components.CompliantMotion(
             RigidTransform(),
-            utils.xyz_rpy_deg([0.5, 0.0, 0.22], [0, 0, 0]),
+            utils.xyz_rpy_deg([0.5, 0.0, 0.22], [180, 0, 0]),
             components.stiff,
         )
     ]
@@ -116,6 +116,6 @@ def funny_rcc():
 
 
 if __name__ == "__main__":
-    test_simulate()
+    test_parallel_sim()
     # funny_rcc()
     # test_vis()
