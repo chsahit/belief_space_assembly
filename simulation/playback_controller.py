@@ -35,7 +35,7 @@ class PlaybackController(LeafSystem):
             m.q_d = ik_solver.gripper_to_joint_states(X_WGd)[:7]
         if self.K_q is None:
             self.update_stiffness(self.motion.K, self.motion.X_GC)
-        B_q = 2 * np.sqrt(self.K_q)
+        B_q = 3 * np.sqrt(self.K_q)
         self.motion.q_d = self.motion.q_d[:7]
         F_spring = np.multiply(self.K_q, self.motion.q_d - q_r)
         F_damper = np.multiply(B_q, np.zeros((7,)) - q_r_dot)

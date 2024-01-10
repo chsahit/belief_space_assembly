@@ -80,6 +80,8 @@ def generate_targets(
 def solve_for_compliance(
     p: state.Particle, CF_d: components.ContactState
 ) -> np.ndarray:
+
+    return np.array([30.0, 30.0, 10.0, 300.0, 300.0, 600.0]), []
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=compliance_samples
     )
@@ -104,7 +106,7 @@ def solve_for_compliance(
             K_opt = K_curr
             print(f"{K_opt=}, {succ_count=}")
 
-    if succ_count == 0 or True:
+    if succ_count == 0:
         K_opt_soft = np.copy(components.soft)
         validated_samples_soft, _ = refine_p(p, CF_d, K_opt_soft, targets=targets)
         succ_count_soft = len(validated_samples_soft)
