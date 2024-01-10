@@ -32,23 +32,6 @@ else:
 print(f"{compliance_samples=}, {refinement_samples=}")
 
 
-def relax_CF(CF_d: components.ContactState) -> components.ContactState:
-    if CF_d == puzzle_contact_defs.goal:
-        return puzzle_contact_defs.side
-    return CF_d
-    relaxation = puzzle_contact_defs.relaxations.get(frozenset(CF_d), None)
-    if relaxation is not None:
-        return relaxation
-    relaxed_CF_d = set()
-    for env_contact, manip_contact in CF_d:
-        e_u = env_contact.rfind("_")
-        r_ec = env_contact[:e_u]
-        e_m = manip_contact.rfind("_")
-        r_mc = manip_contact[:e_m]
-        relaxed_CF_d.add((r_ec, r_mc))
-    return relaxed_CF_d
-
-
 def apply_noise(targets: List[RigidTransform]) -> List[RigidTransform]:
     noised_targets = []
     for X in targets:
@@ -153,10 +136,9 @@ def refine_p(
         print(f"{p_out.sdf=}")
     P_next = dynamics.f_cspace(p, motions)
     U = []
-    relaxed_CF_d = relax_CF(CF_d)
     s_time = time.time()
     for i, p_next in enumerate(P_next):
-        if p_next.satisfies_contact(relaxed_CF_d):
+        if p_next.satisfies_contact(CF_d):
             U.append(motions[i])
             scores.append(1)
         else:
@@ -181,9 +163,8 @@ def score_tree_root(
     P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
     U = []
     success = True
-    relaxed_CF_d = relax_CF(CF_d)
     for i, p1_next in enumerate(P1_next):
-        if p1_next.satisfies_contact(relaxed_CF_d):
+        if p1_next.satisfies_contact(CF_d):
             U.append(U0[i])
     if len(U) == 0:
         print("no intersect")
@@ -206,7 +187,6 @@ def score_tree_root(
 
 
 def iterative_gp(data_a, data_b, b, CF_d, iters=3):
-    relaxed_CF_d = relax_CF(CF_d)
     max_certainty = float("-inf")
     best_u = None
     for idx in range(iters):
@@ -216,15 +196,13 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
         scores = []
         for np_i, new_posterior in enumerate(posteriors):
             certainty = new_posterior.partial_sat_score(CF_d)
-            p0_sat = new_posterior.particles[0].satisfies_contact(relaxed_CF_d)
-            p1_sat = new_posterior.particles[1].satisfies_contact(relaxed_CF_d)
+            p0_sat = new_posterior.particles[0].satisfies_contact(CF_d)
+            p1_sat = new_posterior.particles[1].satisfies_contact(CF_d)
             is_partially_satisfiying = p0_sat or p1_sat
             if certainty > max_certainty and is_partially_satisfiying:
                 max_certainty = certainty
                 best_u = new_samples[np_i]
-            if new_posterior.satisfies_contact(relaxed_CF_d):
-                dynamics.simulate(b.particles[0], new_samples[np_i], vis=True)
-                dynamics.simulate(b.particles[1], new_samples[np_i], vis=True)
+            if new_posterior.satisfies_contact(CF_d):
                 print(f"returning from GP, {certainty=}")
                 return new_samples[np_i], certainty, True
             if is_partially_satisfiying:
@@ -255,7 +233,7 @@ def refine_b(
     if success_gp:
         return u_gp
     if certainty_gp > certainty_0 and certainty_gp > certainty_1:
-        print("max likelihood generated from gp")
+        print(f"max certainty {certainty_gp} generated from gp")
         return u_gp
     assert certainty_0 >= 0 or certainty_1 >= 0
     if certainty_0 >= certainty_1:

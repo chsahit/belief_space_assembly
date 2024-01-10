@@ -149,7 +149,7 @@ def refine_two_particles(
                 break
             traj.append(u_star)
             curr = dynamics.f_bel(curr, u_star)
-        if curr.satisfies_contact(randomized_search.relax_CF(modes[-1])):
+        if curr.satisfies_contact(modes[-1]):
             total_elapsed_time = time.time() - start_time
             sim_time = dynamics.get_time()
             dynamics.reset_time()
