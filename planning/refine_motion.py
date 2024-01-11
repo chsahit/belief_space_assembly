@@ -136,7 +136,10 @@ def refine(
 
 
 def refine_two_particles(
-    b: state.Belief, modes: List[components.ContactState], max_attempts: int = 3
+    b: state.Belief,
+    modes: List[components.ContactState],
+    search_compliance: bool = True,
+    max_attempts: int = 3,
 ) -> List[components.CompliantMotion]:
     start_time = time.time()
     for attempt in range(max_attempts):
@@ -144,7 +147,7 @@ def refine_two_particles(
         curr = b
         traj = []
         for mode in modes:
-            u_star = randomized_search.refine_b(curr, mode)
+            u_star = randomized_search.refine_b(curr, mode, search_compliance)
             if u_star is None:
                 break
             traj.append(u_star)
@@ -152,7 +155,10 @@ def refine_two_particles(
         if curr.satisfies_contact(modes[-1]):
             total_elapsed_time = time.time() - start_time
             sim_time = dynamics.get_time()
+            np = dynamics.get_posterior_count()
+            dynamics.reset_posteriors()
             dynamics.reset_time()
-            return traj, total_elapsed_time, sim_time
+            return components.PlanningResult(traj, total_elapsed_time, sim_time, np)
     dynamics.reset_time()
-    return None, -1.0, -1.0
+    dynamics.reset_posteriors()
+    return components.PlanningResult(None, -1, -1, 0)

@@ -11,6 +11,7 @@ import components
 import state
 
 _time_in_sim = 0.0
+_num_posteriors = 0
 
 
 def reset_time():
@@ -25,6 +26,20 @@ def get_time():
 def add_time(delta):
     global _time_in_sim
     _time_in_sim += delta
+
+
+def reset_posteriors():
+    global _num_posteriors
+    _num_posteriors = 0
+
+
+def get_posterior_count():
+    return _num_posteriors
+
+
+def add_posteriors(n):
+    global _num_posteriors
+    _num_posteriors += n
 
 
 def tf_impedance(K_q, x0):
@@ -136,6 +151,7 @@ def _parallel_simulate(
         print("f_cspace interrupted. Exiting")
         sys.exit()
     add_time(time.time() - p_sim_start)
+    add_posteriors(len(simulation_args))
     return resulting_particles
 
 

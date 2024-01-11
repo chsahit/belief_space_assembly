@@ -7,7 +7,7 @@ from pydrake.all import RigidTransform, RollPitchYaw
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
 
-stiff = np.array([100.0, 100.0, 10.0, 600.0, 600.0, 600.0])
+stiff = np.array([60.0, 60.0, 60.0, 600.0, 600.0, 600.0])
 soft = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 100.0])
 
 
@@ -83,3 +83,18 @@ class TreeNode:
 class Tree:
     p: "Particle"
     nodes: List[TreeNode]
+
+
+@dataclass
+class PlanningResult:
+    traj: List[CompliantMotion]
+    total_time: float
+    sim_time: float
+    num_posteriors: int
+
+    def __str__(self):
+        if self.traj is None:
+            traj_len = 0
+        else:
+            traj_len = len(self.traj)
+        return f"{self.total_time=}, {self.num_posteriors=}, {traj_len=}"

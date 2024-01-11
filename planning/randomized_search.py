@@ -63,8 +63,6 @@ def generate_targets(
 def solve_for_compliance(
     p: state.Particle, CF_d: components.ContactState
 ) -> np.ndarray:
-
-    return np.array([30.0, 30.0, 10.0, 300.0, 300.0, 600.0]), []
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=compliance_samples
     )
@@ -72,7 +70,7 @@ def solve_for_compliance(
     K_opt = np.copy(components.stiff)
     validated_samples, _ = refine_p(p, CF_d, K_opt, targets=targets)
     succ_count = len(validated_samples)
-    print(f"{K_opt=}, {succ_count=}")
+    # print(f"{K_opt=}, {succ_count=}")
     if succ_count == len(targets):
         return K_opt, validated_samples
     for i in range(6):
@@ -87,13 +85,13 @@ def solve_for_compliance(
             succ_count = curr_succ_count
             validated_samples = curr_validated_samples
             K_opt = K_curr
-            print(f"{K_opt=}, {succ_count=}")
+            # print(f"{K_opt=}, {succ_count=}")
 
     if succ_count == 0:
         K_opt_soft = np.copy(components.soft)
         validated_samples_soft, _ = refine_p(p, CF_d, K_opt_soft, targets=targets)
         succ_count_soft = len(validated_samples_soft)
-        print(f"{K_opt_soft=}, {succ_count_soft=}")
+        # print(f"{K_opt_soft=}, {succ_count_soft=}")
         for i in range(6):
             K_curr = np.copy(K_opt_soft)
             K_curr[i] = components.stiff[i]
@@ -105,10 +103,11 @@ def solve_for_compliance(
                 succ_count_soft = curr_succ_count_soft
                 K_opt_soft = K_curr
                 validated_samples_soft = curr_validated_samples_soft
-                print(f"{K_opt_soft=}, {succ_count_soft=}")
+                # print(f"{K_opt_soft=}, {succ_count_soft=}")
         if succ_count_soft > succ_count:
             K_opt = K_opt_soft
             validated_samples = validated_samples_soft
+    print(f"{K_opt=}, succ_count={len(validated_samples)}")
     return K_opt, validated_samples
 
 
@@ -157,7 +156,7 @@ def score_tree_root(
     global scoring_time
     U0, data = refine_p(b.particles[p_idx], CF_d, K_star)
     U0 = U0 + validated_samples
-    print(f"{len(U0)=}")
+    # print(f"{len(U0)=}")
     if len(U0) == 0:
         return None, float("-inf"), False, ([], [])
     P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
@@ -167,7 +166,6 @@ def score_tree_root(
         if p1_next.satisfies_contact(CF_d):
             U.append(U0[i])
     if len(U) == 0:
-        print("no intersect")
         success = False
         U = U0
     best_u = None
@@ -190,7 +188,7 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
     max_certainty = float("-inf")
     best_u = None
     for idx in range(iters):
-        print(f"iteration={idx}")
+        # print(f"iteration={idx}")
         new_samples = infer_joint_soln.infer(*data_a, *data_b)
         posteriors = dynamics.parallel_f_bel(b, new_samples)
         scores = []
@@ -209,16 +207,19 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
                 scores.append(1)
             else:
                 scores.append(0)
-        print(f"{scores=}")
+        # print(f"{scores=}")
         data_a = (data_a[0] + new_samples, data_a[1] + scores)
     return best_u, max_certainty, False
 
 
 def refine_b(
-    b: state.Belief, CF_d: components.ContactState
+    b: state.Belief, CF_d: components.ContactState, search_compliance: bool
 ) -> components.CompliantMotion:
-    print(f"{CF_d=}")
-    K_star, samples = solve_for_compliance(b.particles[0], CF_d)
+    # print(f"{CF_d=}")
+    if search_compliance:
+        K_star, samples = solve_for_compliance(b.particles[0], CF_d)
+    else:
+        K_star, samples = (np.array([30.0, 30.0, 10.0, 300.0, 300.0, 600.0]), [])
     best_u_0, certainty_0, success, data_a = score_tree_root(
         b, CF_d, K_star, p_idx=0, validated_samples=samples
     )

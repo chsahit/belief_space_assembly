@@ -55,8 +55,6 @@ class PlaybackController(LeafSystem):
         )
         J_g = J_g[:, self.panda_start_pos : self.panda_end_pos + 1]
         self.K_q = np.diag(J_g.T @ np.diag(K_EE) @ J_g)
-        print(f"{K_EE=}")
-        print(f"playback_controller, {self.K_q=}")
 
     def clip(self, torque):
         limits = np.array([87.0, 87, 87, 87, 12, 12, 12.0])
