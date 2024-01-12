@@ -50,5 +50,5 @@ def sweep(dof, deviations, geometry, schedule):
 
 
 if __name__ == "__main__":
-    sweep(*pitch_sweep_peg, peg_schedule)
-    # sweep(*x_sweep_puzzle, puzzle_schedule)
+    # sweep(*pitch_sweep_peg, peg_schedule)
+    sweep(*x_sweep_puzzle, puzzle_schedule)

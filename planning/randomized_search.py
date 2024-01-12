@@ -79,7 +79,6 @@ def solve_for_compliance(
         curr_validated_samples, _ = refine_p(p, CF_d, K_curr, targets=targets)
         curr_succ_count = len(curr_validated_samples)
         if curr_succ_count == len(targets):
-            print(f"K_opt={K_curr}")
             return K_curr, curr_validated_samples
         if curr_succ_count > succ_count:
             succ_count = curr_succ_count
@@ -107,7 +106,6 @@ def solve_for_compliance(
         if succ_count_soft > succ_count:
             K_opt = K_opt_soft
             validated_samples = validated_samples_soft
-    print(f"{K_opt=}, succ_count={len(validated_samples)}")
     return K_opt, validated_samples
 
 
@@ -179,7 +177,6 @@ def score_tree_root(
         if certainty > most_certainty:
             most_certainty = certainty
             best_u = U[p_i]
-    print(f"{most_certainty=}")
     scoring_time += time.time() - s_time
     return best_u, most_certainty, success, data
 
@@ -220,12 +217,16 @@ def refine_b(
         K_star, samples = solve_for_compliance(b.particles[0], CF_d)
     else:
         K_star, samples = (np.array([30.0, 30.0, 10.0, 300.0, 300.0, 600.0]), [])
+        K_star, samples = (np.array([60.0, 60.0, 60.0, 600.0, 600.0, 600.0]), [])
+    print(f"{K_star=}, {len(samples)=}")
     best_u_0, certainty_0, success, data_a = score_tree_root(
         b, CF_d, K_star, p_idx=0, validated_samples=samples
     )
+    print(f"{certainty_0=}")
     if success:
         return best_u_0
     best_u_1, certainty_1, success, data_b = score_tree_root(b, CF_d, K_star, p_idx=1)
+    print(f"{certainty_1=}")
     if success:
         return best_u_1
     if best_u_0 is None and best_u_1 is None:

@@ -23,16 +23,15 @@ def simple_down():
     p1 = init_particle.init_peg(pitch=1)
     b = state.Belief([p0, p1])
     # diagram_factory.initialize_factory(b.particles)
-    traj, tet, st = refine_motion.refine_two_particles(b, modes, max_attempts=100)
-    if traj is not None:
+    result = refine_motion.refine_two_particles(b, modes, max_attempts=100)
+    if result is not None:
         """
         visualize.play_motions_on_belief(
             state.Belief([p0, p1]), traj, fname="four_deg_mu_33.html"
         )
         """
-        utils.dump_traj(traj, fname="rot_uncertain.pkl")
-    print(f"{tet=}, {st=}")
-    print(f"{tet-st=}")
+        utils.dump_traj(result.traj, fname="rot_uncertain.pkl")
+    print(f"elapsed time: {result.total_time}")
     input()
 
 
