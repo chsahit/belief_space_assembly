@@ -19,8 +19,8 @@ def simple_down():
         contact_defs.bottom_faces_3,
         contact_defs.bottom_faces,
     ]
-    p0 = init_particle.init_peg(pitch=-1)
-    p1 = init_particle.init_peg(pitch=1)
+    p0 = init_particle.init_peg(pitch=-3)
+    p1 = init_particle.init_peg(pitch=3)
     b = state.Belief([p0, p1])
     # diagram_factory.initialize_factory(b.particles)
     result = refine_motion.refine_two_particles(b, modes, max_attempts=100)
@@ -30,7 +30,7 @@ def simple_down():
             state.Belief([p0, p1]), traj, fname="four_deg_mu_33.html"
         )
         """
-        utils.dump_traj(result.traj, fname="rot_uncertain.pkl")
+        utils.dump_traj(p1.q_r, result.traj, fname="rot_uncertain.pkl")
     print(f"elapsed time: {result.total_time}")
     input()
 

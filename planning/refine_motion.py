@@ -159,6 +159,8 @@ def refine_two_particles(
             dynamics.reset_posteriors()
             dynamics.reset_time()
             return components.PlanningResult(traj, total_elapsed_time, sim_time, np)
+    tet = time.time() - start_time
+    sim_time, np = (dynamics.get_time(), dynamics.get_posterior_count())
     dynamics.reset_time()
     dynamics.reset_posteriors()
-    return components.PlanningResult(None, -1, -1, 0)
+    return components.PlanningResult(None, tet, sim_time, np)

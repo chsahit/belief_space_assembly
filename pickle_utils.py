@@ -24,7 +24,8 @@ def joint_space_post_process(fname: str):
     processed = []
     with open(fname, "rb") as f:
         data = pickle.load(f)
-        for X_WGd, K in data:
+        processed.append((data[0][0], [400, 400, 400, 60, 60, 60]))
+        for X_WGd, K in data[1:]:
             K_q = [K[3], K[4], K[5], K[0], K[1], K[2]]
             q_r = ik_solver.gripper_to_joint_states(RigidTransform(X_WGd))
             processed.append((q_r, K_q))

@@ -7,7 +7,7 @@ from pydrake.all import RigidTransform, RollPitchYaw
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
 
-stiff = np.array([60.0, 60.0, 60.0, 600.0, 600.0, 600.0])
+stiff = np.array([60.0, 60.0, 60.0, 400.0, 400.0, 400.0])
 soft = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 100.0])
 
 
