@@ -135,7 +135,7 @@ def refine(
     return U_candidates[best_candidate], best_posterior
 
 
-def refine_two_particles(
+def randomized_refine(
     b: state.Belief,
     modes: List[components.ContactState],
     search_compliance: bool = True,

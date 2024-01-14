@@ -15,7 +15,6 @@ from planning import infer_joint_soln
 from simulation import generate_contact_set, ik_solver
 
 gen = np.random.default_rng(0)
-scoring_time = 0.0
 
 
 def reset_time():
@@ -140,7 +139,6 @@ def refine_p(
             scores.append(1)
         else:
             scores.append(0)
-    scoring_time += time.time() - s_time
     return U, (motions, scores)
 
 
@@ -151,42 +149,28 @@ def score_tree_root(
     p_idx: int = 0,
     validated_samples=[],
 ) -> components.CompliantMotion:
-    global scoring_time
     U0, data = refine_p(b.particles[p_idx], CF_d, K_star)
     U0 = U0 + validated_samples
-    # print(f"{len(U0)=}")
     if len(U0) == 0:
         return None, float("-inf"), False, ([], [])
-    P1_next = dynamics.f_cspace(b.particles[int(not p_idx)], U0)
-    U = []
-    success = True
-    for i, p1_next in enumerate(P1_next):
-        if p1_next.satisfies_contact(CF_d):
-            U.append(U0[i])
-    if len(U) == 0:
-        success = False
-        U = U0
+    posteriors = dynamics.parallel_f_bel(b, U0)
     best_u = None
     most_certainty = float("-inf")
-    best_u = U[0]
-    most_certainty = 0
-    posteriors = dynamics.parallel_f_bel(b, U)
-    s_time = time.time()
     for p_i, posterior in enumerate(posteriors):
         certainty = posterior.partial_sat_score(CF_d)
         if certainty > most_certainty:
             most_certainty = certainty
-            best_u = U[p_i]
-    scoring_time += time.time() - s_time
+            best_u = U0[p_i]
+    success = most_certainty >= len(b.particles)
     return best_u, most_certainty, success, data
 
 
-def iterative_gp(data_a, data_b, b, CF_d, iters=3):
+def iterative_gp(data, b, CF_d, iters=3):
     max_certainty = float("-inf")
     best_u = None
     for idx in range(iters):
         # print(f"iteration={idx}")
-        new_samples = infer_joint_soln.infer(*data_a, *data_b)
+        new_samples = infer_joint_soln.infer(*data)
         posteriors = dynamics.parallel_f_bel(b, new_samples)
         scores = []
         for np_i, new_posterior in enumerate(posteriors):
@@ -205,40 +189,42 @@ def iterative_gp(data_a, data_b, b, CF_d, iters=3):
             else:
                 scores.append(0)
         # print(f"{scores=}")
-        data_a = (data_a[0] + new_samples, data_a[1] + scores)
+        data = (data[0] + new_samples, data[1] + scores)
     return best_u, max_certainty, False
 
 
 def refine_b(
     b: state.Belief, CF_d: components.ContactState, search_compliance: bool
 ) -> components.CompliantMotion:
-    # print(f"{CF_d=}")
     if search_compliance:
         K_star, samples = solve_for_compliance(b.particles[0], CF_d)
     else:
         K_star, samples = (np.array([30.0, 30.0, 10.0, 300.0, 300.0, 600.0]), [])
-        K_star, samples = (np.array([60.0, 60.0, 60.0, 600.0, 600.0, 600.0]), [])
+        # K_star, samples = (np.array([60.0, 60.0, 60.0, 600.0, 600.0, 600.0]), [])
     print(f"{K_star=}, {len(samples)=}")
-    best_u_0, certainty_0, success, data_a = score_tree_root(
-        b, CF_d, K_star, p_idx=0, validated_samples=samples
-    )
-    print(f"{certainty_0=}")
-    if success:
-        return best_u_0
-    best_u_1, certainty_1, success, data_b = score_tree_root(b, CF_d, K_star, p_idx=1)
-    print(f"{certainty_1=}")
-    if success:
-        return best_u_1
-    if best_u_0 is None and best_u_1 is None:
+    best_u_root = None
+    best_certainty_all = float("-inf")
+    data = [[], []]
+    for p_idx, p in enumerate(b.particles):
+        if p_idx == 0:
+            validated_samples = samples
+        else:
+            validated_samples = []
+        best_u_i, certainty_i, success, data_i = score_tree_root(
+            b, CF_d, K_star, p_idx=p_idx, validated_samples=validated_samples
+        )
+        data[0] += data_i[0]
+        data[1] += data_i[1]
+        print(f"certainty_{p_idx}={certainty_i}")
+        if success:
+            return best_u_i
+        if certainty_i > best_certainty_all:
+            best_certainty_all = certainty_i
+            best_u_root = best_u_i
+    if best_u_root is None:
         return None
-    u_gp, certainty_gp, success_gp = iterative_gp(data_a, data_b, b, CF_d)
-    if success_gp:
-        return u_gp
-    if certainty_gp > certainty_0 and certainty_gp > certainty_1:
+    u_gp, certainty_gp, success_gp = iterative_gp(data, b, CF_d)
+    if certainty_gp > best_certainty_all:
         print(f"max certainty {certainty_gp} generated from gp")
         return u_gp
-    assert certainty_0 >= 0 or certainty_1 >= 0
-    if certainty_0 >= certainty_1:
-        return best_u_0
-    else:
-        return best_u_1
+    return best_u_root

@@ -43,14 +43,10 @@ def GP(X1, y1, X2, kernel_func):
 
 
 def infer(
-    samples_a: List[components.CompliantMotion],
-    scores_a: List[float],
-    samples_b: List[components.CompliantMotion],
-    scores_b: List[float],
+    all_samples: List[components.CompliantMotion],
+    all_scores: List[float],
 ) -> List[components.CompliantMotion]:
 
-    all_samples = samples_a + samples_b
-    all_scores = np.array(scores_a + scores_b)
     mu_as = np.mean(all_scores)
     sigma_as_inv = 1.0 / np.std(all_scores)
     all_scores = sigma_as_inv * (all_scores - mu_as)

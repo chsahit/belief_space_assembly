@@ -30,7 +30,11 @@ def rt_to_str(X: RigidTransform) -> str:
     return t_str + "\n" + r_str
 
 
-def dump_traj(init_q: np.ndarray, traj: List[components.CompliantMotion], fname: str = "traj_out.pkl"):
+def dump_traj(
+    init_q: np.ndarray,
+    traj: List[components.CompliantMotion],
+    fname: str = "traj_out.pkl",
+):
     tau = [(init_q, components.stiff)]
     for u in traj:
         X_WGd = u.X_WCd.multiply(u.X_GC.inverse())

@@ -35,13 +35,15 @@ def sweep(dof, deviations, geometry, schedule):
     experiment_params = itertools.product(deviations, compliance_search)
     for deviation, do_compliance in experiment_params:
         print(f"{deviation=}, {do_compliance=}")
-        kwarg_0 = {dof: -deviation, "mu": 0.0}
-        kwarg_1 = {dof: deviation, "mu": 0.0}
+        kwarg_0 = {dof: -deviation}
+        kwarg_1 = {dof: deviation}
+        kwarg_2 = {dof: 0}
         p0 = initializer(**kwarg_0)
         p1 = initializer(**kwarg_1)
-        b = state.Belief([p0, p1])
+        p2 = initializer(**kwarg_2)
+        b = state.Belief([p0, p1, p2])
         experiment_label = str(deviation) + "_" + str(compliance_search)
-        results[experiment_label] = refine_motion.refine_two_particles(
+        results[experiment_label] = refine_motion.randomized_refine(
             b, schedule, search_compliance=do_compliance, max_attempts=5
         )
         print(str(results[experiment_label]) + "\n")
@@ -50,5 +52,5 @@ def sweep(dof, deviations, geometry, schedule):
 
 
 if __name__ == "__main__":
-    # sweep(*pitch_sweep_peg, peg_schedule)
-    sweep(*x_sweep_puzzle, puzzle_schedule)
+    sweep(*pitch_sweep_peg, peg_schedule)
+    # sweep(*x_sweep_puzzle, puzzle_schedule)

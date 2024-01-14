@@ -23,7 +23,7 @@ def simple_down():
     p1 = init_particle.init_peg(pitch=3)
     b = state.Belief([p0, p1])
     # diagram_factory.initialize_factory(b.particles)
-    result = refine_motion.refine_two_particles(b, modes, max_attempts=100)
+    result = refine_motion.randomized_refine(b, modes, max_attempts=100)
     if result is not None:
         """
         visualize.play_motions_on_belief(
