@@ -54,7 +54,7 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
 
 def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
-    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=0)
+    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=1e-4)
     instance_list = list()
 
     for i, p in enumerate(b.particles):

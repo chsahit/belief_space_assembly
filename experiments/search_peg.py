@@ -25,11 +25,10 @@ def simple_down():
     # diagram_factory.initialize_factory(b.particles)
     result = refine_motion.randomized_refine(b, modes, max_attempts=100)
     if result is not None:
-        """
+        print("visualize")
         visualize.play_motions_on_belief(
-            state.Belief([p0, p1]), traj, fname="four_deg_mu_33.html"
+            state.Belief([p0, p1]), result.traj, fname="four_deg_mu_33.html"
         )
-        """
         utils.dump_traj(p1.q_r, result.traj, fname="rot_uncertain.pkl")
     print(f"elapsed time: {result.total_time}")
     input()

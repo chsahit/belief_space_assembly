@@ -199,8 +199,8 @@ def refine_b(
     if search_compliance:
         K_star, samples = solve_for_compliance(b.particles[0], CF_d)
     else:
-        K_star, samples = (np.array([30.0, 30.0, 10.0, 300.0, 300.0, 600.0]), [])
-        # K_star, samples = (np.array([60.0, 60.0, 60.0, 600.0, 600.0, 600.0]), [])
+        K_star, samples = (np.array([10.0, 10.0, 10.0, 100.0, 100.0, 400.0]), [])
+        K_star, samples = (components.stiff, [])
     print(f"{K_star=}, {len(samples)=}")
     best_u_root = None
     best_certainty_all = float("-inf")

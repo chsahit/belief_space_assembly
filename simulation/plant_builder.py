@@ -16,6 +16,7 @@ from pydrake.all import (
     DiscreteContactApproximation,
     FirstOrderLowPassFilter,
     JointActuatorIndex,
+    JointStiffnessController,
     MakeRenderEngineGl,
     MakeRenderEngineVtk,
     Meshcat,
@@ -44,7 +45,7 @@ from simulation import joint_impedance_controller as jc
 from simulation import playback_controller
 
 timestep = 0.005
-contact_model = ContactModel.kPoint  # ContactModel.kHydroelasticWithFallback
+contact_model = ContactModel.kHydroelasticWithFallback
 contact_approx = DiscreteContactApproximation.kSimilar
 
 
@@ -56,8 +57,8 @@ def init_plant(
 ):
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
     plant.set_contact_model(contact_model)
-    plant.set_penetration_allowance(0.0005)
     if timestep > 0:
+        plant.set_penetration_allowance(0.0005)
         plant.set_discrete_contact_approximation(contact_approx)
     parser = Parser(plant)
     parser.package_map().Add("assets", "assets/")
@@ -79,7 +80,7 @@ def wire_controller(
             controller_name,
             playback_controller.PlaybackController(
                 plant, panda_name
-            ),  # controller.ControllerSystem(plant, panda_name, block_name)
+            ),
         )
         builder.Connect(
             compliant_controller.get_output_port(),
@@ -217,7 +218,8 @@ def _construct_diagram(
     manipuland = parser.AddModels(manip_geom)[0]
     plant.RenameModelInstance(manipuland, "block")
     _weld_geometries(plant, X_GM, X_WO, panda, manipuland, env_geometry)
-    _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
+    _mu = mu if gains is not None else mu - 0.01
+    _set_frictions(plant, scene_graph, [env_geometry, manipuland], _mu)
     for i, ja_index in enumerate(list(range(7))):
         ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
         if gains is not None:
