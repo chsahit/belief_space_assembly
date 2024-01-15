@@ -35,6 +35,14 @@
             <size>0.5 0.5 0.05</size>
           </box>
         </geometry>
+        <drake:proximity_properties>
+            <drake:mu_dynamic>1</drake:mu_dynamic>
+            <drake:mu_static>1</drake:mu_static>
+            <drake:rigid_hydroelastic/>
+            <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
+            <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
+            <drake:relaxation_time>0.0001</drake:relaxation_time>
+        </drake:proximity_properties>
     </collision>
 
     </link>
