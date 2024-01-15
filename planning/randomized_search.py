@@ -22,7 +22,7 @@ def reset_time():
     scoring_time = 0.0
 
 
-if os.uname()[1] == "londonsystem":
+if os.uname()[1] == "londonsystem" or True:
     compliance_samples = 16
     refinement_samples = 32
 else:
