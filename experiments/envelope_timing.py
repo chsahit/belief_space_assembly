@@ -7,7 +7,7 @@ import state
 from experiments import init_particle
 from planning import refine_motion
 
-pitch_sweep_peg = ("pitch", [1, 2, 3, 4, 5], "peg")
+pitch_sweep_peg = ("pitch", [1, 1.5, 2, 2.5, 3, 3.5, 4], "peg")
 x_sweep_puzzle = ("X_GM_x", [0.001, 0.003, 0.005, 0.007, 0.009], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.001, 0.003, 0.005, 0.007, 0.009], "peg")
 peg_schedule = [
@@ -53,6 +53,6 @@ def sweep(dof, deviations, geometry, schedule):
 
 
 if __name__ == "__main__":
-    # sweep(*pitch_sweep_peg, peg_schedule)
+    sweep(*pitch_sweep_peg, peg_schedule)
     # sweep(*x_sweep_puzzle, puzzle_schedule)
-    sweep(*x_sweep_peg, peg_schedule)
+    # sweep(*x_sweep_peg, peg_schedule)
