@@ -25,6 +25,7 @@ puzzle_schedule = [
 
 
 def sweep(dof, deviations, geometry, schedule):
+    print(f"{geometry=}, {dof=}")
     if geometry == "peg":
         initializer = init_particle.init_peg
     elif geometry == "puzzle":

@@ -141,7 +141,7 @@ class GeometryMonitor(LeafSystem):
 
         A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
         if len(descriptors) == 0:
-            print("no descriptors...")
+            print(f"no descriptors for {name}")
             return None
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
