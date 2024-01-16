@@ -35,17 +35,20 @@ def test_stiff():
 
 def two_step_plan():
     p_0 = init(x=0.01)
-    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.23], [180, 0, 0])
+    X_WG_d = utils.xyz_rpy_deg([0.47, 0.0, 0.23], [180, 0, 0])
     stiff = np.array([100, 100, 100, 600, 600, 600])
     unilateral = np.array([10.0, 10.0, 30.0, 100, 100, 600.0])
-    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, unilateral, timeout=10.0)
+    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, stiff, timeout=10.0)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
-    X_WG_d2 = utils.xyz_rpy_deg([0.495, 0.0, 0.2], [180, 0, 0])
-    u_1 = components.CompliantMotion(RigidTransform(), X_WG_d2, stiff, timeout=10.0)
+    X_WG_d2 = utils.xyz_rpy_deg([0.45, 0.0, 0.15], [180, 0, 0])
+    u_1 = components.CompliantMotion(
+        RigidTransform(), X_WG_d2, unilateral, timeout=10.0
+    )
     p_2 = dynamics.simulate(p_1, u_1, vis=True)
     print("done")
     input()
 
 
 if __name__ == "__main__":
-    two_step_plan()
+    test_stiff()
+    # two_step_plan()

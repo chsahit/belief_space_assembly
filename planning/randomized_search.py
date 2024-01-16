@@ -116,6 +116,7 @@ def refine_p(
 ) -> List[components.CompliantMotion]:
     global scoring_time
     scores = []
+    negative_motions = []
     nominal = p.X_WG
     if targets is None:
         targets = generate_contact_set.project_manipuland_to_contacts(
@@ -136,10 +137,10 @@ def refine_p(
     for i, p_next in enumerate(P_next):
         if p_next.satisfies_contact(CF_d):
             U.append(motions[i])
-            scores.append(1)
         else:
+            negative_motions.append(motions[i])
             scores.append(0)
-    return U, (motions, scores)
+    return U, (negative_motions, scores)
 
 
 def score_tree_root(
@@ -156,12 +157,15 @@ def score_tree_root(
     posteriors = dynamics.parallel_f_bel(b, U0)
     best_u = None
     most_certainty = float("-inf")
+    pm_scores = []
     for p_i, posterior in enumerate(posteriors):
         certainty = posterior.partial_sat_score(CF_d)
+        pm_scores.append(certainty)
         if certainty > most_certainty:
             most_certainty = certainty
             best_u = U0[p_i]
     success = most_certainty >= len(b.particles)
+    data = (data[0] + U0, data[1] + pm_scores)
     return best_u, most_certainty, success, data
 
 

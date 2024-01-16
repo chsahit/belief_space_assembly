@@ -222,7 +222,7 @@ def _construct_diagram(
         ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
         if gains is not None:
             ja.set_controller_gains(
-                PdControllerGains(p=gains[i, i], d=3 * np.sqrt(gains[i, i]))
+                PdControllerGains(p=gains[i, i], d=10 * np.sqrt(gains[i, i]))
             )
     plant.Finalize()
     _drop_reflected_inertia(plant, panda)
