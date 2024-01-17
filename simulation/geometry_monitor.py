@@ -57,14 +57,27 @@ class GeometryMonitor(LeafSystem):
                 frame_id_local = inspector.GetFrameId(g_id)
                 body = self.plant.GetBodyFromFrameId(frame_id_local)
                 frame_id_body = self.plant.GetBodyFrameIdOrThrow(body.index())
-                polyhedron = HPolyhedron(
-                    VPolytope(query_obj, g_id, reference_frame=frame_id_body),
-                )
-                # breakpoint()
-                self.manip_poly[name] = (polyhedron.A(), polyhedron.b())
-                self.aa_compute_fine_geometries(
-                    name, self.manip_poly, polyhedron.A(), polyhedron.b()
-                )
+                success = False
+                for i in range(2):
+                    if i % 2 == 1:
+                        f = frame_id_local
+                    else:
+                        f = frame_id_body
+
+                    polyhedron = HPolyhedron(
+                        query_obj, g_id, reference_frame=frame_id_local
+                    )
+                    self.manip_poly[name] = (polyhedron.A(), polyhedron.b())
+                    success = self.aa_compute_fine_geometries(
+                        name, self.manip_poly, polyhedron.A(), polyhedron.b()
+                    )
+                    if success:
+                        break
+                if not success:
+                    from remote_pdb import set_trace
+
+                    set_trace()
+
         if self.manip_poly is None:
             print("warning, manipulator geometry not cached")
 
@@ -118,7 +131,7 @@ class GeometryMonitor(LeafSystem):
     def aa_compute_fine_geometries(self, name: str, mapping_dict, A, b):
         if A.shape[0] < 6:
             self.general_compute_fine_geometries(name, mapping_dict, A, b)
-            return None
+            return True
         x_hat = np.array([1, 0, 0])
         y_hat = np.array([0, 1, 0])
         z_hat = np.array([0, 0, 1])
@@ -142,7 +155,7 @@ class GeometryMonitor(LeafSystem):
         A_local = np.array([x_hat, -x_hat, y_hat, -y_hat, z_hat, -z_hat])
         if len(descriptors) == 0:
             print(f"no descriptors for {name}")
-            return None
+            return False
         for direction, mods in dirs.items():
             local_name = name + "_" + direction
             b_local = np.copy(np.array(descriptors))
@@ -152,6 +165,7 @@ class GeometryMonitor(LeafSystem):
             b_local[3] *= -1
             b_local[5] *= -1
             mapping_dict[local_name] = (A_local, b_local)
+        return True
 
     def _compute_cspace_contacts(self, context):
         dirs = ["top", "bottom", "front", "back", "right", "left", "inside"]

@@ -186,7 +186,6 @@ def iterative_gp(data, b, CF_d, iters=3):
                 max_certainty = certainty
                 best_u = new_samples[np_i]
             if new_posterior.satisfies_contact(CF_d):
-                print(f"returning from GP, {certainty=}")
                 return new_samples[np_i], certainty, True
             if is_partially_satisfiying:
                 scores.append(1)
@@ -202,10 +201,9 @@ def refine_b(
 ) -> components.CompliantMotion:
     if search_compliance:
         K_star, samples = solve_for_compliance(b.particles[0], CF_d)
+        print(f"{K_star=}, {len(samples)=}")
     else:
-        K_star, samples = (np.array([10.0, 10.0, 10.0, 100.0, 100.0, 400.0]), [])
         K_star, samples = (components.stiff, [])
-    print(f"{K_star=}, {len(samples)=}")
     best_u_root = None
     best_certainty_all = float("-inf")
     data = [[], []]

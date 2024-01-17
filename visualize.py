@@ -1,3 +1,4 @@
+import pickle
 from typing import List
 
 import numpy as np
@@ -23,6 +24,7 @@ from pydrake.all import (
 import components
 import dynamics
 import state
+import utils
 from simulation import controller, plant_builder
 
 
@@ -236,3 +238,37 @@ def render_trees(forest: List[components.Tree]):
             plt.plot(xs, ys, marker="o", c=colors[i])
     print("not showing...")
     # plt.show()
+
+
+def show_planning_results(fname: str):
+    import matplotlib.pyplot as plt
+
+    with open(fname, "rb") as f:
+        data = pickle.load(f)
+    line_compliant_x, line_compliant_y = [], []
+    line_stiff_x, line_stiff_y = [], []
+    compliant_std_low, compliant_std_high = [], []
+    stiff_std_low, stiff_std_high = [], []
+    for (params, results) in data.items():
+        deviation = 2 * float(params[0])
+        mu, std = utils.mu_std_result(results)
+        if params[1] == "True":
+            line_compliant_x.append(deviation)
+            line_compliant_y.append(mu)
+            compliant_std_low.append(mu - std)
+            compliant_std_high.append(mu + std)
+        else:
+            line_stiff_x.append(deviation)
+            line_stiff_y.append(mu)
+            stiff_std_low.append(mu - std)
+            stiff_std_high.append(mu + std)
+
+    plt.fill_between(
+        line_compliant_x, compliant_std_low, compliant_std_high, alpha=0.2, color="b"
+    )
+    plt.plot(line_compliant_x, line_compliant_y, color="b")
+
+    plt.fill_between(line_stiff_x, stiff_std_low, stiff_std_high, alpha=0.2, color="g")
+    plt.plot(line_stiff_x, line_stiff_y, color="g")
+
+    plt.show()

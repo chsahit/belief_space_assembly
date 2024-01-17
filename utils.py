@@ -44,5 +44,11 @@ def dump_traj(
         pickle.dump(tau, f)
 
 
+def mu_std_result(results):
+    times = np.array([result.total_time for result in results])
+    mu, std = np.mean(times), np.std(times)
+    return mu, std
+
+
 if __name__ == "__main__":
     post_process_rt_pickle("rot_uncertain.pkl")

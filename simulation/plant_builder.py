@@ -57,8 +57,8 @@ def init_plant(
 ):
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
     plant.set_contact_model(contact_model)
+    plant.set_penetration_allowance(0.0005)
     if timestep > 0:
-        # plant.set_penetration_allowance(0.0005)
         plant.set_discrete_contact_approximation(contact_approx)
     parser = Parser(plant)
     parser.package_map().Add("assets", "assets/")
