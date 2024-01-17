@@ -6,6 +6,7 @@ from pydrake.all import BasicVector, JacobianWrtVariable, LeafSystem, RigidTrans
 
 import components
 import mr
+from simulation import ik_solver
 
 
 class ControllerSystem(LeafSystem):
@@ -23,13 +24,12 @@ class ControllerSystem(LeafSystem):
         ).position_start()
 
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
-        self.DeclareVectorOutputPort("joint_torques", BasicVector(7), self.CalcOutput)
         self.contacts = frozenset()
         self.constraints = None
         self.sdf = dict()
         self.motion = None
+        self.DeclareVectorOutputPort("joint_torques", BasicVector(7), self.CalcOutput)
         self.i = 0
-        self.history = []
         self.printed = False
 
     def compute_error(self, X_WC: RigidTransform, X_WCd: RigidTransform) -> np.ndarray:
@@ -73,8 +73,6 @@ class ControllerSystem(LeafSystem):
             self.plant_context, self.plant.world_frame(), G
         )
         if self.motion is None:
-            # if not self.printed:
-            # print("warning, X_GC is none")
             X_GC = RigidTransform()
             self.printed = True
         else:
@@ -103,15 +101,6 @@ class ControllerSystem(LeafSystem):
         # block_velocity = q[9:16]
 
         tau_controller = self.tau(tau_g, J_g, block_velocity, X_WG)
-        # self.history.append((context.get_time(), X_WG.translation()))
-        """
-        if self.i == 0:
-            from pydrake.all import MultibodyForces
-
-            to_dump = (J_g, tau_controller + tau_g)
-            with open("control_logs.pkl", "wb") as f:
-                pickle.dump(to_dump, f)
-        """
         self.i += 1
         # tau_controller = np.concatenate((tau_controller, np.array([5.0, 5.0])))
         output.SetFromVector(tau_controller)

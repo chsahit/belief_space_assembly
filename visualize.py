@@ -1,3 +1,4 @@
+import pickle
 from typing import List
 
 import numpy as np
@@ -23,6 +24,7 @@ from pydrake.all import (
 import components
 import dynamics
 import state
+import utils
 from simulation import controller, plant_builder
 
 
@@ -52,21 +54,9 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
                     pass
 
 
-def _drop_reflected_inertia(plant, panda):
-    ja_indices = plant.GetJointActuatorIndices(panda)
-    for ja_idx in ja_indices:
-        ja = plant.get_joint_actuator(ja_idx)
-        ja.set_default_rotor_inertia(0.0)
-        ja.set_default_gear_ratio(0.0)
-
-
 def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0005)
-    plant.set_contact_model(ContactModel.kPoint)
-    plant.set_penetration_allowance(0.0005)
-    parser = Parser(plant)
-    parser.package_map().Add("assets", "assets/")
+    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=1e-4)
     instance_list = list()
 
     for i, p in enumerate(b.particles):
@@ -88,19 +78,19 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     colors = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
     for i, p in enumerate(b.particles):
         P, O, M = instance_list[i]
-        _drop_reflected_inertia(plant, P)
+        plant_builder._drop_reflected_inertia(plant, P)
         set_transparency_of_models(plant, [P, O, M], colors[i % 3], 0.5, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
-        compliant_controller = builder.AddNamedSystem(
-            "controller_" + str(i),
-            controller.ControllerSystem(plant, "panda_" + str(i), "block_" + str(i)),
+        plant_builder.wire_controller(
+            True,
+            P,
+            f"controller_{str(i)}",
+            f"panda_{str(i)}",
+            f"block_{str(i)}",
+            builder,
+            plant,
         )
-        builder.Connect(
-            plant.get_state_output_port(P), compliant_controller.GetInputPort("state")
-        )
-        builder.Connect(
-            compliant_controller.get_output_port(), plant.get_actuation_input_port(P)
-        )
+
     meshcat_vis = MeshcatVisualizer.AddToBuilder(
         builder, scene_graph, meshcat, MeshcatVisualizerParams()
     )
@@ -145,7 +135,9 @@ def play_motions_on_belief(
     for u in U:
         T += u.timeout
         for i in range(len(b.particles)):
-            diagram.GetSubsystemByName("controller_" + str(i)).motion = u
+            controller = diagram.GetSubsystemByName("controller_" + str(i))
+            controller.motion = u
+            controller.K_q = None
         simulator.AdvanceTo(T)
     visualizer.PublishRecording()
     if fname is not None:
@@ -246,3 +238,37 @@ def render_trees(forest: List[components.Tree]):
             plt.plot(xs, ys, marker="o", c=colors[i])
     print("not showing...")
     # plt.show()
+
+
+def show_planning_results(fname: str):
+    import matplotlib.pyplot as plt
+
+    with open(fname, "rb") as f:
+        data = pickle.load(f)
+    line_compliant_x, line_compliant_y = [], []
+    line_stiff_x, line_stiff_y = [], []
+    compliant_std_low, compliant_std_high = [], []
+    stiff_std_low, stiff_std_high = [], []
+    for (params, results) in data.items():
+        deviation = 2 * float(params[0])
+        mu, std = utils.mu_std_result(results)
+        if params[1] == "True":
+            line_compliant_x.append(deviation)
+            line_compliant_y.append(mu)
+            compliant_std_low.append(mu - std)
+            compliant_std_high.append(mu + std)
+        else:
+            line_stiff_x.append(deviation)
+            line_stiff_y.append(mu)
+            stiff_std_low.append(mu - std)
+            stiff_std_high.append(mu + std)
+
+    plt.fill_between(
+        line_compliant_x, compliant_std_low, compliant_std_high, alpha=0.2, color="b"
+    )
+    plt.plot(line_compliant_x, line_compliant_y, color="b")
+
+    plt.fill_between(line_stiff_x, stiff_std_low, stiff_std_high, alpha=0.2, color="g")
+    plt.plot(line_stiff_x, line_stiff_y, color="g")
+
+    plt.show()

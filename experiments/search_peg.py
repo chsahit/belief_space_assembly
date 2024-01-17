@@ -2,53 +2,35 @@ import numpy as np
 from pydrake.all import RigidTransform
 
 import components
+import contact_defs
 import dynamics
 import state
 import utils
 import visualize
+from experiments import init_particle
 from planning import randomized_search, refine_motion
-from simulation import diagram_factory, ik_solver
-
-
-def init(X_GM_x: float = 0.0, X_GM_z: float = 0.0) -> state.Particle:
-    z = 0.155 + X_GM_z
-    X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
-    X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, z], [180, 0, 0])
-    X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
-    q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
-    p0 = state.Particle(
-        q_r_0,
-        X_GM,
-        X_WO,
-        "assets/big_chamfered_hole.sdf",
-        "assets/peg.urdf",
-        mu=0.3,
-    )
-    return p0
+from simulation import diagram_factory
 
 
 def simple_down():
-    bottom_faces = (("bin_model::bottom_top", "block::Box_bottom"),)
-    bottom_faces = frozenset(bottom_faces)
-    chamfer_touch_2 = (
-        ("bin_model::front_chamfer_inside", "block::Box_bottom"),
-        ("bin_model::front_chamfer_inside", "block::Box_back"),
-    )
-    front_faces = (
-        ("bin_model::front_front", "block::Box_bottom"),
-        ("bin_model::front_front", "block::Box_back"),
-        ("bin_model::left_left", "block::Box_right"),
-    )
-    front_faces = frozenset(front_faces)
-    chamfer_touch = frozenset(chamfer_touch_2)
-
-    modes = [chamfer_touch_2, front_faces, bottom_faces]
-    p0 = init()
-    b = state.Belief([p0, p0])
-    diagram_factory.initialize_factory(b.particles)
-    traj, tet, st = refine_motion.refine_two_particles(b, modes)
-    if traj is not None:
-        visualize.play_motions_on_belief(state.Belief([p0, p0]), traj)
+    modes = [
+        contact_defs.chamfer_touch_2,
+        contact_defs.front_faces,
+        contact_defs.bottom_faces_3,
+        contact_defs.bottom_faces,
+    ]
+    p0 = init_particle.init_peg(pitch=-3)
+    p1 = init_particle.init_peg(pitch=3)
+    b = state.Belief([p0, p1])
+    # diagram_factory.initialize_factory(b.particles)
+    result = refine_motion.randomized_refine(b, modes, max_attempts=100)
+    if result is not None:
+        print("visualize")
+        visualize.play_motions_on_belief(
+            state.Belief([p0, p1]), result.traj, fname="four_deg_mu_33.html"
+        )
+        utils.dump_traj(p1.q_r, result.traj, fname="rot_uncertain.pkl")
+    print(f"elapsed time: {result.total_time}")
     input()
 
 

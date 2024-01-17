@@ -124,3 +124,35 @@ b_l_align = set(
         ("bin_model::front", "block::002"),
     )
 )
+
+bottom_faces = frozenset(
+    (
+        ("bin_model::bottom_top", "block::Box_bottom"),
+        ("bin_model::front_front", "block::Box_back"),
+    )
+)
+
+bottom_faces_2 = frozenset((("bin_model::botom_top", "block::Box_bottom"),))
+
+bottom_faces_3 = frozenset(
+    (
+        ("bin_model::bottom_top", "block::Box_bottom"),
+        ("bin_model::back_back", "block::Box_front"),
+    )
+)
+
+chamfer_touch_2 = frozenset(
+    (
+        ("bin_model::front_chamfer_inside", "block::Box_bottom"),
+        ("bin_model::front_chamfer_inside", "block::Box_back"),
+    )
+)
+
+front_faces = frozenset(
+    (
+        ("bin_model::front_front", "block::Box_bottom"),
+        ("bin_model::front_front", "block::Box_back"),
+        ("bin_model::left_left", "block::Box_right"),
+        ("bin_model::left_left", "block::Box_bottom"),
+    )
+)

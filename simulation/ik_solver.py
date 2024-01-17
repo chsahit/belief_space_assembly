@@ -21,7 +21,8 @@ from pydrake.all import (
 
 import components
 import utils
-import visualize
+
+# import visualize
 from simulation import annotate_geoms
 
 

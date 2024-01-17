@@ -135,8 +135,11 @@ def refine(
     return U_candidates[best_candidate], best_posterior
 
 
-def refine_two_particles(
-    b: state.Belief, modes: List[components.ContactState], max_attempts: int = 3
+def randomized_refine(
+    b: state.Belief,
+    modes: List[components.ContactState],
+    search_compliance: bool = True,
+    max_attempts: int = 3,
 ) -> List[components.CompliantMotion]:
     start_time = time.time()
     for attempt in range(max_attempts):
@@ -144,15 +147,20 @@ def refine_two_particles(
         curr = b
         traj = []
         for mode in modes:
-            u_star = randomized_search.refine_b(curr, mode)
+            u_star = randomized_search.refine_b(curr, mode, search_compliance)
             if u_star is None:
                 break
             traj.append(u_star)
             curr = dynamics.f_bel(curr, u_star)
-        if curr.satisfies_contact(randomized_search.relax_CF(modes[-1])):
+        if curr.satisfies_contact(modes[-1]):
             total_elapsed_time = time.time() - start_time
             sim_time = dynamics.get_time()
+            np = dynamics.get_posterior_count()
+            dynamics.reset_posteriors()
             dynamics.reset_time()
-            return traj, total_elapsed_time, sim_time
+            return components.PlanningResult(traj, total_elapsed_time, sim_time, np)
+    tet = time.time() - start_time
+    sim_time, np = (dynamics.get_time(), dynamics.get_posterior_count())
     dynamics.reset_time()
-    return None, -1.0, -1.0
+    dynamics.reset_posteriors()
+    return components.PlanningResult(None, tet, sim_time, np)

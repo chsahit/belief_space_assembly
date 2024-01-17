@@ -28,10 +28,11 @@ def test_simulate():
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0])
     mostly_stiff = np.array([100.0, 100.0, 10.0, 600.0, 600.0, 600.0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
+    print(utils.RigidTfToVec(p_0.X_WG))
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
     tT = time.time()
     # print(f"{p_1.contacts=}")
-    # print(f"sim time={tT - t0}")
+    print(f"sim time={tT - t0}")
     input()
 
 
@@ -43,7 +44,7 @@ def test_parallel_sim():
     U = [
         components.CompliantMotion(
             RigidTransform(),
-            utils.xyz_rpy_deg([0.5, 0.0, 0.22], [0, 0, 0]),
+            utils.xyz_rpy_deg([0.5, 0.0, 0.22], [180, 0, 0]),
             components.stiff,
         )
     ]
@@ -115,6 +116,6 @@ def funny_rcc():
 
 
 if __name__ == "__main__":
-    test_simulate()
+    test_parallel_sim()
     # funny_rcc()
     # test_vis()

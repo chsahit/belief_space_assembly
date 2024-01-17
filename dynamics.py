@@ -4,12 +4,15 @@ import sys
 import time
 from typing import List, Tuple
 
-from pydrake.all import Simulator
+import numpy as np
+from pydrake.all import MathematicalProgram, Simulator, Solve
 
 import components
+import mr
 import state
 
 _time_in_sim = 0.0
+_num_posteriors = 0
 
 
 def reset_time():
@@ -24,6 +27,45 @@ def get_time():
 def add_time(delta):
     global _time_in_sim
     _time_in_sim += delta
+
+
+def reset_posteriors():
+    global _num_posteriors
+    _num_posteriors = 0
+
+
+def get_posterior_count():
+    return _num_posteriors
+
+
+def add_posteriors(n):
+    global _num_posteriors
+    _num_posteriors += n
+
+
+def tf_impedance(K_q, x0):
+    samples = [x0]
+    """
+    for i in range(7):
+        new_sample_up = np.copy(x0)
+        new_sample_up[i] += 0.2
+        new_sample_down = np.copy(x0)
+        new_sample_down -= 0.2
+        samples.append(new_sample_up)
+        samples.append(new_sample_down)
+    """
+    mp = MathematicalProgram()
+    w = mp.NewContinuousVariables(7, "w")
+    print(f"{K_q @ x0[:7]=}")
+    for sample in samples:
+        err_vec = np.diag(w) @ sample[:7] - K_q @ sample[:7]
+        mp.AddCost(err_vec.dot(err_vec))
+    mp.AddBoundingBoxConstraint(0, 1000, w)
+    soln = Solve(mp)
+    w_star = soln.GetSolution()
+    print(f"{soln.get_optimal_cost()=}")
+    print(f"{w_star=}")
+    return w_star
 
 
 def AdvanceToWithTimeout(
@@ -56,7 +98,10 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
-    diagram, meshcat = p.make_plant(vis=vis)
+    K_G = mr.Adjoint(motion.X_GC.inverse().GetAsMatrix4()) @ np.diag(motion.K)
+    gains = (p.J.T) @ K_G @ p.J
+    motion.is_joint_space = True
+    diagram, meshcat = p.make_plant(vis=vis, gains=gains)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
     plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
@@ -84,7 +129,7 @@ def simulate(
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
-    p_next.trajectory = controller.history
+    # p_next.trajectory = controller.history
     p_next._update_contact_data()
     return p_next
 
@@ -108,6 +153,7 @@ def _parallel_simulate(
         print("f_cspace interrupted. Exiting")
         sys.exit()
     add_time(time.time() - p_sim_start)
+    add_posteriors(len(simulation_args))
     return resulting_particles
 
 

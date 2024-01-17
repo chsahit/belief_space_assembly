@@ -53,7 +53,7 @@ def try_refine_b():
     curr = state.Belief([p_a, p_b])
     diagram_factory.initialize_factory(curr.particles)
     modes = [top_touch2, bt, bt4, bottom, goal]
-    traj, tet, st = refine_motion.refine_two_particles(curr, modes)
+    traj, tet, st = refine_motion.randomized_refine(curr, modes)
     """
     traj = []
     for mode in modes:

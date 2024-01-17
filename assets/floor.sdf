@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+<world name="w">
+  <model name="bin_model">
+    <!--
+    Axes:
+      +X - Pointing towards front 
+      +Y - Pointing to left side
+      +Z - Up
+    Origin:
+      (0, 0, 0) at the center bottom of the bin
+    -->
+    <link name="bin_base">
+      <inertial>
+        <mass>18.70</mass>
+        <inertia>
+          <ixx>1.0</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>1.0</iyy><iyz>0</iyz><izz>1.0</izz>
+        </inertia>
+      </inertial>
+
+      <!--bottom-->
+      <visual name="visual">
+        <pose> -0.0 -0.0 -0.025 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.05</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="bottom">
+        <pose>-0.0 -0.0 -0.025 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.05</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+            <drake:mu_dynamic>1</drake:mu_dynamic>
+            <drake:mu_static>1</drake:mu_static>
+            <drake:rigid_hydroelastic/>
+            <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
+            <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
+            <drake:relaxation_time>0.0001</drake:relaxation_time>
+        </drake:proximity_properties>
+    </collision>
+
+    </link>
+</model>
+</world>
+</sdf>
