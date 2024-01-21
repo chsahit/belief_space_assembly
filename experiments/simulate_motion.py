@@ -116,6 +116,6 @@ def funny_rcc():
 
 
 if __name__ == "__main__":
-    test_parallel_sim()
+    test_simulate()
     # funny_rcc()
     # test_vis()

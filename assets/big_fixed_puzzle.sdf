@@ -20,7 +20,15 @@
 		<pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
 		<geometry>
 			<box><size>0.028999999999999998 0.07 0.02</size></box>
-		</geometry>
+                </geometry>
+            <drake:proximity_properties>
+                <drake:mu_dynamic>1</drake:mu_dynamic>
+                <drake:mu_static>1</drake:mu_static>
+                <drake:rigid_hydroelastic/>
+                <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
+                <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
+                <drake:relaxation_time>0.0001</drake:relaxation_time>
+            </drake:proximity_properties>
 	</collision>
 	<visual name="b2">
 		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
@@ -32,7 +40,15 @@
 		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
 		<geometry>
 			<box><size>0.1105 0.019000000000000003 0.02</size></box>
-		</geometry>
+                </geometry>
+            <drake:proximity_properties>
+                <drake:mu_dynamic>1</drake:mu_dynamic>
+                <drake:mu_static>1</drake:mu_static>
+                <drake:rigid_hydroelastic/>
+                <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
+                <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
+                <drake:relaxation_time>0.0001</drake:relaxation_time>
+            </drake:proximity_properties>
 	</collision>
 	<visual name="b3">
 		<pose>0.04025 0.0 0.06 0.0 0.0 0.0</pose>
@@ -45,7 +61,15 @@
 		<geometry>
 			<box><size>0.03 0.031 0.02</size></box>
 		</geometry>
-	</collision>
+	    <drake:proximity_properties>
+                <drake:mu_dynamic>1</drake:mu_dynamic>
+                <drake:mu_static>1</drake:mu_static>
+                <drake:rigid_hydroelastic/>
+                <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
+                <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
+                <drake:relaxation_time>0.0001</drake:relaxation_time>
+            </drake:proximity_properties>
+        </collision>
 	<visual name="b4">
 		<pose>-0.04025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
@@ -57,7 +81,15 @@
 		<geometry>
 			<box><size>0.03 0.031 0.02</size></box>
 		</geometry>
-	</collision>
+            <drake:proximity_properties>
+                <drake:mu_dynamic>1</drake:mu_dynamic>
+                <drake:mu_static>1</drake:mu_static>
+                <drake:rigid_hydroelastic/>
+                <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
+                <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
+                <drake:relaxation_time>0.0001</drake:relaxation_time>
+            </drake:proximity_properties>
+        </collision>
 	<visual name="b5">
 		<pose>0.0 -0.025 0.06 0.0 0.0 0.0</pose>
 		<geometry>
@@ -69,6 +101,14 @@
 		<geometry>
 			<box><size>0.1105 0.019000000000000003 0.02</size></box>
 		</geometry>
+            <drake:proximity_properties>
+                <drake:mu_dynamic>1</drake:mu_dynamic>
+                <drake:mu_static>1</drake:mu_static>
+                <drake:rigid_hydroelastic/>
+                <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
+                <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
+                <drake:relaxation_time>0.0001</drake:relaxation_time>
+            </drake:proximity_properties>
 	</collision>
 </link>
 </model>
