@@ -245,12 +245,15 @@ def show_planning_results(fname: str):
 
     with open(fname, "rb") as f:
         data = pickle.load(f)
+
+    utils.envelope_analysis(data)
     line_compliant_x, line_compliant_y = [], []
     line_stiff_x, line_stiff_y = [], []
     compliant_std_low, compliant_std_high = [], []
     stiff_std_low, stiff_std_high = [], []
     for (params, results) in data.items():
         deviation = 2 * float(params[0])
+        results_succ = [result in results if (result.traj is not None)]
         mu, std = utils.mu_std_result(results)
         if params[1] == "True":
             line_compliant_x.append(deviation)
@@ -266,11 +269,14 @@ def show_planning_results(fname: str):
     plt.fill_between(
         line_compliant_x, compliant_std_low, compliant_std_high, alpha=0.2, color="b"
     )
-    plt.plot(line_compliant_x, line_compliant_y, color="b")
+    plt.plot(line_compliant_x, line_compliant_y, color="b", label="ours")
 
     plt.fill_between(line_stiff_x, stiff_std_low, stiff_std_high, alpha=0.2, color="g")
-    plt.plot(line_stiff_x, line_stiff_y, color="g")
-
+    plt.plot(line_stiff_x, line_stiff_y, color="g", label="no stiffness")
+    plt.title("The effect of Uuncertainty on Planning Time")
+    plt.xlabel("Uncertainty (degrees)")
+    plt.ylabel("Time (seconds)")
+    plt.legend()
     plt.show()
 
 

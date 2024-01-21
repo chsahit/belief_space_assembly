@@ -60,7 +60,11 @@ def infer(
         all_samples_r6.append(np.concatenate((r, t)))
 
     # compute test_points
-    num_test_points = 100
+    K = 16
+    if do_gp:
+        num_test_points = 100
+    else:
+        num_test_points = K
     test_points = []
     for i in range(num_test_points):
         base = np.array(random.choice(all_samples_r6))
@@ -71,7 +75,6 @@ def infer(
     all_samples_r6 = np.array(all_samples_r6)
 
     # do regression
-    K = 16
     test_points_out, _ = GP(
         all_samples_r6, all_scores, test_points, exponentiated_quadratic
     )

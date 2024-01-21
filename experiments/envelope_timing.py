@@ -38,8 +38,11 @@ def sweep(dof, deviations, geometry, schedule):
     results = dict()
     compliance_gp = [(True, True), (False, True), (True, False)]
     experiment_params = itertools.product(deviations, compliance_gp)
+    stopped_params = []
     for deviation, (do_compliance, do_gp) in experiment_params:
         print(f"{deviation=}, {do_compliance=} {do_gp=}")
+        if (do_compliance, do_gp) in stopped_params:
+            print("not running experiment because envelope is smaller\n")
         kwarg_0 = {dof: -deviation}
         kwarg_1 = {dof: deviation}
         kwarg_2 = {dof: 0}
@@ -58,11 +61,14 @@ def sweep(dof, deviations, geometry, schedule):
                     schedule,
                     search_compliance=do_compliance,
                     do_gp=do_gp,
-                    max_attempts=5,
+                    max_attempts=10,
                 )
             )
             print(str(experiment_results[-1]))
         print("\n")
+        if all([result.traj is None for result in result.results]):
+            print("stopping ({do_compliance=}, {do_gp=})")
+            stopped_params.append((do_compliance, do_gp))
         results[experiment_label] = experiment_results
     fname = dof + "_" + geometry + "_" + "sweep_results.pkl"
     with open(fname, "wb") as f:

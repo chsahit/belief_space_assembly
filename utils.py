@@ -50,5 +50,23 @@ def mu_std_result(results):
     return mu, std
 
 
+def envelope_analysis(data):
+    ours_max = float("-inf")
+    no_stiffness_max = float("-inf")
+    no_gp_max = float("-inf")
+    for (params, results) in data.items():
+        has_success = any([result.traj is not None for result in results])
+        if params[1] == "True" and params[2] == "True" and has_success:
+            ours_max = max(ours_max, 2 * params[0])
+        elif params[1] == "True" and params[2] == "False" and has_success:
+            no_stiffness_max = max(no_stiffness_max, 2 * params[0])
+        elif params[1] == "False" and params[2] == "True" and has_success:
+            no_gp_max = max(no_gp_max, 2 * params[0])
+
+    print(f"{ours_max=}")
+    print(f"{no_stiffness_max=}")
+    print(f"{no_gp_max=}")
+
+
 if __name__ == "__main__":
     post_process_rt_pickle("rot_uncertain.pkl")
