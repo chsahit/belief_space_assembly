@@ -56,7 +56,7 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
 
 def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
-    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=1e-4)
+    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=1e-5)
     instance_list = list()
 
     for i, p in enumerate(b.particles):
@@ -272,3 +272,16 @@ def show_planning_results(fname: str):
     plt.plot(line_stiff_x, line_stiff_y, color="g")
 
     plt.show()
+
+
+def playback_result(b, fname):
+    with open(fname, "rb") as f:
+        data = pickle.load(f)
+    # results = data[("0.009", "True")]
+    results = data[("4", "True")]
+    for result in results:
+        if (result.traj is not None) and len(result.traj) == 4:
+            play_motions_on_belief(b, result.traj)
+            break
+    print("done")
+    input()

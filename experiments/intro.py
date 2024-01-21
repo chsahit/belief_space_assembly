@@ -17,30 +17,32 @@ def init(x: float = 0.0, pitch: float = 0.0):
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
     p_0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/big_chamfered_hole.sdf", "assets/peg.urdf", mu=0.2
+        q_r_0, X_GM, X_WO, "assets/big_chamfered_hole.sdf", "assets/peg.urdf", mu=0.4
     )
     return p_0
 
 
-def test_stiff():
+def test_one_step(sim_stiff: bool):
     p_0 = init(pitch=3)
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.21], [180, 0, 0])
     stiff = np.array([100, 100, 100, 600, 600, 600])
     unilateral = np.array([10.0, 10.0, 30.0, 100, 100, 600.0])
-    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, unilateral, timeout=10.0)
+    K = stiff if sim_stiff else unilateral
+    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, K, timeout=10.0)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
     print(f"done")
     input()
 
 
 def two_step_plan():
-    p_0 = init(x=0.01)
-    X_WG_d = utils.xyz_rpy_deg([0.47, 0.0, 0.23], [180, 0, 0])
+    p_0 = init(x=-0.01, pitch=3)
+    # X_WG_d = utils.xyz_rpy_deg([0.47, 0.0, 0.23], [180, 0, 0])
+    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.21], [180, 0, 0])
     stiff = np.array([100, 100, 100, 600, 600, 600])
-    unilateral = np.array([10.0, 10.0, 30.0, 100, 100, 600.0])
-    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, stiff, timeout=10.0)
+    unilateral = np.array([10.0, 10.0, 10.0, 100, 100, 600.0])
+    u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, unilateral, timeout=10.0)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
-    X_WG_d2 = utils.xyz_rpy_deg([0.45, 0.0, 0.15], [180, 0, 0])
+    X_WG_d2 = utils.xyz_rpy_deg([0.5, 0.0, 0.17], [180, 0, 0])
     u_1 = components.CompliantMotion(
         RigidTransform(), X_WG_d2, unilateral, timeout=10.0
     )
@@ -50,5 +52,6 @@ def two_step_plan():
 
 
 if __name__ == "__main__":
-    test_stiff()
-    # two_step_plan()
+    # test_one_step(True)
+    # test_one_step(False)
+    two_step_plan()

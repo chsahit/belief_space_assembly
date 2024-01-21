@@ -201,7 +201,7 @@ def refine_b(
 ) -> components.CompliantMotion:
     if search_compliance:
         K_star, samples = solve_for_compliance(b.particles[0], CF_d)
-        print(f"{K_star=}, {len(samples)=}")
+        # print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = (components.stiff, [])
     best_u_root = None
@@ -217,7 +217,7 @@ def refine_b(
         )
         data[0] += data_i[0]
         data[1] += data_i[1]
-        print(f"certainty_{p_idx}={certainty_i}")
+        # print(f"certainty_{p_idx}={certainty_i}")
         if success:
             return best_u_i
         if certainty_i > best_certainty_all:
@@ -227,6 +227,6 @@ def refine_b(
         return None
     u_gp, certainty_gp, success_gp = iterative_gp(data, b, CF_d)
     if certainty_gp > best_certainty_all:
-        print(f"max certainty {certainty_gp} generated from gp")
+        # print(f"max certainty {certainty_gp} generated from gp")
         return u_gp
     return best_u_root
