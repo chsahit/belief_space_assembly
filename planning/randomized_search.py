@@ -169,12 +169,12 @@ def score_tree_root(
     return best_u, most_certainty, success, data
 
 
-def iterative_gp(data, b, CF_d, iters=3):
+def iterative_gp(data, b, CF_d, do_gp, iters=3):
     max_certainty = float("-inf")
     best_u = None
     for idx in range(iters):
         # print(f"iteration={idx}")
-        new_samples = infer_joint_soln.infer(*data)
+        new_samples = infer_joint_soln.infer(*data, do_gp)
         posteriors = dynamics.parallel_f_bel(b, new_samples)
         scores = []
         for np_i, new_posterior in enumerate(posteriors):
@@ -197,11 +197,14 @@ def iterative_gp(data, b, CF_d, iters=3):
 
 
 def refine_b(
-    b: state.Belief, CF_d: components.ContactState, search_compliance: bool
+    b: state.Belief,
+    CF_d: components.ContactState,
+    search_compliance: bool,
+    do_gp: bool = True,
 ) -> components.CompliantMotion:
     if search_compliance:
         K_star, samples = solve_for_compliance(b.particles[0], CF_d)
-        # print(f"{K_star=}, {len(samples)=}")
+        print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = (components.stiff, [])
     best_u_root = None
@@ -219,14 +222,16 @@ def refine_b(
         data[1] += data_i[1]
         # print(f"certainty_{p_idx}={certainty_i}")
         if success:
+            print("successful refinement")
             return best_u_i
         if certainty_i > best_certainty_all:
             best_certainty_all = certainty_i
             best_u_root = best_u_i
     if best_u_root is None:
         return None
-    u_gp, certainty_gp, success_gp = iterative_gp(data, b, CF_d)
+    u_gp, certainty_gp, success_gp = iterative_gp(data, b, CF_d, do_gp)
     if certainty_gp > best_certainty_all:
-        # print(f"max certainty {certainty_gp} generated from gp")
+        print(f"max certainty {certainty_gp} generated from gp")
         return u_gp
+    print(f"{best_certainty_all=}")
     return best_u_root

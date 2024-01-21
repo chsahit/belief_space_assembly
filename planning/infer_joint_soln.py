@@ -43,8 +43,7 @@ def GP(X1, y1, X2, kernel_func):
 
 
 def infer(
-    all_samples: List[components.CompliantMotion],
-    all_scores: List[float],
+    all_samples: List[components.CompliantMotion], all_scores: List[float], do_gp: bool
 ) -> List[components.CompliantMotion]:
 
     mu_as = np.mean(all_scores)
@@ -76,8 +75,11 @@ def infer(
     test_points_out, _ = GP(
         all_samples_r6, all_scores, test_points, exponentiated_quadratic
     )
-    ind = np.argpartition(test_points_out, -K)[-K:]
-    top_n = test_points[ind]
+    if do_gp:
+        ind = np.argpartition(test_points_out, -K)[-K:]
+        top_n = test_points[ind]
+    else:
+        top_n = test_points[:K]
 
     # threshold and convert to compliant motion
     U = []

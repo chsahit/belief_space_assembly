@@ -36,10 +36,10 @@ def sweep(dof, deviations, geometry, schedule):
     else:
         raise NotImplementedError
     results = dict()
-    compliance_search = [True, False]
-    experiment_params = itertools.product(deviations, compliance_search)
-    for deviation, do_compliance in experiment_params:
-        print(f"{deviation=}, {do_compliance=}")
+    compliance_gp = [(True, True), (False, True), (True, False)]
+    experiment_params = itertools.product(deviations, compliance_gp)
+    for deviation, (do_compliance, do_gp) in experiment_params:
+        print(f"{deviation=}, {do_compliance=} {do_gp=}")
         kwarg_0 = {dof: -deviation}
         kwarg_1 = {dof: deviation}
         kwarg_2 = {dof: 0}
@@ -47,14 +47,18 @@ def sweep(dof, deviations, geometry, schedule):
         p1 = initializer(**kwarg_1)
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
-        experiment_label = (str(deviation), str(do_compliance))
+        experiment_label = (str(deviation), str(do_compliance), str(do_gp))
         trials = 5
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
             experiment_results.append(
                 refine_motion.randomized_refine(
-                    b, schedule, search_compliance=do_compliance, max_attempts=5
+                    b,
+                    schedule,
+                    search_compliance=do_compliance,
+                    do_gp=do_gp,
+                    max_attempts=5,
                 )
             )
             print(str(experiment_results[-1]))
@@ -67,8 +71,8 @@ def sweep(dof, deviations, geometry, schedule):
 
 if __name__ == "__main__":
     # visualize.show_planning_results("pitch_peg_sweep_results.pkl")
-    sweep(*pitch_sweep_puzzle, puzzle_schedule)
-    # sweep(*pitch_sweep_peg, peg_schedule)
+    # sweep(*pitch_sweep_puzzle, puzzle_schedule)
+    sweep(*pitch_sweep_peg, peg_schedule)
     # sweep(*x_sweep_puzzle, puzzle_schedule)
     # sweep(*x_sweep_peg, peg_schedule)
 

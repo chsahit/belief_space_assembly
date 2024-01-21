@@ -139,6 +139,7 @@ def randomized_refine(
     b: state.Belief,
     modes: List[components.ContactState],
     search_compliance: bool = True,
+    do_gp: bool = True,
     max_attempts: int = 3,
 ) -> List[components.CompliantMotion]:
     start_time = time.time()
@@ -147,7 +148,7 @@ def randomized_refine(
         curr = b
         traj = []
         for mode in modes:
-            u_star = randomized_search.refine_b(curr, mode, search_compliance)
+            u_star = randomized_search.refine_b(curr, mode, search_compliance, do_gp)
             if u_star is None:
                 break
             traj.append(u_star)
