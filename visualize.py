@@ -251,15 +251,24 @@ def show_planning_results(fname: str):
     line_stiff_x, line_stiff_y = [], []
     compliant_std_low, compliant_std_high = [], []
     stiff_std_low, stiff_std_high = [], []
+    line_ngp_x, line_ngp_y = [], []
+    ngp_std_low, ngp_std_high = [], []
     for (params, results) in data.items():
         deviation = 2 * float(params[0])
-        results_succ = [result in results if (result.traj is not None)]
+        # results_succ = [result in results if (result.traj is not None)]
+        # if len(results_succ) == 0:
+        #     continue
         mu, std = utils.mu_std_result(results)
-        if params[1] == "True":
+        if params[1] == "True" and params[2] == "True":
             line_compliant_x.append(deviation)
             line_compliant_y.append(mu)
             compliant_std_low.append(mu - std)
             compliant_std_high.append(mu + std)
+        elif params[1] == "True" and params[2] == "False":
+            line_ngp_x.append(deviation)
+            line_ngp_y.append(mu)
+            ngp_std_low.append(mu - std)
+            ngp_std_high.append(mu + std)
         else:
             line_stiff_x.append(deviation)
             line_stiff_y.append(mu)

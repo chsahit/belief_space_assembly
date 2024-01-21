@@ -62,7 +62,7 @@ def infer(
     # compute test_points
     K = 16
     if do_gp:
-        num_test_points = 100
+        num_test_points = 1000
     else:
         num_test_points = K
     test_points = []

@@ -1,5 +1,5 @@
-# IK solving is bad, this exists now
 import os
+import random
 import time
 from typing import List
 
@@ -14,6 +14,7 @@ import state
 from planning import infer_joint_soln
 from simulation import generate_contact_set, ik_solver
 
+random.seed(0)
 gen = np.random.default_rng(0)
 
 
@@ -26,8 +27,8 @@ if os.uname()[1] == "londonsystem" or True:
     compliance_samples = 16
     refinement_samples = 32
 else:
-    compliance_samples = 40
-    refinement_samples = 60
+    compliance_samples = 16
+    refinement_samples = 32
 print(f"{compliance_samples=}, {refinement_samples=}")
 
 
@@ -203,7 +204,7 @@ def refine_b(
     do_gp: bool = True,
 ) -> components.CompliantMotion:
     if search_compliance:
-        K_star, samples = solve_for_compliance(b.particles[0], CF_d)
+        K_star, samples = solve_for_compliance(random.choice(b.particles), CF_d)
         # print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = (components.stiff, [])
