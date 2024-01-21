@@ -66,7 +66,7 @@ def sweep(dof, deviations, geometry, schedule):
             )
             print(str(experiment_results[-1]))
         print("\n")
-        if all([result.traj is None for result in result.results]):
+        if all([result.traj is None for result in experiment_results]):
             print("stopping ({do_compliance=}, {do_gp=})")
             stopped_params.append((do_compliance, do_gp))
         results[experiment_label] = experiment_results

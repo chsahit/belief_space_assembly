@@ -34,11 +34,14 @@ print(f"{compliance_samples=}, {refinement_samples=}")
 
 def apply_noise(targets: List[RigidTransform]) -> List[RigidTransform]:
     noised_targets = []
-    for X in targets:
+    for i, X in enumerate(targets):
         r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
         t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
         random_vel = np.concatenate((r_vel, t_vel))
-        X_noise = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
+        if i % 2 == 0:
+            X_noise = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
+        else:
+            X_noise = RigidTransform()
         noised_targets.append(X.multiply(X_noise))
     return noised_targets
 
@@ -129,7 +132,7 @@ def refine_p(
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     # if abs(K[1] - 10) < 1e-3 and ("b3" in str(CF_d)) and False:
-    if np.linalg.norm(K - components.stiff) < 1e-3:
+    if np.linalg.norm(K - components.stiff) < 1e-3 and False:
         p_out = dynamics.simulate(p, motions[0], vis=True)
         print(f"{p_out.sdf=}")
     P_next = dynamics.f_cspace(p, motions)

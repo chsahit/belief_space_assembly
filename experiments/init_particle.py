@@ -4,7 +4,7 @@ from simulation import ik_solver
 
 
 def init_peg(
-    X_GM_x: float = 0.0, X_GM_z: float = 0.0, pitch: float = 0.01, mu: float = 0.3
+    X_GM_x: float = 0.0, X_GM_z: float = 0.0, pitch: float = 0.0, mu: float = 0.3
 ) -> state.Particle:
     z = 0.155 + X_GM_z
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
