@@ -35,13 +35,16 @@ print(f"{compliance_samples=}, {refinement_samples=}")
 def apply_noise(targets: List[RigidTransform]) -> List[RigidTransform]:
     noised_targets = []
     for i, X in enumerate(targets):
-        r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
-        t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
-        random_vel = np.concatenate((r_vel, t_vel))
         if i % 2 == 0:
-            X_noise = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
+            r_bounds = 0.05
+            t_bounds = 0.01
         else:
-            X_noise = RigidTransform()
+            r_bounds = 0.0001
+            t_bounds = 0.00001
+        r_vel = gen.uniform(low=-r_bounds, high=r_bounds, size=3)
+        t_vel = gen.uniform(low=-t_bounds, high=t_bounds, size=3)
+        random_vel = np.concatenate((r_vel, t_vel))
+        X_noise = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
         noised_targets.append(X.multiply(X_noise))
     return noised_targets
 

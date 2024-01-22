@@ -26,16 +26,19 @@ def GP(X1, y1, X2, kernel_func):
     and the prior kernel function.
     """
     # Kernel of the observations
-    Σ11 = kernel_func(X1, X1)
+    Sigma11 = kernel_func(X1, X1)
     # Kernel of observations vs to-predict
-    Σ12 = kernel_func(X1, X2)
+    Sigma12 = kernel_func(X1, X2)
     # Solve
-    solved = scipy.linalg.solve(Σ11, Σ12, assume_a="pos").T
+    try:
+        solved = scipy.linalg.solve(Sigma11, Sigma12, assume_a="pos").T
+    except Exception as e:
+        solved = scipy.linalg.solve(Sigma11, Sigma12).T
     # Compute posterior mean
     μ2 = solved @ y1
     # Compute the posterior covariance
     Σ22 = kernel_func(X2, X2)
-    Σ2 = Σ22 - (solved @ Σ12)
+    Σ2 = Σ22 - (solved @ Sigma12)
     return μ2, Σ2  # mean, covariance
 
 
