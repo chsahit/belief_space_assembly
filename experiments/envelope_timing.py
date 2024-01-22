@@ -67,7 +67,7 @@ def sweep(dof, deviations, geometry, schedule):
             print(str(experiment_results[-1]))
         print("\n")
         if all([result.traj is None for result in experiment_results]):
-            print("stopping ({do_compliance=}, {do_gp=})")
+            print(f"stopping ({do_compliance=}, {do_gp=})")
             stopped_params.append((do_compliance, do_gp))
         results[experiment_label] = experiment_results
     fname = dof + "_" + geometry + "_" + "sweep_results.pkl"
@@ -77,8 +77,8 @@ def sweep(dof, deviations, geometry, schedule):
 
 if __name__ == "__main__":
     # visualize.show_planning_results("pitch_peg_sweep_results.pkl")
-    # sweep(*pitch_sweep_puzzle, puzzle_schedule)
-    sweep(*pitch_sweep_peg, peg_schedule)
+    sweep(*pitch_sweep_puzzle, puzzle_schedule)
+    # sweep(*pitch_sweep_peg, peg_schedule)
     # sweep(*x_sweep_puzzle, puzzle_schedule)
     # sweep(*x_sweep_peg, peg_schedule)
 

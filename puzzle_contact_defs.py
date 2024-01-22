@@ -56,9 +56,17 @@ goal = set(
     (
         ("big_fixed_puzzle::b1_top", "block::b3_bottom"),
         ("big_fixed_puzzle::b1_front", "block::b4_back"),
+        # ("big_fixed_puzzle::b1_back", "block::b5_front"),
         ("big_fixed_puzzle::b2_left", "block::b2_right"),
     )
 )
+pre_goal = set(
+    (
+        ("big_fixed_puzzle::b1_front", "block::b4_back"),
+        ("big_fixed_puzzle::b2_top", "block::b1_bottom"),
+    )
+)
+
 side2 = set(
     (
         ("big_fixed_puzzle::b1_top", "block::b3_bottom"),

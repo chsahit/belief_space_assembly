@@ -39,8 +39,8 @@ def apply_noise(targets: List[RigidTransform]) -> List[RigidTransform]:
             r_bounds = 0.05
             t_bounds = 0.01
         else:
-            r_bounds = 0.0001
-            t_bounds = 0.00001
+            r_bounds = 0.001
+            t_bounds = 0.0001
         r_vel = gen.uniform(low=-r_bounds, high=r_bounds, size=3)
         t_vel = gen.uniform(low=-t_bounds, high=t_bounds, size=3)
         random_vel = np.concatenate((r_vel, t_vel))
@@ -135,7 +135,7 @@ def refine_p(
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     # if abs(K[1] - 10) < 1e-3 and ("b3" in str(CF_d)) and False:
-    if np.linalg.norm(K - components.stiff) < 1e-3 and False:
+    if np.linalg.norm(K - components.stiff) < 1e-3 and ("b2_right" in str(CF_d)):
         p_out = dynamics.simulate(p, motions[0], vis=True)
         print(f"{p_out.sdf=}")
     P_next = dynamics.f_cspace(p, motions)

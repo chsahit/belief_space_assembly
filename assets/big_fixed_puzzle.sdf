@@ -33,13 +33,13 @@
 	<visual name="b2">
 		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.1105 0.019000000000000003 0.02</size></box>
+			<box><size>0.1105 0.019000000000000003 0.018</size></box>
 		</geometry>
 	</visual>
 	<collision name="b2">
 		<pose>0.0 0.025 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.1105 0.019000000000000003 0.02</size></box>
+			<box><size>0.1105 0.019000000000000003 0.018</size></box>
                 </geometry>
             <drake:proximity_properties>
                 <drake:mu_dynamic>1</drake:mu_dynamic>
@@ -53,13 +53,13 @@
 	<visual name="b3">
 		<pose>0.04025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.02</size></box>
+			<box><size>0.03 0.031 0.018</size></box>
 		</geometry>
 	</visual>
 	<collision name="b3">
 		<pose>0.04025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.02</size></box>
+			<box><size>0.03 0.031 0.018</size></box>
 		</geometry>
 	    <drake:proximity_properties>
                 <drake:mu_dynamic>1</drake:mu_dynamic>
@@ -73,13 +73,13 @@
 	<visual name="b4">
 		<pose>-0.04025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.02</size></box>
+			<box><size>0.03 0.031 0.018</size></box>
 		</geometry>
 	</visual>
 	<collision name="b4">
 		<pose>-0.04025 0.0 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.03 0.031 0.02</size></box>
+			<box><size>0.03 0.031 0.018</size></box>
 		</geometry>
             <drake:proximity_properties>
                 <drake:mu_dynamic>1</drake:mu_dynamic>
@@ -93,13 +93,13 @@
 	<visual name="b5">
 		<pose>0.0 -0.025 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.1105 0.019000000000000003 0.02</size></box>
+			<box><size>0.1105 0.019000000000000003 0.018</size></box>
 		</geometry>
 	</visual>
 	<collision name="b5">
 		<pose>0.0 -0.025 0.06 0.0 0.0 0.0</pose>
 		<geometry>
-			<box><size>0.1105 0.019000000000000003 0.02</size></box>
+			<box><size>0.1105 0.019000000000000003 0.018</size></box>
 		</geometry>
             <drake:proximity_properties>
                 <drake:mu_dynamic>1</drake:mu_dynamic>
