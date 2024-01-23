@@ -61,7 +61,7 @@ def envelope_analysis(data):
         elif params[1] == "True" and params[2] == "False" and has_success:
             no_stiffness_max = max(no_stiffness_max, 2 * float(params[0]))
         elif params[1] == "False" and params[2] == "True" and has_success:
-            no_gp_max = max(no_gp_max, 2* float(params[0]))
+            no_gp_max = max(no_gp_max, 2 * float(params[0]))
 
     print(f"{ours_max=}")
     print(f"{no_stiffness_max=}")
