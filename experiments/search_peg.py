@@ -19,8 +19,8 @@ def simple_down():
         contact_defs.bottom_faces_3,
         contact_defs.bottom_faces,
     ]
-    p0 = init_particle.init_peg(pitch=-3)
-    p1 = init_particle.init_peg(pitch=3)
+    p0 = init_particle.init_peg(X_GM_z=-0.005)
+    p1 = init_particle.init_peg(X_GM_z=0.005)
     b = state.Belief([p0, p1])
     # diagram_factory.initialize_factory(b.particles)
     result = refine_motion.randomized_refine(b, modes, max_attempts=100)

@@ -27,6 +27,9 @@
             <size>0.061 0.061 0.05</size>
           </box>
         </geometry>
+        <material>
+            <diffuse>0 0 0 1</diffuse>
+        </material>
       </visual>
       <collision name="bottom">
         <pose>-0.0 -0.0 -0.1 0 0 0</pose>
@@ -52,7 +55,10 @@
             <size>0.007 0.075 0.1</size>
           </box>
         </geometry>
-      </visual>
+      <material>
+        <diffuse>0 0 0 1</diffuse>
+    </material>
+    </visual>
       <collision name="front">
         <pose>-0.034 -0.0 -0.025 0 0 0</pose>
         <geometry>
@@ -75,7 +81,10 @@
             <size>0.007 0.075 0.1</size>
           </box>
         </geometry>
-      </visual>
+      <material>
+        <diffuse>0 0 0 1</diffuse>
+    </material>
+    </visual>
       <collision name="back">
         <pose>0.034 -0.0 -0.025 0 0 0</pose>
         <geometry>
@@ -139,7 +148,10 @@
             <size>0.061 0.007 0.1</size>
           </box>
         </geometry>
-      </visual>
+      <material>
+        <diffuse>0 0 0 1</diffuse>
+    </material>
+    </visual>
       <collision name="left">
         <pose>0.0 0.034 -0.025 0 0 0</pose>
         <geometry>
@@ -164,6 +176,9 @@
             <size>0.061 0.007 0.1</size>
           </box>
         </geometry>
+        <material>
+            <diffuse>0 0 0 1</diffuse>
+        </material>
       </visual>
       <collision name="right">
         <pose>0.0 -0.034 -0.025 0 0 0</pose>

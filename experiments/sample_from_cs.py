@@ -91,5 +91,19 @@ def test_ik():
 
 
 if __name__ == "__main__":
-    ts2()
-    print("\n")
+    # ts2()
+    # print("\n")
+    p = init()
+    X_WGs = generate_contact_set.project_manipuland_to_contacts(
+        p, puzzle_contact_defs.goal
+    )
+    q_r = ik_solver.gripper_to_joint_states(X_WGs[0])
+    new_p = p.deepcopy()
+    new_p.q_r = q_r
+    cm = components.CompliantMotion(
+        RigidTransform(),
+        utils.xyz_rpy_deg([0.5, 0.0, 0.3], [180, 0, 0]),
+        components.stiff,
+    )
+    dynamics.simulate(new_p, cm, vis=True)
+    input()

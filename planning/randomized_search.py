@@ -131,11 +131,14 @@ def refine_p(
         )
         targets = apply_noise(targets)
 
-    X_GC = RigidTransform([0.0, 0.0, 0.15])
+    if "b2_right" in str(CF_d):
+        X_GC = RigidTransform([0.0, -0.03, 0.0])
+    else:
+        X_GC = RigidTransform([0.0, 0.0, 0.15])
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
-    # if np.linalg.norm(K - components.stiff) < 1e-3 and ("b2_right" in str(CF_d)):
-    if False:
+    # if np.linalg.norm(K - components.stiff) < 1e-3 and ("top" in str(CF_d)) and False:
+    if np.linalg.norm(K - components.stiff) < 1e-3:
         p_out = dynamics.simulate(p, motions[0], vis=True)
         print(f"{p_out.sdf=}")
     P_next = dynamics.f_cspace(p, motions)
@@ -235,6 +238,7 @@ def refine_b(
             best_certainty_all = certainty_i
             best_u_root = best_u_i
     if best_u_root is None:
+        print("all candidate motion sets are empty")
         return None
     u_gp, certainty_gp, success_gp = iterative_gp(data, b, CF_d, do_gp)
     if certainty_gp > best_certainty_all:

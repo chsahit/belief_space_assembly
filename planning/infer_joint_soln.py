@@ -1,15 +1,18 @@
 import random
+import warnings
 from typing import List
 
 import numpy as np
 import scipy.spatial
 from pydrake.all import RigidTransform
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 
 import components
 import mr
 
+warnings.simplefilter("ignore", category=ConvergenceWarning)
 gen_infer = np.random.default_rng(0)
 
 # Yoinked from https://peterroelants.github.io/posts/gaussian-process-tutorial/
@@ -50,8 +53,8 @@ def GP(X1, y1, X2, kernel_func):
 
 def gp_sklearn(X1, y1, X2, kf):
     del kf
-    kernel = 1 * RBF(length_scale=1.0, length_scale_bounds=(1e-4, 1e2))
-    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=5)
+    kernel = 1 * RBF(length_scale=1.0, length_scale_bounds=(1e-5, 1e2))
+    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=9)
     gp.fit(X1, y1)
     mu, std = gp.predict(X2, return_std=True)
     return mu, std
