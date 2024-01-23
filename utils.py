@@ -57,11 +57,11 @@ def envelope_analysis(data):
     for (params, results) in data.items():
         has_success = any([result.traj is not None for result in results])
         if params[1] == "True" and params[2] == "True" and has_success:
-            ours_max = max(ours_max, 2 * params[0])
+            ours_max = max(ours_max, 2 * float(params[0]))
         elif params[1] == "True" and params[2] == "False" and has_success:
-            no_stiffness_max = max(no_stiffness_max, 2 * params[0])
+            no_stiffness_max = max(no_stiffness_max, 2 * float(params[0]))
         elif params[1] == "False" and params[2] == "True" and has_success:
-            no_gp_max = max(no_gp_max, 2 * params[0])
+            no_gp_max = max(no_gp_max, 2* float(params[0]))
 
     print(f"{ours_max=}")
     print(f"{no_stiffness_max=}")
