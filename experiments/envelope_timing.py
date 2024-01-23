@@ -8,12 +8,11 @@ import visualize
 from experiments import init_particle
 from planning import refine_motion
 
-pitch_sweep_peg = ("pitch", [4, 4.5, 5], "peg")
+pitch_sweep_peg = ("pitch", [5], "peg")
 pitch_sweep_puzzle = ("pitch", [1, 1.5, 2, 2.5, 3, 3.5, 4], "puzzle")
 x_sweep_puzzle = ("X_GM_x", [0.001, 0.003, 0.005, 0.007, 0.009], "puzzle")
-z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015], "peg")
 # x_sweep_peg = ("X_GM_x", [0.0075, 0.01, 0.0125, 0.015], "peg")
-x_sweep_peg = ("X_GM_x", [0.0175, 0.02, 0.0225], "peg")
+x_sweep_peg = ("X_GM_x", [0.0225, 0.025, 0.0275], "peg")
 peg_schedule = [
     contact_defs.chamfer_touch_2,
     contact_defs.front_faces,
@@ -83,8 +82,8 @@ if __name__ == "__main__":
     # sweep(*pitch_sweep_puzzle, puzzle_schedule)
     # sweep(*pitch_sweep_peg, peg_schedule)
     # sweep(*x_sweep_puzzle, puzzle_schedule)
-    # sweep(*x_sweep_peg, peg_schedule)
-    sweep(*z_sweep_peg, peg_schedule)
+    sweep(*x_sweep_peg, peg_schedule)
+    # sweep(*z_sweep_peg, peg_schedule)
 
     # b = state.Belief([init_particle.init_peg(-0.009), init_particle.init_peg(), init_particle.init_peg(0.009)])
     # visualize.playback_result(b, "X_GM_x_peg_sweep_results.pkl")

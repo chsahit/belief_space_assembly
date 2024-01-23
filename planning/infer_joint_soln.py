@@ -4,6 +4,8 @@ from typing import List
 import numpy as np
 import scipy.spatial
 from pydrake.all import RigidTransform
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF
 
 import components
 import mr
@@ -46,6 +48,15 @@ def GP(X1, y1, X2, kernel_func):
 # end yoink
 
 
+def gp_sklearn(X1, y1, X2, kf):
+    del kf
+    kernel = 1 * RBF(length_scale=1.0, length_scale_bounds=(1e-4, 1e2))
+    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=5)
+    gp.fit(X1, y1)
+    mu, std = gp.predict(X2, return_std=True)
+    return mu, std
+
+
 def infer(
     all_samples: List[components.CompliantMotion], all_scores: List[float], do_gp: bool
 ) -> List[components.CompliantMotion]:
@@ -79,7 +90,7 @@ def infer(
     all_samples_r6 = np.array(all_samples_r6)
 
     # do regression
-    test_points_out, _ = GP(
+    test_points_out, _ = gp_sklearn(
         all_samples_r6, all_scores, test_points, exponentiated_quadratic
     )
     if do_gp:
