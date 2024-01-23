@@ -11,9 +11,9 @@ from planning import refine_motion
 pitch_sweep_peg = ("pitch", [4, 4.5, 5], "peg")
 pitch_sweep_puzzle = ("pitch", [1, 1.5, 2, 2.5, 3, 3.5, 4], "puzzle")
 x_sweep_puzzle = ("X_GM_x", [0.001, 0.003, 0.005, 0.007, 0.009], "puzzle")
-x_sweep_peg = ("X_GM_x", [0.0075, 0.01, 0.0125, 0.015], "peg")
-
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015], "peg")
+# x_sweep_peg = ("X_GM_x", [0.0075, 0.01, 0.0125, 0.015], "peg")
+x_sweep_peg = ("X_GM_x", [0.0175, 0.02, 0.0225], "peg")
 peg_schedule = [
     contact_defs.chamfer_touch_2,
     contact_defs.front_faces,
@@ -52,7 +52,7 @@ def sweep(dof, deviations, geometry, schedule):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(do_compliance), str(do_gp))
-        trials = 5
+        trials = 4
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")

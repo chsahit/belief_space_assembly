@@ -27,13 +27,14 @@ def GP(X1, y1, X2, kernel_func):
     """
     # Kernel of the observations
     Sigma11 = kernel_func(X1, X1)
+    Sigma11_ridge = Sigma11 + 0.001 * np.eye(Sigma11.shape[0])
     # Kernel of observations vs to-predict
     Sigma12 = kernel_func(X1, X2)
     # Solve
     try:
-        solved = scipy.linalg.solve(Sigma11, Sigma12, assume_a="pos").T
+        solved = scipy.linalg.solve(Sigma11_ridge, Sigma12, assume_a="pos").T
     except Exception as e:
-        solved = scipy.linalg.solve(Sigma11, Sigma12).T
+        solved = scipy.linalg.solve(Sigma11_ridge, Sigma12).T
     # Compute posterior mean
     μ2 = solved @ y1
     # Compute the posterior covariance
