@@ -40,9 +40,15 @@ from pydrake.all import (
 )
 
 import utils
-from simulation import annotate_geoms, controller, geometry_monitor, image_logger
+from simulation import (
+    annotate_geoms,
+    controller,
+    full_joint_stiffness,
+    geometry_monitor,
+    image_logger,
+)
 from simulation import joint_impedance_controller as jc
-from simulation import playback_controller, full_joint_stiffness
+from simulation import playback_controller
 
 timestep = 0.005
 contact_model = ContactModel.kHydroelasticWithFallback
@@ -84,23 +90,28 @@ def wire_controller(
             compliant_controller.get_output_port(),
             plant.get_actuation_input_port(panda),
         )
+        builder.Connect(
+            plant.get_state_output_port(panda),
+            compliant_controller.GetInputPort("state"),
+        )
     else:
         compliant_controller = builder.AddNamedSystem(
-            controller_name, jc.JointImpedanceController(plant, panda_name)
+            controller_name, full_joint_stiffness.JointStiffnessController(plant, None)
+        )
+        fixblock = builder.AddSystem(full_joint_stiffness.FixedVal())
+        builder.Connect(
+            plant.get_state_output_port(panda),
+            compliant_controller.get_input_port_estimated_state(),
         )
         builder.Connect(
-            compliant_controller.GetOutputPort("q_d"),
-            plant.get_desired_state_input_port(panda),
+            fixblock.get_output_port(),
+            compliant_controller.get_input_port_desired_state(),
         )
         builder.Connect(
-            compliant_controller.GetOutputPort("gravity_ff"),
+            compliant_controller.get_output_port_generalized_force(),
             plant.get_actuation_input_port(panda),
         )
 
-    builder.Connect(
-        plant.get_state_output_port(panda),
-        compliant_controller.GetInputPort("state"),
-    )
     return compliant_controller
 
 
