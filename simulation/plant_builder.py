@@ -42,7 +42,7 @@ from pydrake.all import (
 import utils
 from simulation import annotate_geoms, controller, geometry_monitor, image_logger
 from simulation import joint_impedance_controller as jc
-from simulation import playback_controller
+from simulation import playback_controller, full_joint_stiffness
 
 timestep = 0.005
 contact_model = ContactModel.kHydroelasticWithFallback
