@@ -10,6 +10,8 @@ from pydrake.all import MathematicalProgram, Simulator, Solve
 import components
 import mr
 import state
+from simulation import ik_solver
+print("warning, not recycling q_d, questionable import")
 
 _time_in_sim = 0.0
 _num_posteriors = 0
@@ -98,9 +100,10 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
-    K_G = mr.Adjoint(motion.X_GC.inverse().GetAsMatrix4()) @ np.diag(motion.K)
-    gains = (p.J.T) @ K_G @ p.J
-    motion.is_joint_space = True
+    # K_G = mr.Adjoint(motion.X_GC.inverse().GetAsMatrix4()) @ np.diag(motion.K)
+    # gains = (p.J.T) @ K_G @ p.J
+    # motion.is_joint_space = True
+    gains = np.eye(9)
     diagram, meshcat = p.make_plant(vis=vis, gains=gains)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
@@ -108,8 +111,12 @@ def simulate(
     plant.SetPositions(plant_context, plant.GetModelInstanceByName("panda"), p.q_r)
 
     controller = diagram.GetSubsystemByName("controller")
+    controller.kp = 300 * np.eye(9)
+    setpoint = diagram.GetSubsystemByName("setpoint")
     controller.motion = motion
+    setpoint.setpoint = ik_solver.gripper_to_joint_states(motion.X_WCd.multiply(motion.X_GC.inverse()))
     simulator.Initialize()
+
     if vis:
         meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
         meshcat_vis.StartRecording()
@@ -129,8 +136,9 @@ def simulate(
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
+    print("warning, not updating contact data")
     # p_next.trajectory = controller.history
-    p_next._update_contact_data()
+    # p_next._update_contact_data()
     return p_next
 
 

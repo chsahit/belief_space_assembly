@@ -80,37 +80,22 @@ def wire_controller(
     builder,
     plant,
 ):
-    compliant_controller = None
-    if is_cartesian:
-        compliant_controller = builder.AddNamedSystem(
-            controller_name,
-            playback_controller.PlaybackController(plant, panda_name),
-        )
-        builder.Connect(
-            compliant_controller.get_output_port(),
-            plant.get_actuation_input_port(panda),
-        )
-        builder.Connect(
-            plant.get_state_output_port(panda),
-            compliant_controller.GetInputPort("state"),
-        )
-    else:
-        compliant_controller = builder.AddNamedSystem(
-            controller_name, full_joint_stiffness.JointStiffnessController(plant, None)
-        )
-        fixblock = builder.AddSystem(full_joint_stiffness.FixedVal())
-        builder.Connect(
-            plant.get_state_output_port(panda),
-            compliant_controller.get_input_port_estimated_state(),
-        )
-        builder.Connect(
-            fixblock.get_output_port(),
-            compliant_controller.get_input_port_desired_state(),
-        )
-        builder.Connect(
-            compliant_controller.get_output_port_generalized_force(),
-            plant.get_actuation_input_port(panda),
-        )
+    compliant_controller = builder.AddNamedSystem(
+        controller_name, full_joint_stiffness.JointStiffnessController(plant, None)
+    )
+    fixblock = builder.AddNamedSystem("setpoint", full_joint_stiffness.FixedVal(None))
+    builder.Connect(
+        plant.get_state_output_port(panda),
+        compliant_controller.get_input_port_estimated_state(),
+    )
+    builder.Connect(
+        fixblock.get_output_port(),
+        compliant_controller.get_input_port_desired_state(),
+    )
+    builder.Connect(
+        compliant_controller.get_output_port_generalized_force(),
+        plant.get_actuation_input_port(panda),
+    )
 
     return compliant_controller
 
@@ -229,12 +214,14 @@ def _construct_diagram(
     _weld_geometries(plant, X_GM, X_WO, panda, manipuland, env_geometry)
     # _mu = mu if gains is not None else mu - 0.01
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
-    for i, ja_index in enumerate(list(range(7))):
+    """
+    for i, ja_index in enumerate(list(range(9))):
         ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
         if gains is not None:
             ja.set_controller_gains(
                 PdControllerGains(p=gains[i, i], d=10 * np.sqrt(gains[i, i]))
             )
+    """
     plant.Finalize()
     _drop_reflected_inertia(plant, panda)
     plant.SetDefaultPositions(panda, q_r)

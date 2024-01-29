@@ -1,3 +1,4 @@
+import numpy as np
 from pydrake.all import BasicVector, LeafSystem, MultibodyForces, Value, ValueProducer
 
 
@@ -8,8 +9,8 @@ class JointStiffnessController(LeafSystem):
         self.kp = kp
 
         num_states = self.plant.num_multibody_states()
-        print("warning, underactuated system")
-        num_q = self.plant.num_positions() - 2
+        self.num_q = self.plant.num_positions()
+        print(f"{self.num_q=}")
 
         self.input_port_index_estimated_state_ = self.DeclareVectorInputPort(
             "estimated_state", num_states
@@ -19,7 +20,7 @@ class JointStiffnessController(LeafSystem):
         ).get_index()
         self.output_port_index_force_ = self.DeclareVectorOutputPort(
             "generalized_force",
-            BasicVector(num_q),
+            BasicVector(self.num_q),
             self.CalcOutputForce,
             {
                 self.all_input_ports_ticket(),
@@ -71,24 +72,39 @@ class JointStiffnessController(LeafSystem):
         applied_forces = self.get_cache_entry(self.applied_forces_cache_index_).Eval(
             context
         )
-        output.SetFromVector(-applied_forces)
+        tau = self.plant.CalcInverseDynamics(
+            plant_context, np.zeros((self.num_q,)), applied_forces
+        )
+        Cv = self.plant.CalcBiasTerm(plant_context)
+        tau -= Cv
+
+        x = self.get_input_port_estimated_state().Eval(context)
+        x_d =  self.get_input_port_desired_state().Eval(context)
+        tau += self.kp @ (x_d[:self.num_q] - x[:self.num_q])
+
+        output.SetFromVector(tau)
+
 
     def CalcMultibodyForces(self, context, cache_val):
         plant_context = self.get_cache_entry(self.plant_context_cache_index_).Eval(
             context
         )
-        self.plant.CalcForceElementsContribution(plant_context, cache_val)
+        self.plant.CalcForceElementsContribution(
+            plant_context, cache_val.get_mutable_value()
+        )
 
 
 class FixedVal(LeafSystem):
-    def __init__(self):
+    def __init__(self, setpoint):
         LeafSystem.__init__(self)
         self.output_port_xd = self.DeclareVectorOutputPort(
             "out", BasicVector(18), self.CalcOuput
         )
+        self.setpoint = setpoint
 
     def CalcOuput(self, context, output):
-        output.SetFromVector(np.zeros((7,)))
+        x_d = np.concatenate((self.setpoint, np.zeros((9,))))
+        output.SetFromVector(x_d)
 
 
 if __name__ == "__main__":
