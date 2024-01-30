@@ -101,6 +101,7 @@ def wire_controller(
 
 
 def _drop_reflected_inertia(plant, panda):
+    return None
     ja_indices = plant.GetJointActuatorIndices(panda)
     for ja_idx in ja_indices:
         ja = plant.get_joint_actuator(ja_idx)

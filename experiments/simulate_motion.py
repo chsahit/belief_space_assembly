@@ -16,16 +16,14 @@ def init(X_GM_x: float = 0.0):
     X_GM = utils.xyz_rpy_deg([X_GM_x, 0.0, 0.155], [180, 0, 0])
     X_WO = utils.xyz_rpy_deg([0.5, 0, 0.075], [0, 0, 0])
     q_r_0 = ik_solver.gripper_to_joint_states(X_WG_0)
-    p_0 = state.Particle(
-        q_r_0, X_GM, X_WO, "assets/big_chamfered_hole.sdf", "assets/peg.urdf"
-    )
+    p_0 = state.Particle(q_r_0, X_GM, X_WO, "assets/empty_world.sdf", "assets/peg.urdf")
     return p_0
 
 
 def test_simulate():
     p_0 = init()
     t0 = time.time()
-    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.20], [180, 0, 0])
+    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.30], [180, 0, 0])
     mostly_stiff = np.array([100.0, 100.0, 10.0, 600.0, 600.0, 600.0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     # print(utils.RigidTfToVec(p_0.X_WG))

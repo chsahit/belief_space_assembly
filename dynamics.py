@@ -11,6 +11,7 @@ import components
 import mr
 import state
 from simulation import ik_solver
+
 print("warning, not recycling q_d, questionable import")
 
 _time_in_sim = 0.0
@@ -100,10 +101,11 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
+
     # K_G = mr.Adjoint(motion.X_GC.inverse().GetAsMatrix4()) @ np.diag(motion.K)
     # gains = (p.J.T) @ K_G @ p.J
     # motion.is_joint_space = True
-    gains = np.eye(9)
+    gains = np.eye(6)
     diagram, meshcat = p.make_plant(vis=vis, gains=gains)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
@@ -111,10 +113,12 @@ def simulate(
     plant.SetPositions(plant_context, plant.GetModelInstanceByName("panda"), p.q_r)
 
     controller = diagram.GetSubsystemByName("controller")
-    controller.kp = 300 * np.eye(9)
+    controller.kp = motion.K
     setpoint = diagram.GetSubsystemByName("setpoint")
-    controller.motion = motion
-    setpoint.setpoint = ik_solver.gripper_to_joint_states(motion.X_WCd.multiply(motion.X_GC.inverse()))
+    # controller.motion = motion
+    setpoint.setpoint = ik_solver.gripper_to_joint_states(
+        motion.X_WCd.multiply(motion.X_GC.inverse())
+    )
     simulator.Initialize()
 
     if vis:
