@@ -10,9 +10,6 @@ from pydrake.all import MathematicalProgram, Simulator, Solve
 import components
 import mr
 import state
-from simulation import ik_solver
-
-print("warning, not recycling q_d, questionable import")
 
 _time_in_sim = 0.0
 _num_posteriors = 0
@@ -116,9 +113,8 @@ def simulate(
     controller.kp = motion.K
     setpoint = diagram.GetSubsystemByName("setpoint")
     # controller.motion = motion
-    setpoint.setpoint = ik_solver.gripper_to_joint_states(
-        motion.X_WCd.multiply(motion.X_GC.inverse())
-    )
+    setpoint.setpoint = motion.q_d
+    assert setpoint.setpoint is not None
     simulator.Initialize()
 
     if vis:
@@ -140,9 +136,8 @@ def simulate(
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
-    print("warning, not updating contact data")
     # p_next.trajectory = controller.history
-    # p_next._update_contact_data()
+    p_next._update_contact_data()
     return p_next
 
 

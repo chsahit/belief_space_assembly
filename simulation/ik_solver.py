@@ -77,6 +77,13 @@ def gripper_to_joint_states(
     return soln
 
 
+def update_motion_qd(motion):
+    if motion.q_d is None:
+        X_WG = motion.X_WCd.multiply(motion.X_GC.inverse())
+        motion.q_d = gripper_to_joint_states(X_WG)
+    return motion
+
+
 def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId]]:
     plant = diagram.GetSubsystemByName("plant")
     scene_graph = diagram.GetSubsystemByName("scene_graph")
