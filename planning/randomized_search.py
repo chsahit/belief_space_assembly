@@ -72,7 +72,7 @@ def solve_for_compliance(
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=compliance_samples
     )
-    targets = apply_noise(targets)
+    # targets = apply_noise(targets)
     K_opt = np.copy(components.stiff)
     validated_samples, _ = refine_p(p, CF_d, K_opt, targets=targets)
     succ_count = len(validated_samples)
@@ -129,7 +129,7 @@ def refine_p(
         targets = generate_contact_set.project_manipuland_to_contacts(
             p, CF_d, num_samples=refinement_samples
         )
-        targets = apply_noise(targets)
+        # targets = apply_noise(targets)
 
     if "b2_right" in str(CF_d):
         X_GC = RigidTransform([0.0, -0.03, 0.0])

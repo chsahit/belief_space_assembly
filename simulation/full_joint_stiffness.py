@@ -99,8 +99,6 @@ class JointStiffnessController(LeafSystem):
         plant_context = self.get_cache_entry(self.plant_context_cache_index_).Eval(
             context
         )
-        J = cache_val.get_mutable_value()
-        # CRINGE
         J = self.plant.CalcJacobianSpatialVelocity(
             plant_context,
             JacobianWrtVariable.kQDot,
@@ -109,9 +107,8 @@ class JointStiffnessController(LeafSystem):
             self.W,
             self.W,
         )
-        for i in range(6):
-            for j in range(9):
-                cache_val.get_mutable_value()[i, j] = J[i, j]
+        np.copyto(cache_val.get_mutable_value(), J)
+        # cache_val.get_mutable_value()[:, :] = J[:, :]
 
     def CalcMultibodyForces(self, context, cache_val):
         plant_context = self.get_cache_entry(self.plant_context_cache_index_).Eval(
