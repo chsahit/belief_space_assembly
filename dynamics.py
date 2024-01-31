@@ -98,9 +98,11 @@ def simulate(
         A particle with the same grasp and object pose hypothesis as the input but
         with new robot joint angles corresponding to the result of the motion.
     """
-    K_G = mr.Adjoint(motion.X_GC.inverse().GetAsMatrix4()) @ np.diag(motion.K)
-    gains = (p.J.T) @ K_G @ p.J
-    motion.is_joint_space = True
+
+    # K_G = mr.Adjoint(motion.X_GC.inverse().GetAsMatrix4()) @ np.diag(motion.K)
+    # gains = (p.J.T) @ K_G @ p.J
+    # motion.is_joint_space = True
+    gains = np.eye(6)
     diagram, meshcat = p.make_plant(vis=vis, gains=gains)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
@@ -108,8 +110,13 @@ def simulate(
     plant.SetPositions(plant_context, plant.GetModelInstanceByName("panda"), p.q_r)
 
     controller = diagram.GetSubsystemByName("controller")
-    controller.motion = motion
+    controller.kp = motion.K
+    setpoint = diagram.GetSubsystemByName("setpoint")
+    # controller.motion = motion
+    setpoint.setpoint = motion.q_d
+    assert setpoint.setpoint is not None
     simulator.Initialize()
+
     if vis:
         meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
         meshcat_vis.StartRecording()

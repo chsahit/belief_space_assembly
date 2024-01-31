@@ -12,7 +12,7 @@ pitch_sweep_peg = ("pitch", [5], "peg")
 pitch_sweep_puzzle = ("pitch", [1.5, 2, 3, 3.5, 4], "puzzle")
 # x_sweep_peg = ("X_GM_x", [0.0075, 0.01, 0.0125, 0.015], "peg")
 x_sweep_peg = ("X_GM_x", [0.025], "peg")
-x_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
+z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.01, 0.01666, 0.023333, 0.03], "peg")
 
 peg_schedule = [
@@ -86,11 +86,11 @@ def sweep(dof, deviations, geometry, schedule):
 if __name__ == "__main__":
     # visualize.show_planning_results("pitch_peg_sweep_results.pkl")
     # sweep(*pitch_sweep_puzzle, puzzle_schedule)
-    # sweep(*pitch_sweep_peg, peg_schedule)
+    sweep(*pitch_sweep_peg, peg_schedule)
     # sweep(*x_sweep_puzzle, puzzle_schedule)
     # sweep(*x_sweep_peg, peg_schedule)
     # sweep(*z_sweep_peg, peg_schedule)
-    sweep(*z_sweep_puzzle, puzzle_schedule)
+    # sweep(*z_sweep_puzzle, puzzle_schedule)
 
     # b = state.Belief([init_particle.init_peg(-0.009), init_particle.init_peg(), init_particle.init_peg(0.009)])
     # visualize.playback_result(b, "X_GM_x_peg_sweep_results.pkl")

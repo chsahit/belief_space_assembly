@@ -137,6 +137,7 @@ def refine_p(
         X_GC = RigidTransform([0.0, 0.0, 0.15])
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
+    motions = [ik_solver.update_motion_qd(m) for m in motions]
     # if np.linalg.norm(K - components.stiff) < 1e-3 and ("top" in str(CF_d)) and False:
     if np.linalg.norm(K - components.stiff) < 1e-3 and False:
         p_out = dynamics.simulate(p, motions[0], vis=True)
@@ -164,6 +165,7 @@ def score_tree_root(
     U0 = U0 + validated_samples
     if len(U0) == 0:
         return None, float("-inf"), False, ([], [])
+    U0 = [ik_solver.update_motion_qd(u0) for u0 in U0]
     posteriors = dynamics.parallel_f_bel(b, U0)
     best_u = None
     most_certainty = float("-inf")
@@ -185,6 +187,7 @@ def iterative_gp(data, b, CF_d, do_gp, iters=3):
     for idx in range(iters):
         # print(f"iteration={idx}")
         new_samples = infer_joint_soln.infer(*data, do_gp)
+        new_samples = [ik_solver.update_motion_qd(s) for s in new_samples]
         posteriors = dynamics.parallel_f_bel(b, new_samples)
         scores = []
         for np_i, new_posterior in enumerate(posteriors):
