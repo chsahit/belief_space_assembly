@@ -10,23 +10,25 @@ from pydrake.all import (
 
 
 class JointStiffnessController(LeafSystem):
-    def __init__(self, plant, kp):
+    def __init__(self, plant, kp, panda_name="panda"):
         LeafSystem.__init__(self)
         self.plant = plant
         self.kp = kp
 
-        num_states = self.plant.num_multibody_states()
-        self.num_q = self.plant.num_positions()
-        panda = self.plant.GetModelInstanceByName("panda")
+        self.panda = self.plant.GetModelInstanceByName(panda_name)
+        num_states = self.plant.num_multibody_states(self.panda)
+        self.num_q = self.plant.num_positions(self.panda)
+        self.num_q_all = self.plant.num_positions()
+
         self.panda_body_frame = self.plant.GetBodyByName(
-            "panda_hand", panda
+            "panda_hand", self.panda
         ).body_frame()
         self.W = self.plant.world_frame()
         self.panda_start_pos = plant.GetJointByName(
-            "panda_joint1", panda
+            "panda_joint1", self.panda
         ).position_start()
         self.panda_end_pos = plant.GetJointByName(
-            "panda_joint7", panda
+            "panda_joint7", self.panda
         ).position_start()
 
         self.input_port_index_estimated_state_ = self.DeclareVectorInputPort(
@@ -68,7 +70,7 @@ class JointStiffnessController(LeafSystem):
             },
         ).cache_index()
 
-        self.J = np.zeros((6, 9))
+        self.J = np.zeros((6, 7))
         self.jacobian_cache_idx_ = self.DeclareCacheEntry(
             "jacobian_cache",
             ValueProducer(
@@ -93,7 +95,9 @@ class JointStiffnessController(LeafSystem):
 
     def SetMultibodyContext(self, context, abstract_value):
         state = self.get_input_port_estimated_state().Eval(context)
-        self.plant.SetPositionsAndVelocities(abstract_value.get_mutable_value(), state)
+        self.plant.SetPositionsAndVelocities(
+            abstract_value.get_mutable_value(), self.panda, state
+        )
 
     def CalcJacobian(self, context, cache_val):
         plant_context = self.get_cache_entry(self.plant_context_cache_index_).Eval(
@@ -107,8 +111,8 @@ class JointStiffnessController(LeafSystem):
             self.W,
             self.W,
         )
-        np.copyto(cache_val.get_mutable_value(), J)
-        # cache_val.get_mutable_value()[:, :] = J[:, :]
+        J_g = J[:, self.panda_start_pos : self.panda_end_pos + 1]
+        np.copyto(cache_val.get_mutable_value(), J_g)
 
     def CalcMultibodyForces(self, context, cache_val):
         plant_context = self.get_cache_entry(self.plant_context_cache_index_).Eval(
@@ -125,16 +129,16 @@ class JointStiffnessController(LeafSystem):
         applied_forces = self.get_cache_entry(self.applied_forces_cache_index_).Eval(
             context
         )
-        J = self.get_cache_entry(self.jacobian_cache_idx_).Eval(context)
+        J_g = self.get_cache_entry(self.jacobian_cache_idx_).Eval(context)
         tau = self.plant.CalcInverseDynamics(
-            plant_context, np.zeros((self.num_q,)), applied_forces
+            plant_context, np.zeros((self.num_q_all,)), applied_forces
         )
         Cv = self.plant.CalcBiasTerm(plant_context)
         tau -= Cv
+        tau = self.plant.GetVelocitiesFromArray(self.panda, tau)
 
         x = self.get_input_port_estimated_state().Eval(context)
         x_d = self.get_input_port_desired_state().Eval(context)
-        J_g = J[:, self.panda_start_pos : self.panda_end_pos + 1]
         kp_q = J_g.T @ np.diag(self.kp) @ J_g
         finger_gains = np.array(
             [[0, 0, 0, 0, 0, 0, 0, 100, 0], [0, 0, 0, 0, 0, 0, 0, 0, 100]]

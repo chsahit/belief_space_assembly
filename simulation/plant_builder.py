@@ -76,14 +76,19 @@ def wire_controller(
     panda: ModelInstanceIndex,
     controller_name: str,
     panda_name: str,
-    block_name: str,
+    setpoint_name: str,
     builder,
     plant,
 ):
     compliant_controller = builder.AddNamedSystem(
-        controller_name, full_joint_stiffness.JointStiffnessController(plant, None)
+        controller_name,
+        full_joint_stiffness.JointStiffnessController(
+            plant, None, panda_name=panda_name
+        ),
     )
-    fixblock = builder.AddNamedSystem("setpoint", full_joint_stiffness.FixedVal(None))
+    fixblock = builder.AddNamedSystem(
+        setpoint_name, full_joint_stiffness.FixedVal(None)
+    )
     builder.Connect(
         plant.get_state_output_port(panda),
         compliant_controller.get_input_port_estimated_state(),
@@ -242,7 +247,9 @@ def _construct_diagram(
 
     # connect controller
     is_cartesian = gains is None
-    wire_controller(is_cartesian, panda, "controller", "panda", "block", builder, plant)
+    wire_controller(
+        is_cartesian, panda, "controller", "panda", "setpoint", builder, plant
+    )
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:

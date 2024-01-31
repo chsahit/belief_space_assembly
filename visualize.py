@@ -56,7 +56,7 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
 
 def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
-    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=1e-5)
+    plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=0.005)
     instance_list = list()
 
     for i, p in enumerate(b.particles):
@@ -78,7 +78,6 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     colors = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
     for i, p in enumerate(b.particles):
         P, O, M = instance_list[i]
-        plant_builder._drop_reflected_inertia(plant, P)
         set_transparency_of_models(plant, [P, O, M], colors[i % 3], 0.5, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
         plant_builder.wire_controller(
@@ -86,7 +85,7 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
             P,
             f"controller_{str(i)}",
             f"panda_{str(i)}",
-            f"block_{str(i)}",
+            f"setpoint_{str(i)}",
             builder,
             plant,
         )
@@ -136,8 +135,9 @@ def play_motions_on_belief(
         T += u.timeout
         for i in range(len(b.particles)):
             controller = diagram.GetSubsystemByName("controller_" + str(i))
-            controller.motion = u
-            controller.K_q = None
+            setpoint = diagram.GetSubsystemByName("setpoint_" + str(i))
+            setpoint.setpoint = u.q_d
+            controller.kp = u.K
         simulator.AdvanceTo(T)
     visualizer.PublishRecording()
     if fname is not None:

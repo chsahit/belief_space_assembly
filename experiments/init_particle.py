@@ -23,7 +23,7 @@ def init_peg(
 
 
 def init_puzzle(
-    X_GM_x: float = 0.0, X_GM_z: float = 0.0, pitch: float = 0.0, mu: float = 0.6
+    X_GM_x: float = 0.0, X_GM_z: float = 0.0, pitch: float = 0.0, mu: float = 0.15
 ) -> state.Particle:
     z = 0.09 + X_GM_z
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.32], [180, 0, 0])

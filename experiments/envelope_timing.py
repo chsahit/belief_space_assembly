@@ -52,9 +52,9 @@ def sweep(dof, deviations, geometry, schedule):
         kwarg_0 = {dof: -deviation}
         kwarg_1 = {dof: deviation}
         kwarg_2 = {dof: 0}
-        p0 = initializer(**kwarg_0, mu=0.15)
-        p1 = initializer(**kwarg_1, mu=0.15)
-        p2 = initializer(**kwarg_2, mu=0.15)
+        p0 = initializer(**kwarg_0)
+        p1 = initializer(**kwarg_1)
+        p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(do_compliance), str(do_gp))
         trials = 5
