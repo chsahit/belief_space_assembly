@@ -15,6 +15,7 @@ from pydrake.all import (
     MeshcatVisualizer,
     MeshcatVisualizerParams,
     Parser,
+    RigidTransform,
     Role,
     RoleAssign,
     Simulator,
@@ -25,7 +26,7 @@ import components
 import dynamics
 import state
 import utils
-from simulation import controller, plant_builder
+from simulation import controller, ik_solver, plant_builder
 
 
 # yoinked from https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
@@ -184,18 +185,11 @@ def generate_particle_picture(p: state.Particle, name="test.jpg") -> Image:
 def show_particle(p: state.Particle):
     diagram, _ = p.make_plant(vis=True)
     simulator = Simulator(diagram)
+    simulator.Initialize()
     meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
     meshcat_vis.StartRecording()
-    simulator.AdvanceTo(0.1)
-    worst_collision_amt = float("inf")
-    wc = None
-    for k, v in p.sdf.items():
-        if v < worst_collision_amt:
-            worst_collision_amt = v
-            wc = k
-    print(f"{wc=}, {worst_collision_amt=}")
+    simulator.AdvanceTo(0.001)
     meshcat_vis.PublishRecording()
-    return worst_collision_amt
 
 
 def plot_motion_sets(sets: List[HPolyhedron]):
@@ -300,3 +294,16 @@ def playback_result(b, fname):
             break
     print("done")
     input()
+
+
+def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
+    for target in targets:
+        print(f"{target.translation()=}")
+        p_vis = p_nom.deepcopy()
+        p_vis.q_r = ik_solver.gripper_to_joint_states(target)
+        p_vis._X_WG = None
+        u_noop = components.CompliantMotion(
+            RigidTransform(), p_vis.X_WG, components.stiff, timeout=0.001
+        )
+        u_noop.q_d = p_vis.q_r
+        dynamics.simulate(p_vis, u_noop, vis=True)

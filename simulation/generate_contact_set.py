@@ -66,6 +66,7 @@ def relax_CF(CF_d: components.ContactState) -> components.ContactState:
 
 
 def generate_noised(p: state.Particle, sample, CF_d):
+    return sample, RigidTransform()
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)

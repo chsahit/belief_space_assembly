@@ -11,6 +11,7 @@ import dynamics
 import mr
 import puzzle_contact_defs
 import state
+import visualize
 from planning import infer_joint_soln
 from simulation import generate_contact_set, ik_solver
 
@@ -33,6 +34,7 @@ print(f"{compliance_samples=}, {refinement_samples=}")
 
 
 def apply_noise(targets: List[RigidTransform]) -> List[RigidTransform]:
+    assert False
     noised_targets = []
     for i, X in enumerate(targets):
         if i % 2 == 0:
@@ -72,11 +74,12 @@ def solve_for_compliance(
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=compliance_samples
     )
+    visualize.visualize_targets(p, targets)
     # targets = apply_noise(targets)
     K_opt = np.copy(components.stiff)
     validated_samples, _ = refine_p(p, CF_d, K_opt, targets=targets)
     succ_count = len(validated_samples)
-    # print(f"{K_opt=}, {succ_count=}")
+    print(f"{K_opt=}, {succ_count=}")
     if succ_count == len(targets):
         return K_opt, validated_samples
     for i in range(6):
@@ -90,13 +93,13 @@ def solve_for_compliance(
             succ_count = curr_succ_count
             validated_samples = curr_validated_samples
             K_opt = K_curr
-            # print(f"{K_opt=}, {succ_count=}")
+            print(f"{K_opt=}, {succ_count=}")
 
     if succ_count == 0:
         K_opt_soft = np.copy(components.soft)
         validated_samples_soft, _ = refine_p(p, CF_d, K_opt_soft, targets=targets)
         succ_count_soft = len(validated_samples_soft)
-        # print(f"{K_opt_soft=}, {succ_count_soft=}")
+        print(f"{K_opt_soft=}, {succ_count_soft=}")
         for i in range(6):
             K_curr = np.copy(K_opt_soft)
             K_curr[i] = components.stiff[i]
@@ -108,7 +111,7 @@ def solve_for_compliance(
                 succ_count_soft = curr_succ_count_soft
                 K_opt_soft = K_curr
                 validated_samples_soft = curr_validated_samples_soft
-                # print(f"{K_opt_soft=}, {succ_count_soft=}")
+                print(f"{K_opt_soft=}, {succ_count_soft=}")
         if succ_count_soft > succ_count:
             K_opt = K_opt_soft
             validated_samples = validated_samples_soft
