@@ -65,20 +65,21 @@ def relax_CF(CF_d: components.ContactState) -> components.ContactState:
     return relaxed_CF_d
 
 
-def generate_noised(p: state.Particle, sample, CF_d):
-    return sample, RigidTransform()
+def generate_noised(p: state.Particle, sample, CF_d, verbose=False):
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
-    r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    # r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     X_noise = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
     contact_manifold = None
-    for env_poly, manip_poly_name in CF_d:
+    for env_poly, manip_poly_name in relaxed_CF_d:
         A_env, b_env = constraints[env_poly]
         env_geometry = HPolyhedron(A_env, b_env)
         A_manip, b_manip = p._manip_poly[manip_poly_name]
         A_manip = A_manip @ X_noise.rotation().inverse().matrix()
+        # A_manip = A_manip @ X_noise.rotation().matrix()
         A_manip = -1 * A_manip
         manip_geometry = HPolyhedron(A_manip, b_manip)
         minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
@@ -87,7 +88,11 @@ def generate_noised(p: state.Particle, sample, CF_d):
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
         sample_translated = sample + X_noise.translation()
+        if verbose:
+            print(f"{sample=}")
         if contact_manifold.PointInSet(sample_translated):
+            if verbose:
+                print(f"(point as is) {sample_translated=}")
             return sample_translated, X_noise
         elif contact_manifold.PointInSet(sample):
             direction = t_vel * 0.001
@@ -96,8 +101,12 @@ def generate_noised(p: state.Particle, sample, CF_d):
                 sample_translated += direction
             sample_translated -= direction
             X_noise.set_translation(sample_translated - sample)
+            if verbose:
+                print(f"(computed) {sample_translated=}")
             return sample_translated, X_noise
         else:
+            if verbose:
+                print("off manifold, sample_translated={sample}")
             return sample, None
 
 
@@ -141,7 +150,10 @@ def _project_manipuland_to_contacts(
 ) -> List[RigidTransform]:
     projections = []
     samples = compute_samples_from_contact_set(p, CF_d, num_samples=num_samples)
-    samples_noised = [generate_noised(p, sample, CF_d) for sample in samples]
+    verbose = (num_samples == 16) and ("top" in str(CF_d))
+    samples_noised = [
+        generate_noised(p, sample, CF_d, verbose=verbose) for sample in samples
+    ]
     num_not_noised = 0.0
     for (s, R) in samples_noised:
         if R is None:

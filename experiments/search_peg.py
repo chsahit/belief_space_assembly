@@ -16,8 +16,8 @@ def simple_down():
     modes = [
         contact_defs.chamfer_touch_2,
         contact_defs.front_faces,
-        contact_defs.bottom_faces_3,
-        contact_defs.bottom_faces,
+        contact_defs.bottom_faces_fully_constrained,
+        contact_defs.bottom_faces_fully_constrained,
     ]
     p0 = init_particle.init_peg(pitch=-5)
     p1 = init_particle.init_peg(pitch=0)
@@ -25,15 +25,15 @@ def simple_down():
     b = state.Belief([p0, p1, p2])
     # diagram_factory.initialize_factory(b.particles)
     result = refine_motion.randomized_refine(b, modes, max_attempts=1)
-    if result is not None:
+    if result.traj is not None:
         print("visualize")
         try:
             visualize.play_motions_on_belief(
-                state.Belief([p0, p1]), result.traj, fname="four_deg_mu_33.html"
+                state.Belief([p0, p1, p2]), result.traj, fname="four_deg_mu_33.html"
             )
             utils.dump_traj(p1.q_r, result.traj, fname="rot_uncertain.pkl")
         except Exception as e:
-            pass
+            print(e)
     print(f"elapsed time: {result.total_time}")
     input()
 

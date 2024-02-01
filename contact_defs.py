@@ -141,6 +141,14 @@ bottom_faces_3 = frozenset(
     )
 )
 
+bottom_faces_fully_constrained = frozenset(
+    (
+        ("bin_model::bottom_top", "block::Box_bottom"),
+        ("bin_model::back_back", "block::Box_front"),
+        ("bin_model::left_left", "block::Box_right"),
+    )
+)
+
 chamfer_touch_2 = frozenset(
     (
         ("bin_model::front_chamfer_inside", "block::Box_bottom"),
