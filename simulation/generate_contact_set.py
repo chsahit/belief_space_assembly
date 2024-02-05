@@ -75,11 +75,14 @@ def tf(X_MMt, p_MV):
 
 
 def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
-    vrep = VPolytope(H)
+    scale_factor = 100000
+    H_big = H.Scale(scale_factor)
+    vrep = VPolytope(H_big)
     verts = vrep.vertices()
+    assert verts.shape[1] == 8
     transformed_verts = np.array([tf(X, vert) for vert in verts.T])
     transformed_vrep = VPolytope(transformed_verts.T)
-    transformed_hrep = HPolyhedron(transformed_vrep)
+    transformed_hrep = HPolyhedron(transformed_vrep).Scale(1.0 / scale_factor)
     return transformed_hrep
 
 
@@ -88,6 +91,7 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
+    # t_vel = gen.uniform(low=-0.0, high=0.0, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
     contact_manifold = None
@@ -95,7 +99,9 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
         A_env, b_env = constraints[env_poly]
         env_geometry = HPolyhedron(A_env, b_env)
         A_manip, b_manip = p._manip_poly[manip_poly_name]
-        rotatated_manip = tf_HPolyhedron(HPolyhedron(A_manip, b_manip), X_MMt)
+        rotatated_manip = tf_HPolyhedron(
+            HPolyhedron(A_manip, b_manip), RigidTransform(X_MMt)
+        )
         A_manip, b_manip = rotatated_manip.A(), rotatated_manip.b()
         A_manip = -1 * A_manip
         manip_geometry = HPolyhedron(A_manip, b_manip)
@@ -173,7 +179,8 @@ def _project_manipuland_to_contacts(
     verbose = (num_samples == 16) and ("top" in str(CF_d))
     samples_noised = [generate_noised(p, X_WM, CF_d, verbose=verbose) for X_WM in X_WMs]
     for (X_WMt, X_MMt) in samples_noised:
-        X_WG = (X_WMt.multiply(X_MMt.inverse())).multiply(p.X_GM.inverse())
+        # X_WG = (X_WMt.multiply(X_MMt.inverse())).multiply(p.X_GM.inverse())
+        X_WG = X_WMt.multiply(p.X_GM.inverse())
         q_r = ik_solver.gripper_to_joint_states(X_WG)
         new_p = p.deepcopy()
         new_p.q_r = q_r
