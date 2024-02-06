@@ -17,15 +17,13 @@ def simple_down():
         contact_defs.chamfer_touch_2,
         contact_defs.front_faces,
         contact_defs.bottom_faces_fully_constrained,
-        contact_defs.bottom_faces_fully_constrained,
-        contact_defs.bottom_faces_fully_constrained,
     ]
-    p0 = init_particle.init_peg(pitch=-5.5)
+    p0 = init_particle.init_peg(y=-0.01)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(pitch=5.5)
+    p2 = init_particle.init_peg(y=0.01)
     b = state.Belief([p0, p1, p2])
     # diagram_factory.initialize_factory(b.particles)
-    result = refine_motion.randomized_refine(b, modes, max_attempts=1)
+    result = refine_motion.randomized_refine(b, modes, max_attempts=3)
     if result.traj is not None:
         print("visualize")
         try:

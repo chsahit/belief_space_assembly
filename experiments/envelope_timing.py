@@ -8,7 +8,8 @@ import visualize
 from experiments import init_particle
 from planning import refine_motion
 
-pitch_sweep_peg = ("pitch", [5], "peg")
+# pitch_sweep_peg = ("pitch", [5, 7, 9, 11], "peg")
+pitch_sweep_peg = ("pitch", [9, 11, 13, 15], "peg")
 pitch_sweep_puzzle = ("pitch", [1.5, 2, 3, 3.5, 4], "puzzle")
 # x_sweep_peg = ("X_GM_x", [0.0075, 0.01, 0.0125, 0.015], "peg")
 x_sweep_peg = ("X_GM_x", [0.025], "peg")
@@ -18,8 +19,7 @@ z_sweep_peg = ("X_GM_z", [0.01, 0.01666, 0.023333, 0.03], "peg")
 peg_schedule = [
     contact_defs.chamfer_touch_2,
     contact_defs.front_faces,
-    contact_defs.bottom_faces_3,
-    contact_defs.bottom_faces,
+    contact_defs.bottom_faces_fully_constrained,
 ]
 puzzle_schedule = [
     puzzle_contact_defs.top_touch2,
@@ -57,7 +57,7 @@ def sweep(dof, deviations, geometry, schedule):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(do_compliance), str(do_gp))
-        trials = 5
+        trials = 1
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
@@ -67,7 +67,7 @@ def sweep(dof, deviations, geometry, schedule):
                     schedule,
                     search_compliance=do_compliance,
                     do_gp=do_gp,
-                    max_attempts=10,
+                    max_attempts=3,
                 )
             )
             # if experiment_results[-1].traj is not None:
