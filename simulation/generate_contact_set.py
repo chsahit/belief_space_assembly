@@ -83,6 +83,14 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     transformed_verts = np.array([tf(X, vert) for vert in verts.T])
     transformed_vrep = VPolytope(transformed_verts.T)
     transformed_hrep = HPolyhedron(transformed_vrep).Scale(1.0 / scale_factor)
+    if (
+        abs(
+            H.MaximumVolumeInscribedEllipsoid().CalcVolume()
+            - transformed_hrep.MaximumVolumeInscribedEllipsoid().CalcVolume()
+        )
+        > 1e-4
+    ):
+        breakpoint()
     return transformed_hrep
 
 
@@ -90,45 +98,31 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
-    # t_vel = gen.uniform(low=-0.0, high=0.0, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
+    X_WMt = X_WM.multiply(X_MMt)
     contact_manifold = None
     for env_poly, manip_poly_name in relaxed_CF_d:
         A_env, b_env = constraints[env_poly]
         env_geometry = HPolyhedron(A_env, b_env)
         A_manip, b_manip = p._manip_poly[manip_poly_name]
         rotatated_manip = tf_HPolyhedron(
-            HPolyhedron(A_manip, b_manip), RigidTransform(X_MMt)
+            HPolyhedron(A_manip, b_manip), RigidTransform(X_WMt.rotation())
         )
-        A_manip, b_manip = rotatated_manip.A(), rotatated_manip.b()
-        A_manip = -1 * A_manip
-        manip_geometry = HPolyhedron(A_manip, b_manip)
+        manip_geometry = tf_HPolyhedron(
+            rotatated_manip, utils.xyz_rpy_deg([0, 0, 0], [180, 180, 180])
+        )
         minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
         if contact_manifold is None:
             contact_manifold = minkowski_sum
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
 
-        X_WMt = X_WM.multiply(X_MMt)
-        if verbose:
-            print(f"{X_WM.translation()=}")
         if contact_manifold.PointInSet(X_WMt.translation()):
             if verbose:
                 print(f"(point as is) {X_WMt.translation()=}")
-            return X_WMt, X_MMt
-        elif contact_manifold.PointInSet(X_WM.translation()) and False:
-            """
-            direction = t_vel * 0.001
-            sample_translated = sample + direction
-            while contact_manifold.PointInSet(sample_translated) and False:
-                sample_translated += direction
-            sample_translated -= direction
-            X_noise.set_translation(sample_translated - sample)
-            """
-            if verbose:
-                print(f"(computed) {X_WMt.translation()=}")
             return X_WMt, X_MMt
         else:
             if verbose:
@@ -177,9 +171,9 @@ def _project_manipuland_to_contacts(
     p_WMs = compute_samples_from_contact_set(p, CF_d, num_samples=num_samples)
     X_WMs = [RigidTransform(p_WM) for p_WM in p_WMs]
     verbose = (num_samples == 16) and ("top" in str(CF_d))
+    verbose = False
     samples_noised = [generate_noised(p, X_WM, CF_d, verbose=verbose) for X_WM in X_WMs]
     for (X_WMt, X_MMt) in samples_noised:
-        # X_WG = (X_WMt.multiply(X_MMt.inverse())).multiply(p.X_GM.inverse())
         X_WG = X_WMt.multiply(p.X_GM.inverse())
         q_r = ik_solver.gripper_to_joint_states(X_WG)
         new_p = p.deepcopy()

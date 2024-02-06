@@ -74,8 +74,10 @@ def solve_for_compliance(
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=compliance_samples
     )
+    """
     if "top" in str(CF_d):
         visualize.visualize_targets(p, targets)
+    """
     # targets = apply_noise(targets)
     K_opt = np.copy(components.stiff)
     validated_samples, _ = refine_p(p, CF_d, K_opt, targets=targets)

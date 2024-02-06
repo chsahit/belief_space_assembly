@@ -298,7 +298,6 @@ def playback_result(b, fname):
 
 def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
     for target in targets:
-        print(f"{target.translation()=}")
         p_vis = p_nom.deepcopy()
         p_vis.q_r = ik_solver.gripper_to_joint_states(target)
         p_vis._X_WG = None
@@ -306,4 +305,6 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
             RigidTransform(), p_vis.X_WG, components.stiff, timeout=0.001
         )
         u_noop.q_d = p_vis.q_r
+        p_vis.env_geom = "assets/floor.sdf"
+        p_vis.X_WO = RigidTransform([0.5, 0, 0.0])
         dynamics.simulate(p_vis, u_noop, vis=True)
