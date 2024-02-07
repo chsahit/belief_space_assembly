@@ -8,6 +8,7 @@ from pydrake.all import RigidTransform
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
+from sklearn.neural_network import MLPRegressor
 
 import components
 import mr
@@ -60,6 +61,13 @@ def gp_sklearn(X1, y1, X2, kf):
     return mu, std
 
 
+def NN(X1, y1, X2):
+    nn = MLPRegressor(hidden_layer_sizes=(15, 15))
+    nn = nn.fit(X1, y1)
+    predictions = nn.predict(X2)
+    return predictions, None
+
+
 def infer(
     all_samples: List[components.CompliantMotion], all_scores: List[float], do_gp: bool
 ) -> List[components.CompliantMotion]:
@@ -96,6 +104,7 @@ def infer(
     test_points_out, _ = gp_sklearn(
         all_samples_r6, all_scores, test_points, exponentiated_quadratic
     )
+    # test_points_out, _ = NN(all_samples_r6, all_scores, test_points)
     if do_gp:
         ind = np.argpartition(test_points_out, -K)[-K:]
         top_n = test_points[ind]

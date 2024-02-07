@@ -43,31 +43,6 @@ def add_posteriors(n):
     _num_posteriors += n
 
 
-def tf_impedance(K_q, x0):
-    samples = [x0]
-    """
-    for i in range(7):
-        new_sample_up = np.copy(x0)
-        new_sample_up[i] += 0.2
-        new_sample_down = np.copy(x0)
-        new_sample_down -= 0.2
-        samples.append(new_sample_up)
-        samples.append(new_sample_down)
-    """
-    mp = MathematicalProgram()
-    w = mp.NewContinuousVariables(7, "w")
-    print(f"{K_q @ x0[:7]=}")
-    for sample in samples:
-        err_vec = np.diag(w) @ sample[:7] - K_q @ sample[:7]
-        mp.AddCost(err_vec.dot(err_vec))
-    mp.AddBoundingBoxConstraint(0, 1000, w)
-    soln = Solve(mp)
-    w_star = soln.GetSolution()
-    print(f"{soln.get_optimal_cost()=}")
-    print(f"{w_star=}")
-    return w_star
-
-
 def AdvanceToWithTimeout(
     simulator: Simulator, sim_timeout: float, clock_timeout: float = 60.0
 ):
