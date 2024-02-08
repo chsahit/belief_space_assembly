@@ -235,6 +235,7 @@ def render_trees(forest: List[components.Tree]):
 
 
 def show_planning_results(fname: str):
+    print("rendering results")
     import matplotlib.pyplot as plt
 
     with open(fname, "rb") as f:
@@ -281,6 +282,7 @@ def show_planning_results(fname: str):
     plt.ylabel("Time (seconds)")
     plt.legend()
     plt.show()
+    print("done")
 
 
 def playback_result(b, fname):
@@ -308,3 +310,7 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
         p_vis.env_geom = "assets/floor.sdf"
         p_vis.X_WO = RigidTransform([0.5, 0, 0.0])
         dynamics.simulate(p_vis, u_noop, vis=True)
+
+
+if __name__ == "__main__":
+    show_planning_results("pitch_peg_sweep_results.pkl")

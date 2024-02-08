@@ -17,11 +17,10 @@ def simple_down():
         puzzle_contact_defs.top_touch2,
         puzzle_contact_defs.bt,
         puzzle_contact_defs.bottom,
-        # puzzle_contact_defs.pre_goal,
         puzzle_contact_defs.goal,
     ]
-    p0 = init_particle.init_puzzle(pitch=1.0, mu=0.1)
-    p1 = init_particle.init_puzzle(pitch=-1.0, mu=0.1)
+    p0 = init_particle.init_puzzle(pitch=2.0)
+    p1 = init_particle.init_puzzle(pitch=-2.0)
     b = state.Belief([p0, p1])
     result = refine_motion.randomized_refine(b, modes, max_attempts=10)
     if result.traj is not None:

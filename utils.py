@@ -45,7 +45,7 @@ def dump_traj(
 
 
 def mu_std_result(results):
-    times = np.array([result.total_time for result in results])
+    times = np.array([result.num_posteriors for result in results])
     mu, std = np.mean(times), np.std(times)
     return mu, std
 

@@ -83,6 +83,7 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     transformed_verts = np.array([tf(X, vert) for vert in verts.T])
     transformed_vrep = VPolytope(transformed_verts.T)
     transformed_hrep = HPolyhedron(transformed_vrep).Scale(1.0 / scale_factor)
+    """
     if (
         abs(
             H.MaximumVolumeInscribedEllipsoid().CalcVolume()
@@ -91,6 +92,7 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
         > 1e-4
     ):
         breakpoint()
+    """
     return transformed_hrep
 
 
@@ -98,6 +100,9 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    r_vel[0] = 0
+    r_vel[2] = 0
+    # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))

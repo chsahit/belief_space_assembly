@@ -39,7 +39,7 @@ def generate_coloring(b: state.Particle) -> Coloring:
     cmap = {0: "r", 1: "g", 2: "b", 3: "black"}
     nominal = utils.xyz_rpy_deg([0, 0, 0], [180, 0, 0])
     X_GC = RigidTransform([0.0, 0.0, 0.15])
-    K = components.stiff
+    K = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 400.0])
 
     xs = []
     zs = []
@@ -73,9 +73,29 @@ def color_experiment():
     b0 = init()
     print("do color:")
     results = generate_coloring(b0)
-    plt.scatter(results[0], results[1], c=results[3])
+    nbx = []
+    nbp = []
+    nbz = []
+    nbc = []
+    bx = []
+    bz = []
+    bp = []
+    for i, color in enumerate(results[3]):
+        if color == "black":
+            bx.append(results[0][i])
+            bz.append(results[1][i])
+            bp.append(results[2][i])
+        else:
+            nbx.append(results[0][i])
+            nbz.append(results[1][i])
+            nbp.append(results[2][i])
+            nbc.append(color)
+
+    plt.scatter(nbx, nbz, c=nbc)
+    plt.scatter(bx, bz, c="black")
     plt.show()
-    plt.scatter(results[1], results[2], c=results[3])
+    plt.scatter(nbz, nbp, c=nbc)
+    plt.scatter(bz, bp, c="black")
     plt.show()
     breakpoint()
 
