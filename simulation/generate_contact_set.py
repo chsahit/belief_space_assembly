@@ -19,7 +19,7 @@ import components
 import mr
 import state
 import utils
-from simulation import annotate_geoms, hyperrectangle, ik_solver
+from simulation import hyperrectangle, ik_solver
 
 random.seed(0)
 gen = np.random.default_rng(1)

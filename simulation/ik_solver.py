@@ -23,7 +23,6 @@ import components
 import utils
 
 # import visualize
-from simulation import annotate_geoms
 
 
 def gripper_to_joint_states(
@@ -105,77 +104,6 @@ def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId
         name = inspector.GetName(g_id)
         g_id_map[name] = g_id
     return manipuland_id, g_id_map
-
-
-def project_manipuland_to_contacts(
-    p: state.Particle,
-    CF_d: components.ContactState,
-    fallback: bool = False,
-    vis: bool = False,
-) -> RigidTransform:
-    p_aligned = axis_align_particle(p)
-    diagram, _ = p_aligned.make_plant()
-    plant = diagram.GetSubsystemByName("plant")
-    plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
-    constraints = p.constraints
-    ik = InverseKinematics(plant, plant_context)
-    corner_map = annotate_geoms.annotate(p.manip_geom)
-
-    W = plant.world_frame()
-    M = plant.GetBodyByName("base_link").body_frame()
-    G = plant.GetBodyByName("panda_hand").body_frame()
-    for env_poly, object_corner in CF_d:
-        p_MP = corner_map[object_corner].translation()
-        A, b = constraints[env_poly]
-        ik.AddPolyhedronConstraint(W, M, p_MP, A, b)
-
-    q = ik.q()
-    prog = ik.get_mutable_prog()
-    prog.SetInitialGuess(q, p_aligned.q_r)
-
-    p_WM = p.X_WG.multiply(p_aligned.X_GM).translation()
-    ik.AddPositionCost(W, p_WM, M, np.zeros((3,)), np.identity(3))
-    # R_WM = p.X_WG.multiply(p.X_GM).rotation()
-    # ik.AddOrientationCost(W, R_WM, M, RotationMatrix(np.eye(3)), 0.01)
-
-    g_manipuland, g_ids = get_geometry_ids(diagram)
-    if fallback:
-        ap = -1e-5
-    else:
-        ap = -1e-10
-    for k in g_ids.keys():
-        if k not in str(CF_d):
-            ik.AddDistanceConstraint((g_ids[k], g_manipuland), ap, np.inf)
-        else:
-            ik.AddDistanceConstraint((g_ids[k], g_manipuland), -1e-4, np.inf)
-    try:
-        result = Solve(ik.prog())
-        X_WG_out = plant.CalcRelativeTransform(plant_context, W, G)
-        if not result.is_success():
-            if not fallback:
-                p_aligned = axis_align_particle(p)
-                return project_manipuland_to_contacts(p_aligned, CF_d, fallback=True)
-            else:
-                print(f"warning, ik solve failed. {X_WG_out}")
-    except Exception as e:
-        print("IK SOLVER EXCEPTION")
-        if not fallback:
-            p_aligned = axis_align_particle(p)
-            return project_manipuland_to_contacts(p_aligned, CF_d, fallback=True)
-        else:
-            print("info on p_aligned: \n", utils.rt_to_str(p_aligned.X_WG))
-            print(f"warning, ik solve failed.")
-            return None
-    p_aligned.q_r = plant.GetPositions(
-        plant_context, plant.GetModelInstanceByName("panda")
-    )
-    X_WG_out = step_sim(p_aligned)
-    if vis:
-        print("showing ik result")
-        print(utils.rt_to_str(X_WG_out))
-        visualize.show_particle(p_aligned)
-        # p_aligned.env_geom = "assets/empty_world.sdf"
-    return X_WG_out
 
 
 def axis_align_particle(p: state.Particle) -> state.Particle:

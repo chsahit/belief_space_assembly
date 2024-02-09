@@ -150,17 +150,15 @@ class JointStiffnessController(LeafSystem):
             kd[i, i] = 2 * np.sqrt(kp_q[i, i])
 
         q_err = x_d[: self.num_q] - x[: self.num_q]
-        tau += kp_q @ q_err + kd @ (x_d[-self.num_q :] - x[-self.num_q :])
+        qd_err = x_d[-self.num_q :] - x[-self.num_q :]
+        spring_damper_F = kp_q @ q_err + kd @ qd_err
+        spring_damper_F_mag = np.linalg.norm(spring_damper_F)
+        if spring_damper_F_mag > 20:
+            spring_damper_F = (spring_damper_F / spring_damper_F_mag) * 20
+        tau += spring_damper_F
         lims = np.array([87.0, 87.0, 87.0, 87, 12, 12, 12, 10, 10])
         tau = np.clip(tau, -lims, lims)
         output.SetFromVector(tau)
-
-    def circle_dist(self, v1, v2):
-        v3 = np.zeros_like(v1)
-        for i in range(v1.shape[0]):
-            diff = (v1[i] - v2[i] + np.pi) % (2 * np.pi) - np.pi
-            v3[i] = diff + np.pi if diff < -np.pi else diff
-        return v3
 
 
 class FixedVal(LeafSystem):

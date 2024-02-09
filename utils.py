@@ -45,7 +45,14 @@ def dump_traj(
 
 
 def mu_std_result(results):
-    times = np.array([result.num_posteriors for result in results])
+    traj_lens = []
+    for r in results:
+        if r.traj is not None:
+            traj_lens.append(len(r.traj))
+        else:
+            traj_lens.append(20)
+    times = np.array(traj_lens)
+    # times = np.array([len(result.traj) for result in results])
     mu, std = np.mean(times), np.std(times)
     return mu, std
 

@@ -16,7 +16,6 @@ import dynamics
 import state
 import utils
 from planning import directed_msets, motion_sets, randomized_search
-from simulation import annotate_geoms
 
 
 def compute_compliance_frame(

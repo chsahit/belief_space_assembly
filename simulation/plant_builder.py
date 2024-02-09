@@ -40,19 +40,12 @@ from pydrake.all import (
 )
 
 import utils
-from simulation import (
-    annotate_geoms,
-    controller,
-    full_joint_stiffness,
-    geometry_monitor,
-    image_logger,
-)
+from simulation import controller, full_joint_stiffness, geometry_monitor, image_logger
 from simulation import joint_impedance_controller as jc
 from simulation import playback_controller
 
 timestep = 0.005
 contact_model = ContactModel.kHydroelasticWithFallback
-contact_approx = DiscreteContactApproximation.kSimilar
 
 
 def init_plant(
