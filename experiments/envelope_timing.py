@@ -9,8 +9,7 @@ from experiments import init_particle
 from planning import refine_motion
 
 # pitch_sweep_peg = ("pitch", [5, 7, 9, 11], "peg")
-# pitch_sweep_peg = ("pitch", [9, 11, 13, 15], "peg")
-pitch_sweep_peg = ("pitch", [3, 6, 9, 12, 15, 18], "peg")
+pitch_sweep_peg = ("pitch", [9, 11, 13, 15, 18], "peg")
 pitch_sweep_puzzle = ("pitch", [1.5, 2, 3, 3.5, 4], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
@@ -55,7 +54,7 @@ def sweep(dof, deviations, geometry, schedule):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(do_compliance), str(do_gp))
-        trials = 5
+        trials = 10
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
@@ -65,7 +64,7 @@ def sweep(dof, deviations, geometry, schedule):
                     schedule,
                     search_compliance=do_compliance,
                     do_gp=do_gp,
-                    max_attempts=5,
+                    max_attempts=10,
                 )
             )
             # if experiment_results[-1].traj is not None:
@@ -83,8 +82,8 @@ def sweep(dof, deviations, geometry, schedule):
 
 if __name__ == "__main__":
     # visualize.show_planning_results("pitch_peg_sweep_results.pkl")
-    sweep(*pitch_sweep_puzzle, puzzle_schedule)
-    # sweep(*pitch_sweep_peg, peg_schedule)
+    # sweep(*pitch_sweep_puzzle, puzzle_schedule)
+    sweep(*pitch_sweep_peg, peg_schedule)
     # sweep(*x_sweep_puzzle, puzzle_schedule)
     # sweep(*x_sweep_peg, peg_schedule)
     # sweep(*z_sweep_peg, peg_schedule)
