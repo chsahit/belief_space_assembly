@@ -39,7 +39,8 @@ def sweep(dof, deviations, geometry, schedule):
     else:
         raise NotImplementedError
     results = dict()
-    compliance_gp = [(True, True), (False, True), (True, False)]
+    # compliance_gp = [(True, True), (False, True), (True, False)]
+    compliance_gp = [(True, True), (False, True)]
     experiment_params = itertools.product(deviations, compliance_gp)
     stopped_params = []
     for deviation, (do_compliance, do_gp) in experiment_params:

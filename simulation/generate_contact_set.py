@@ -107,51 +107,47 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
     X_WMt = X_WM.multiply(X_MMt)
-    contact_manifold = None
-    for env_poly, manip_poly_name in relaxed_CF_d:
-        A_env, b_env = constraints[env_poly]
-        env_geometry = HPolyhedron(A_env, b_env)
-        A_manip, b_manip = p._manip_poly[manip_poly_name]
-        rotatated_manip = tf_HPolyhedron(
-            HPolyhedron(A_manip, b_manip), RigidTransform(X_WMt.rotation())
-        )
-        manip_geometry = tf_HPolyhedron(
-            rotatated_manip, utils.xyz_rpy_deg([0, 0, 0], [180, 180, 180])
-        )
-        minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
-        if contact_manifold is None:
-            contact_manifold = minkowski_sum
-        else:
-            contact_manifold = Intersection(contact_manifold, minkowski_sum)
-
-        if contact_manifold.PointInSet(X_WMt.translation()):
-            if verbose:
-                print(f"(point as is) {X_WMt.translation()=}")
-            return X_WMt, X_MMt
-        else:
-            if verbose:
-                print(f"off manifold, sample_translated={X_WM.translation()}")
-            return X_WM, RigidTransform()
+    contact_manifold = make_cspace(p, relaxed_CF_d, tf=RigidTransform(X_WMt.rotation()))
+    if contact_manifold.PointInSet(X_WMt.translation()):
+        if verbose:
+            print(f"(point as is) {X_WMt.translation()=}")
+        return X_WMt, X_MMt
+    else:
+        if verbose:
+            print(f"off manifold, sample_translated={X_WM.translation()}")
+        return X_WM, RigidTransform()
 
 
-def compute_samples_from_contact_set(
-    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
-) -> List[np.ndarray]:
+def make_cspace(
+    p: state.Particle,
+    CF_d: components.ContactState,
+    tf: RigidTransform = RigidTransform(),
+) -> Intersection:
     contact_manifold = None
     constraints = p.constraints
-    samples = []
     for env_poly, manip_poly_name in CF_d:
         A_env, b_env = constraints[env_poly]
         env_geometry = HPolyhedron(A_env, b_env)
         A_manip, b_manip = p._manip_poly[manip_poly_name]
-        A_manip = -1 * A_manip
-        manip_geometry = HPolyhedron(A_manip, b_manip)
+        rotatated_manip = tf_HPolyhedron(HPolyhedron(A_manip, b_manip), tf)
+        reflection = np.array(
+            [[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 0]]
+        )
+        manip_geometry = tf_HPolyhedron(rotatated_manip, RigidTransform(reflection))
         minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
         if contact_manifold is None:
             contact_manifold = minkowski_sum
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
     assert not contact_manifold.IsEmpty()
+    return contact_manifold
+
+
+def compute_samples_from_contact_set(
+    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
+) -> List[np.ndarray]:
+    contact_manifold = make_cspace(p, CF_d)
+    samples = []
     cm_hyper_rect, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(contact_manifold)
     interior_pts = rejection_sample(contact_manifold, bounds, num_samples=num_samples)
     for interior_pt in interior_pts:
