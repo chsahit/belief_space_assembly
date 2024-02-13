@@ -15,6 +15,8 @@ from simulation import generate_contact_set, ik_solver
 random.seed(0)
 gen = np.random.default_rng(0)
 
+solve_for_compliance = compliance_solver.solve_for_compliance
+
 
 if os.uname()[1] == "londonsystem":
     compliance_samples = 16
@@ -25,7 +27,7 @@ else:
 print(f"{compliance_samples=}, {refinement_samples=}")
 
 
-def solve_for_compliance(
+def solve_for_compliance_dep(
     p: state.Particle, CF_d: components.ContactState
 ) -> np.ndarray:
     targets = generate_contact_set.project_manipuland_to_contacts(

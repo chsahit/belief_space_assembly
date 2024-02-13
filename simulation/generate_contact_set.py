@@ -99,10 +99,8 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
 def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
-    r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
-    r_vel[0] = 0
-    r_vel[2] = 0
-    # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
+    # r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
+    r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
@@ -139,6 +137,7 @@ def make_cspace(
             contact_manifold = minkowski_sum
         else:
             contact_manifold = Intersection(contact_manifold, minkowski_sum)
+    print(f"{CF_d=}")
     assert not contact_manifold.IsEmpty()
     return contact_manifold
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 from pydrake.all import RigidTransform
@@ -42,8 +42,62 @@ def evaluate_K(
     return U, (negative_motions, scores)
 
 
-def K_t_opt(p: state.Particle) -> np.ndarray:
-    pass
+def is_psd(A: np.ndarray) -> bool:
+    Ap = A + 1e-3 * np.eye(3)
+    if np.allclose(Ap, Ap.T):
+        try:
+            np.linalg.cholesky(Ap)
+            return True
+        except np.linalg.LinAlgError:
+            return False
+    return False
+
+
+def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
+    K = np.diag(components.stiff[3:])
+    if len(p.contacts) == 0:
+        return K
+    cpsace = generate_contact_set.make_cspace(p, p.contacts)
+    pt = p.X_WM.translation()
+    normals = list()
+    dirs = {0: -1, 1: -0.5, 2: 0, 3: 0.5, 4: 1}
+    for x in range(5):
+        for y in range(5):
+            for z in range(5):
+                if x == 2 and y == 2 and z == 2:
+                    continue
+                normals.append([dirs[x], dirs[y], dirs[z]])
+    best_normal = None
+    min_dist = float("inf")
+    for n in normals:
+        candidate_pt = pt + 1e-4 * np.array(n)
+        if cspace.PointInSet(candidate_pt):
+            continue
+        prog = MathematicalProgram()
+        closest_pt = prog.NewContinuousVariables(3, "cpt")
+        prog.SetInitialGuess(closest_pt, pt)
+        dist_var = (candidate_pt - closest_pt).dot(candidate_pt - closest_pt)
+        prog.AddCost(dist_var)
+        cpsace.AddPointInSetConstraints(prog, closest_pt)
+        pt_star = Solve(prog).GetSolution()
+        dist = np.linalg.norm(pt_star - pt)
+        if dist < min_dist:
+            min_dist = dist
+            best_normal = n
+
+    assert best_normal is not None
+    best_normal = best_normal / np.linalg.norm(best_normal)
+    I3 = np.eye(3)
+    vecs = np.concatenate((n, I3))
+    q, r = np.linalg.qr(vecs.T)
+    q[:, 0] = best_normal
+    basis_vectors = q[:, [1, 2, 0]]
+    opt = K @ basis_vectors
+    if not is_psd(opt):
+        basis_vectors[:, -1] *= -1
+        opt = K @ basis_vectors
+    assert is_psd(opt)
+    return opt, best_normal
 
 
 def solve_for_compliance(
@@ -52,9 +106,12 @@ def solve_for_compliance(
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=16
     )
-    K_opt = K_t_opt(p)
+    K_opt_3, best_normal = K_t_opt(p)
+    K_opt = np.diag(components.stiff)
+    K_opt[3:, 3:] = K_opt_3
     validated_samples, _ = evaluate_K(p, CF_d, K_opt, targets=targets)
     succ_count = len(validated_samples)
+    print(f"{best_normal=}, {succ_count=}")
     for i in range(3):
         K_curr = np.copy(K_init)
         K[i, i] = components.soft[i]
@@ -64,11 +121,12 @@ def solve_for_compliance(
             return K_curr, curr_validated_samples
         if curr_succ_count > succ_count:
             succ_count = curr_succ_count
+            print(f"setting index {i} compliant, {succ_count=}")
             validated_samples = curr_samples
             K_opt = K_curr
     return K_opt, validated_samples
 
 
-def solve_for_compliance(b: state.Belief) -> np.ndarray:
+def solve_for_compliance_b(b: state.Belief) -> np.ndarray:
     # idea, average compliance across particles?
     pass
