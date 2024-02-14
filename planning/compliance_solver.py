@@ -70,8 +70,6 @@ def compute_normal(pt, cspace, candidate_normals, step_size) -> np.ndarray:
         if dist < min_dist:
             min_dist = dist
             best_normal = n
-    if min_dist < 1e5:
-        print(f"{min_dist=}")
     return best_normal
 
 
@@ -103,11 +101,10 @@ def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
     q[:, 0] = best_normal
     basis_vectors = q[:, [1, 2, 0]]
     opt = basis_vectors @ K @ np.linalg.inv(basis_vectors)
-    if np.linalg.norm(best_normal, ord=1) > 1.01:
+    if np.linalg.norm(best_normal, ord=1) > 1.01 and False:
         print(f"{best_normal=}")
         print(f"basis_vectors=\n{basis_vectors}")
         print(f"opt=\n{opt}")
-        # opt = np.abs(opt)
     # assert is_psd(opt)
     return opt, best_normal
 
@@ -130,7 +127,7 @@ def solve_for_compliance(
         curr_samples, _ = evaluate_K(p, CF_d, K_curr, targets=targets)
         curr_succ_count = len(curr_samples)
         if curr_succ_count == len(targets):
-            return K_curr, curr_validated_samples
+            return K_curr, curr_samples
         if curr_succ_count > succ_count:
             succ_count = curr_succ_count
             print(f"setting index {i} compliant, {succ_count=}")

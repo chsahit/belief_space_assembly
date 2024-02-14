@@ -126,7 +126,9 @@ def make_cspace(
         if contact_manifold is None:
             contact_manifold = minkowski_sum
         else:
-            contact_manifold = Intersection(contact_manifold, minkowski_sum)
+            _contact_manifold = Intersection(contact_manifold, minkowski_sum)
+            if not _contact_manifold.IsEmpty():
+                contact_manifold = _contact_manifold
     assert not contact_manifold.IsEmpty()
     return contact_manifold
 
