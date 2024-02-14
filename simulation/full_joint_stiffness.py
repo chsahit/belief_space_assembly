@@ -139,7 +139,11 @@ class JointStiffnessController(LeafSystem):
 
         x = self.get_input_port_estimated_state().Eval(context)
         x_d = self.get_input_port_desired_state().Eval(context)
-        kp_q = J_g.T @ np.diag(self.kp) @ J_g
+        if len(self.kp.shape) == 1:
+            Kp = np.diag(self.kp)
+        else:
+            Kp = self.kp
+        kp_q = J_g.T @ Kp @ J_g
         finger_gains = np.array(
             [[0, 0, 0, 0, 0, 0, 0, 100, 0], [0, 0, 0, 0, 0, 0, 0, 0, 100]]
         )
