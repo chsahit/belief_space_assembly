@@ -83,16 +83,6 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     transformed_verts = np.array([tf(X, vert) for vert in verts.T])
     transformed_vrep = VPolytope(transformed_verts.T)
     transformed_hrep = HPolyhedron(transformed_vrep).Scale(1.0 / scale_factor)
-    """
-    if (
-        abs(
-            H.MaximumVolumeInscribedEllipsoid().CalcVolume()
-            - transformed_hrep.MaximumVolumeInscribedEllipsoid().CalcVolume()
-        )
-        > 1e-4
-    ):
-        breakpoint()
-    """
     return transformed_hrep
 
 

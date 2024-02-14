@@ -8,6 +8,7 @@ import dynamics
 import state
 from simulation import generate_contact_set, ik_solver
 
+np.set_printoptions(precision=3, suppress=True)
 
 def evaluate_K(
     p: state.Particle,
@@ -26,8 +27,7 @@ def evaluate_K(
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     motions = [ik_solver.update_motion_qd(m) for m in motions]
-    # if np.linalg.norm(K - components.stiff) < 1e-3 and ("top" in str(CF_d)) and False:
-    if np.linalg.norm(K - components.stiff) < 1e-3 and False:
+    if "left" in str(CF_d) and False:
         p_out = dynamics.simulate(p, motions[0], vis=True)
         print(f"{p_out.sdf=}")
     P_next = dynamics.f_cspace(p, motions)
@@ -70,7 +70,8 @@ def compute_normal(pt, cspace, candidate_normals, step_size) -> np.ndarray:
         if dist < min_dist:
             min_dist = dist
             best_normal = n
-    print(f"{min_dist=}")
+    if min_dist < 1e5:
+        print(f"{min_dist=}")
     return best_normal
 
 
@@ -78,6 +79,7 @@ def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
     K = np.diag(components.stiff[3:])
     if len(p.contacts) == 0:
         return K, np.array([0, 0, 0])
+    K[2, 2] = components.soft[5]
     cspace = generate_contact_set.make_cspace(p, p.contacts)
     pt = p.X_WM.translation()
     normals = list()
@@ -100,12 +102,13 @@ def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
     q, r = np.linalg.qr(vecs.T)
     q[:, 0] = best_normal
     basis_vectors = q[:, [1, 2, 0]]
-    opt = K @ basis_vectors
-    if not is_psd(opt):
-        opt = np.abs(opt)
+    opt = basis_vectors @ K @ np.linalg.inv(basis_vectors)
+    if np.linalg.norm(best_normal, ord=1) > 1.01:
         print(f"{best_normal=}")
-        print(f"{opt=}")
-    assert is_psd(opt)
+        print(f"basis_vectors=\n{basis_vectors}")
+        print(f"opt=\n{opt}")
+        # opt = np.abs(opt)
+    # assert is_psd(opt)
     return opt, best_normal
 
 
