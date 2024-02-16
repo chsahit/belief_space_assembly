@@ -277,9 +277,9 @@ def show_planning_results(fname: str):
 
     plt.fill_between(line_stiff_x, stiff_std_low, stiff_std_high, alpha=0.2, color="g")
     plt.plot(line_stiff_x, line_stiff_y, color="g", label="no stiffness")
-    plt.title("The effect of Uuncertainty on Planning Time")
+    plt.title("The effect of Uncertainty on Planning")
     plt.xlabel("Uncertainty (degrees)")
-    plt.ylabel("Time (seconds)")
+    plt.ylabel("Planning Time")
     plt.legend()
     plt.show()
     print("done")
@@ -313,4 +313,4 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
 
 
 if __name__ == "__main__":
-    show_planning_results("pitch_peg_sweep_results.pkl")
+    show_planning_results("pitch_peg_sweep_results_clear.pkl")
