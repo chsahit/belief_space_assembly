@@ -10,37 +10,7 @@ from pydrake.all import MathematicalProgram, Simulator, Solve
 import components
 import mr
 import state
-
-_time_in_sim = 0.0
-_num_posteriors = 0
-
-
-def reset_time():
-    global _time_in_sim
-    _time_in_sim = 0.0
-
-
-def get_time():
-    return _time_in_sim
-
-
-def add_time(delta):
-    global _time_in_sim
-    _time_in_sim += delta
-
-
-def reset_posteriors():
-    global _num_posteriors
-    _num_posteriors = 0
-
-
-def get_posterior_count():
-    return _num_posteriors
-
-
-def add_posteriors(n):
-    global _num_posteriors
-    _num_posteriors += n
+from counters import *
 
 
 def AdvanceToWithTimeout(
@@ -51,6 +21,7 @@ def AdvanceToWithTimeout(
     while curr_time_sim < sim_timeout:
         curr_time_sim += 0.1
         if time.time() - start_time_clock > clock_timeout:
+            print("warning, simulation timed out")
             break
         simulator.AdvanceTo(curr_time_sim)
 
@@ -74,11 +45,7 @@ def simulate(
         with new robot joint angles corresponding to the result of the motion.
     """
 
-    # K_G = mr.Adjoint(motion.X_GC.inverse().GetAsMatrix4()) @ np.diag(motion.K)
-    # gains = (p.J.T) @ K_G @ p.J
-    # motion.is_joint_space = True
-    gains = np.eye(6)
-    diagram, meshcat = p.make_plant(vis=vis, gains=gains)
+    diagram, meshcat = p.make_plant(vis=vis)
     plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
     plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
@@ -87,7 +54,6 @@ def simulate(
     controller = diagram.GetSubsystemByName("controller")
     controller.kp = motion.K
     setpoint = diagram.GetSubsystemByName("setpoint")
-    # controller.motion = motion
     setpoint.setpoint = motion.q_d
     assert setpoint.setpoint is not None
     simulator.Initialize()
@@ -96,7 +62,6 @@ def simulate(
         meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
         meshcat_vis.StartRecording()
         try:
-            # simulator.AdvanceTo(motion.timeout)
             AdvanceToWithTimeout(simulator, motion.timeout)
         except Exception as e:
             print(f"EXCEPTION: {e}")
@@ -106,12 +71,10 @@ def simulate(
         with open("meshcat_html.html", "w") as f:
             f.write(meshcat.StaticHtml())
     else:
-        # simulator.AdvanceTo(motion.timeout)
         AdvanceToWithTimeout(simulator, motion.timeout)
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
-    # p_next.trajectory = controller.history
     p_next._update_contact_data()
     return p_next
 

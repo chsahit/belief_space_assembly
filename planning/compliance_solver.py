@@ -10,6 +10,7 @@ from simulation import generate_contact_set, ik_solver
 
 np.set_printoptions(precision=3, suppress=True)
 
+
 def evaluate_K(
     p: state.Particle,
     CF_d: components.ContactState,

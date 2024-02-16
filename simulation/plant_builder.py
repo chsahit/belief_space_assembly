@@ -65,7 +65,6 @@ def init_plant(
 
 
 def wire_controller(
-    is_cartesian: bool,
     panda: ModelInstanceIndex,
     controller_name: str,
     panda_name: str,
@@ -96,15 +95,6 @@ def wire_controller(
     )
 
     return compliant_controller
-
-
-def _drop_reflected_inertia(plant, panda):
-    return None
-    ja_indices = plant.GetJointActuatorIndices(panda)
-    for ja_idx in ja_indices:
-        ja = plant.get_joint_actuator(ja_idx)
-        ja.set_default_rotor_inertia(0.0)
-        ja.set_default_gear_ratio(0.0)
 
 
 def _weld_geometries(
@@ -142,7 +132,6 @@ def make_plant(
     vis: bool = False,
     mu: float = 0.0,
     meshcat_instance=None,
-    gains=None,
 ) -> Tuple[Diagram, Meshcat]:
     builder, _, _, meshcat = _construct_diagram(
         q_r,
@@ -154,7 +143,6 @@ def make_plant(
         vis=vis,
         mu=mu,
         meshcat_instance=meshcat_instance,
-        gains=gains,
     )
     diagram = builder.Build()
     return diagram, meshcat
@@ -197,7 +185,6 @@ def _construct_diagram(
     vis: bool = False,
     mu: float = 0.0,
     meshcat_instance=None,
-    gains=None,
 ) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Meshcat]:
     builder = DiagramBuilder()
     plant, scene_graph, parser = init_plant(builder)
@@ -207,22 +194,11 @@ def _construct_diagram(
     panda_name = "panda"
     plant.RenameModelInstance(panda, panda_name)
     env_geometry = parser.AddModels(env_geom)[0]
-    # manipuland = parser.AddModelFromFile(manip_geom, model_name="block")
     manipuland = parser.AddModels(manip_geom)[0]
     plant.RenameModelInstance(manipuland, "block")
     _weld_geometries(plant, X_GM, X_WO, panda, manipuland, env_geometry)
-    # _mu = mu if gains is not None else mu - 0.01
     _set_frictions(plant, scene_graph, [env_geometry, manipuland], mu)
-    """
-    for i, ja_index in enumerate(list(range(9))):
-        ja = plant.get_joint_actuator(JointActuatorIndex(ja_index))
-        if gains is not None:
-            ja.set_controller_gains(
-                PdControllerGains(p=gains[i, i], d=10 * np.sqrt(gains[i, i]))
-            )
-    """
     plant.Finalize()
-    _drop_reflected_inertia(plant, panda)
     plant.SetDefaultPositions(panda, q_r)
 
     if collision_check:
@@ -239,10 +215,7 @@ def _construct_diagram(
         )
 
     # connect controller
-    is_cartesian = gains is None
-    wire_controller(
-        is_cartesian, panda, "controller", "panda", "setpoint", builder, plant
-    )
+    wire_controller(panda, "controller", "panda", "setpoint", builder, plant)
     meshcat = meshcat_instance
     if vis:
         if meshcat is None:
