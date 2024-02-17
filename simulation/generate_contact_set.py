@@ -90,8 +90,6 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
-    r_vel[0] = 0
-    r_vel[2] = 0
     # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
@@ -120,10 +118,13 @@ def make_cspace(
         env_geometry = HPolyhedron(A_env, b_env)
         A_manip, b_manip = p._manip_poly[manip_poly_name]
         rotatated_manip = tf_HPolyhedron(HPolyhedron(A_manip, b_manip), tf)
+        """
         reflection = np.array(
             [[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 0]]
         )
         manip_geometry = tf_HPolyhedron(rotatated_manip, RigidTransform(reflection))
+        """
+        manip_geometry = HPolyhedron(-1 * rotatated_manip.A(), rotatated_manip.b())
         minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
         if contact_manifold is None:
             contact_manifold = minkowski_sum
@@ -163,7 +164,7 @@ def _project_manipuland_to_contacts(
     p_WMs = compute_samples_from_contact_set(p, CF_d, num_samples=num_samples)
     X_WMs = [RigidTransform(p_WM) for p_WM in p_WMs]
     verbose = (num_samples == 16) and ("top" in str(CF_d))
-    verbose = False
+    # verbose = False
     samples_noised = [generate_noised(p, X_WM, CF_d, verbose=verbose) for X_WM in X_WMs]
     for (X_WMt, X_MMt) in samples_noised:
         X_WG = X_WMt.multiply(p.X_GM.inverse())
@@ -181,16 +182,3 @@ def project_manipuland_to_contacts(
     projections_pre = _project_manipuland_to_contacts(p, CF_d, num_samples=num_samples)
     projections = [p.multiply(offset) for p in projections_pre]
     return projections
-
-
-def collision_depth(p: state.Particle) -> float:
-    diagram, _ = p.make_plant(vis=False)
-    simulator = Simulator(diagram)
-    simulator.AdvanceTo(0.1)
-    worst_collision_amt = float("inf")
-    wc = None
-    for k, v in p.sdf.items():
-        if v < worst_collision_amt:
-            worst_collision_amt = v
-            wc = k
-    return worst_collision_amt

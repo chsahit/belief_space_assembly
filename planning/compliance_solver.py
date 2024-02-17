@@ -6,9 +6,10 @@ from pydrake.all import MathematicalProgram, RigidTransform, Solve
 import components
 import dynamics
 import state
+import visualize
 from simulation import generate_contact_set, ik_solver
 
-np.set_printoptions(precision=3, suppress=True)
+np.set_printoptions(precision=5, suppress=True)
 
 
 def evaluate_K(
@@ -24,6 +25,7 @@ def evaluate_K(
         targets = generate_contact_set.project_manipuland_to_contacts(
             p, CF_d, num_samples=32
         )
+
     X_GC = RigidTransform([0, 0, 0.15])
     targets = [target.multiply(X_GC) for target in targets]
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
@@ -116,6 +118,8 @@ def solve_for_compliance(
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=16
     )
+    if "top" in str(CF_d) and len(targets) == 16:
+        visualize.visualize_targets(p, targets)
     K_opt_3, best_normal = K_t_opt(p)
     K_opt = np.diag(components.stiff)
     K_opt[3:, 3:] = K_opt_3

@@ -82,7 +82,6 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
         set_transparency_of_models(plant, [P, O, M], colors[i % 3], 0.5, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
         plant_builder.wire_controller(
-            True,
             P,
             f"controller_{str(i)}",
             f"panda_{str(i)}",
