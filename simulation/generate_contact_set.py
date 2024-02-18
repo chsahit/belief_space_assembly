@@ -74,23 +74,55 @@ def tf(X_MMt, p_MV):
     return r3
 
 
+scale_factor = 100000
+
+
+def Scale(H: HPolyhedron, scale: float = 100) -> HPolyhedron:
+    b = H.b()
+    b *= scale
+    return HPolyhedron(H.A(), b)
+
+
+def reflect_HPolyhedron(H: HPolyhedron) -> HPolyhedron:
+    H_big = Scale(H)
+    vrep = VPolytope(H_big)
+    verts = vrep.vertices()
+    assert verts.shape[1] == 8
+    transformed_verts = np.array([-1 * vert for vert in verts.T])
+    transformed_vrep = VPolytope(transformed_verts.T)
+    transformed_hrep = Scale(HPolyhedron(transformed_vrep), 0.01)
+    return transformed_hrep
+
+
 def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
-    scale_factor = 100000
-    H_big = H.Scale(scale_factor)
+    H_big = Scale(H)
     vrep = VPolytope(H_big)
     verts = vrep.vertices()
     assert verts.shape[1] == 8
     transformed_verts = np.array([tf(X, vert) for vert in verts.T])
     transformed_vrep = VPolytope(transformed_verts.T)
-    transformed_hrep = HPolyhedron(transformed_vrep).Scale(1.0 / scale_factor)
+    transformed_hrep = Scale(HPolyhedron(transformed_vrep), 0.01)
     return transformed_hrep
+
+
+def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron):
+    from pydrake.all import MathematicalProgram, Solve
+
+    eqns = tf_HPolyhedron(H, X_WMt)
+    mp = MathematicalProgram()
+    opt = mp.NewContinuousVariables(3, "opt")
+    mp.AddCost(opt[2])
+    eqns.AddPointInSetConstraints(mp, opt)
+    print(Solve(mp).GetSolution(opt))
 
 
 def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
-    # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
+    r_vel[0] = 0
+    r_vel[2] = 0
+    r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
@@ -100,6 +132,21 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
         if verbose:
             print(f"(point as is) {X_WMt.translation()=}")
         return X_WMt, X_MMt
+    elif contact_manifold.PointInSet(X_WM.translation()):
+        direction = X_WMt.translation() - X_WM.translation()
+        pt = np.copy(X_WM.translation())
+        while contact_manifold.PointInSet(pt):
+            pt += 1e-4 * direction
+        pt -= 1e-4 * direction
+        X_WMt_new = RigidTransform(X_WMt.rotation(), pt)
+        X_MMt_new = X_WM.inverse().multiply(X_WMt_new)
+        if pt[2] > 0.081 and verbose:
+            hpol = HPolyhedron(*p._manip_poly["block::Box"])
+            lowest_pt(X_WMt_new, hpol)
+            breakpoint()
+        if verbose:
+            print(f"computed: {X_WMt_new.translation()=}")
+        return X_WMt_new, X_MMt_new
     else:
         if verbose:
             print(f"off manifold, sample_translated={X_WM.translation()}")
@@ -118,13 +165,7 @@ def make_cspace(
         env_geometry = HPolyhedron(A_env, b_env)
         A_manip, b_manip = p._manip_poly[manip_poly_name]
         rotatated_manip = tf_HPolyhedron(HPolyhedron(A_manip, b_manip), tf)
-        """
-        reflection = np.array(
-            [[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 0]]
-        )
-        manip_geometry = tf_HPolyhedron(rotatated_manip, RigidTransform(reflection))
-        """
-        manip_geometry = HPolyhedron(-1 * rotatated_manip.A(), rotatated_manip.b())
+        manip_geometry = reflect_HPolyhedron(rotatated_manip)
         minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
         if contact_manifold is None:
             contact_manifold = minkowski_sum
