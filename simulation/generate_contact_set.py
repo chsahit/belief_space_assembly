@@ -1,6 +1,7 @@
 import random
 from typing import List
 
+import cdd
 import matplotlib.pyplot as plt
 import numpy as np
 from pydrake.all import (
@@ -94,6 +95,7 @@ def reflect_HPolyhedron(H: HPolyhedron) -> HPolyhedron:
     return transformed_hrep
 
 
+"""
 def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     H_big = Scale(H)
     vrep = VPolytope(H_big)
@@ -103,17 +105,47 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     transformed_vrep = VPolytope(transformed_verts.T)
     transformed_hrep = Scale(HPolyhedron(transformed_vrep), 0.01)
     return transformed_hrep
+"""
 
 
-def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron):
+def MatToArr(m: cdd.Matrix) -> np.ndarray:
+    return np.array([m[i] for i in range(m.row_size)])
+
+
+def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
+    A, b = (H.A(), H.b())
+    H_repr = np.hstack((np.array([b]).T, -A))
+    mat = cdd.Matrix(H_repr, number_type="float")
+    mat.rep_type = cdd.RepType.INEQUALITY
+    poly = cdd.Polyhedron(mat)
+    V_repr = MatToArr(poly.get_generators())
+    vertices = V_repr[:, 1:]
+    vertices_transformed = []
+    for v_idx in range(vertices.shape[0]):
+        vertices_transformed.append(tf(X, vertices[v_idx]))
+    vertices_transformed = np.array(vertices_transformed)
+    V_repr_tf = np.hstack(
+        (np.ones((vertices_transformed.shape[0], 1)), vertices_transformed)
+    )
+    mat_tf_V = cdd.Matrix(V_repr_tf, number_type="float")
+    mat_tf_V.rep_type = cdd.RepType.GENERATOR
+    poly_tf = cdd.Polyhedron(mat_tf_V)
+    H_repr_tf = MatToArr(poly_tf.get_inequalities())
+    b_tf = H_repr_tf[:, 0]
+    A_tf = -1 * H_repr_tf[:, 1:]
+    return HPolyhedron(A_tf, b_tf)
+
+
+def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron) -> np.ndarray:
     from pydrake.all import MathematicalProgram, Solve
 
     eqns = tf_HPolyhedron(H, X_WMt)
+    print(eqns.PointInSet([0, 0, 0]))
     mp = MathematicalProgram()
     opt = mp.NewContinuousVariables(3, "opt")
     mp.AddCost(opt[2])
     eqns.AddPointInSetConstraints(mp, opt)
-    print(Solve(mp).GetSolution(opt))
+    return Solve(mp).GetSolution(opt)
 
 
 def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
@@ -122,7 +154,7 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
     r_vel[0] = 0
     r_vel[2] = 0
-    r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
+    # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
@@ -142,8 +174,8 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
         X_MMt_new = X_WM.inverse().multiply(X_WMt_new)
         if pt[2] > 0.081 and verbose:
             hpol = HPolyhedron(*p._manip_poly["block::Box"])
-            lowest_pt(X_WMt_new, hpol)
             breakpoint()
+            print(f"{lowest_pt(X_WMt_new, hpol)=}")
         if verbose:
             print(f"computed: {X_WMt_new.translation()=}")
         return X_WMt_new, X_MMt_new
