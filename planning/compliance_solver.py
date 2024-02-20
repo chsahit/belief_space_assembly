@@ -93,7 +93,7 @@ def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
                 normals.append([dirs[x], dirs[y], dirs[z]])
 
     for i in range(3):
-        best_normal = compute_normal(pt, cspace, normals, 1e-4 * (10 ** i))
+        best_normal = compute_normal(pt, cspace, normals, 1e-4 * (10**i))
         if best_normal is not None:
             break
     assert best_normal is not None
@@ -118,8 +118,8 @@ def solve_for_compliance(
     targets = generate_contact_set.project_manipuland_to_contacts(
         p, CF_d, num_samples=16
     )
-    if "top" in str(CF_d) and len(targets) == 16:
-        visualize.visualize_targets(p, targets)
+    # if "top" in str(CF_d) and len(targets) == 16:
+    #     visualize.visualize_targets(p, targets)
     K_opt_3, best_normal = K_t_opt(p)
     K_opt = np.diag(components.stiff)
     K_opt[3:, 3:] = K_opt_3

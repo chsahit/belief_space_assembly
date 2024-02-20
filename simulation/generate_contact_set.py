@@ -127,9 +127,16 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     V_repr_tf = np.hstack(
         (np.ones((vertices_transformed.shape[0], 1)), vertices_transformed)
     )
-    mat_tf_V = cdd.Matrix(V_repr_tf, number_type="float")
-    mat_tf_V.rep_type = cdd.RepType.GENERATOR
-    poly_tf = cdd.Polyhedron(mat_tf_V)
+    try:
+        mat_tf_V = cdd.Matrix(V_repr_tf, number_type="float")
+        mat_tf_V.rep_type = cdd.RepType.GENERATOR
+        poly_tf = cdd.Polyhedron(mat_tf_V)
+    except:
+        V_repr_tf = np.round(V_repr_tf, decimals=8)
+        V_repr_tf += 1e-6
+        mat_tf_V.rep_type = cdd.RepType.GENERATOR
+        poly_tf = cdd.Polyhedron(mat_tf_V)
+
     H_repr_tf = MatToArr(poly_tf.get_inequalities())
     b_tf = H_repr_tf[:, 0]
     A_tf = -1 * H_repr_tf[:, 1:]
@@ -139,8 +146,7 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
 def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron) -> np.ndarray:
     from pydrake.all import MathematicalProgram, Solve
 
-    eqns = tf_HPolyhedron(H, X_WMt)
-    print(eqns.PointInSet([0, 0, 0]))
+    eqns = tf_HPolyhedron(H, X_WMt.inverse())
     mp = MathematicalProgram()
     opt = mp.NewContinuousVariables(3, "opt")
     mp.AddCost(opt[2])
@@ -152,8 +158,6 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
     constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
-    r_vel[0] = 0
-    r_vel[2] = 0
     # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
     random_vel = np.concatenate((r_vel, t_vel))
@@ -172,12 +176,16 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
         pt -= 1e-4 * direction
         X_WMt_new = RigidTransform(X_WMt.rotation(), pt)
         X_MMt_new = X_WM.inverse().multiply(X_WMt_new)
+        """
         if pt[2] > 0.081 and verbose:
             hpol = HPolyhedron(*p._manip_poly["block::Box"])
             breakpoint()
             print(f"{lowest_pt(X_WMt_new, hpol)=}")
+        """
         if verbose:
             print(f"computed: {X_WMt_new.translation()=}")
+            hpol = HPolyhedron(*p._manip_poly["block::Box"])
+            print(f"{lowest_pt(X_WMt_new, hpol)=}")
         return X_WMt_new, X_MMt_new
     else:
         if verbose:
@@ -237,7 +245,7 @@ def _project_manipuland_to_contacts(
     p_WMs = compute_samples_from_contact_set(p, CF_d, num_samples=num_samples)
     X_WMs = [RigidTransform(p_WM) for p_WM in p_WMs]
     verbose = (num_samples == 16) and ("top" in str(CF_d))
-    # verbose = False
+    verbose = False
     samples_noised = [generate_noised(p, X_WM, CF_d, verbose=verbose) for X_WM in X_WMs]
     for (X_WMt, X_MMt) in samples_noised:
         X_WG = X_WMt.multiply(p.X_GM.inverse())
