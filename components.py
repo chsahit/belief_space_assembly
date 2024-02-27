@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import FrozenSet, List, NamedTuple, Tuple
 
 import numpy as np
-from pydrake.all import RigidTransform, RollPitchYaw
+from pydrake.all import HPolyhedron, RigidTransform, RollPitchYaw
 
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
@@ -98,3 +98,22 @@ class PlanningResult:
         else:
             traj_len = len(self.traj)
         return f"{self.total_time=}, {self.num_posteriors=}, {traj_len=}"
+
+
+@dataclass
+class CFace:
+    H: HPolyhedron
+    neighbor_faces: List[CFace]
+    neighbors: List[Any]
+
+    def __eq___(self, other):
+        if not isinstance(other, CFace):
+            return False
+        # TODO: this should normalize the A, b repr before checking
+        return (np.isclose(self.A(), other.A())) and (np.isclose(self.b(), other.b()))
+
+
+@dataclass
+class CVert:
+    pose: np.ndarray
+    label: ContactState

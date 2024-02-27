@@ -6,6 +6,7 @@ from pydrake.all import MathematicalProgram, RigidTransform, Solve
 import components
 import dynamics
 import state
+import utils
 import visualize
 from simulation import generate_contact_set, ik_solver
 
@@ -76,6 +77,28 @@ def compute_normal(pt, cspace, candidate_normals, step_size) -> np.ndarray:
     return best_normal
 
 
+def K_r_opt(p: state.Particle) -> np.ndarray:
+    if len(p.contacts) == 0:
+        return components.stiff[:3]
+    K = list()
+    delta = 0.05
+    for i in range(3):
+        rpy = np.array([0, 0, 0])
+        rpy[i] = delta
+        delta_pos = utils.xyz_rpy_deg([0, 0, 0], rpy)
+        delta_neg = utils.xyz_rpy_deg([0, 0, 0], -rpy)
+        cspace_pos = generate_contact_set.make_cspace(p, p.contacts, delta_pos)
+        cspace_neg = generate_contact_set.make_cspace(p, p.contacts, delta_neg)
+        if cspace_pos.PointInSet(p.X_WM.translation()) and cspace_pos.PointInSet(
+            p.X_WM.translation()
+        ):
+            K.append(components.soft[i])
+        else:
+            K.append(components.stiff[i])
+
+    return np.array(K)
+
+
 def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
     K = np.diag(components.stiff[3:])
     if len(p.contacts) == 0:
@@ -113,6 +136,19 @@ def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def solve_for_compliance(
+    p: state.Particle, CF_d: components.ContactState
+) -> np.ndarray:
+    del CF_d
+    K_r = np.diag(K_r_opt(p))
+    K_t, _ = K_t_opt(p)
+    K_opt = np.zeros((6, 6))
+    K_opt[:3, :3] = K_r
+    K_opt[3:, 3:] = K_t
+    print(f"K_opt=\n{K_opt}")
+    return K_opt, []
+
+
+def hybrid_solve_for_compliance(
     p: state.Particle, CF_d: components.ContactState
 ) -> np.ndarray:
     targets = generate_contact_set.project_manipuland_to_contacts(

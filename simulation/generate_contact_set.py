@@ -84,6 +84,7 @@ def Scale(H: HPolyhedron, scale: float = 100) -> HPolyhedron:
     return HPolyhedron(H.A(), b)
 
 
+"""
 def reflect_HPolyhedron(H: HPolyhedron) -> HPolyhedron:
     H_big = Scale(H)
     vrep = VPolytope(H_big)
@@ -95,7 +96,6 @@ def reflect_HPolyhedron(H: HPolyhedron) -> HPolyhedron:
     return transformed_hrep
 
 
-"""
 def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     H_big = Scale(H)
     vrep = VPolytope(H_big)
@@ -112,21 +112,17 @@ def MatToArr(m: cdd.Matrix) -> np.ndarray:
     return np.array([m[i] for i in range(m.row_size)])
 
 
-def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
+def HPolyhedronToVRepr(H: HPolyhedron) -> cdd.Matrix:
     A, b = (H.A(), H.b())
     H_repr = np.hstack((np.array([b]).T, -A))
     mat = cdd.Matrix(H_repr, number_type="float")
     mat.rep_type = cdd.RepType.INEQUALITY
     poly = cdd.Polyhedron(mat)
-    V_repr = MatToArr(poly.get_generators())
-    vertices = V_repr[:, 1:]
-    vertices_transformed = []
-    for v_idx in range(vertices.shape[0]):
-        vertices_transformed.append(tf(X, vertices[v_idx]))
-    vertices_transformed = np.array(vertices_transformed)
-    V_repr_tf = np.hstack(
-        (np.ones((vertices_transformed.shape[0], 1)), vertices_transformed)
-    )
+    return poly.get_generators()
+
+
+def VerticesToHPolyhedron(vertices: np.ndarray) -> HPolyhedron:
+    V_repr_tf = np.hstack((np.ones((vertices.shape[0], 1)), vertices))
     try:
         mat_tf_V = cdd.Matrix(V_repr_tf, number_type="float")
         mat_tf_V.rep_type = cdd.RepType.GENERATOR
@@ -136,11 +132,32 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
         V_repr_tf += 1e-6
         mat_tf_V.rep_type = cdd.RepType.GENERATOR
         poly_tf = cdd.Polyhedron(mat_tf_V)
-
     H_repr_tf = MatToArr(poly_tf.get_inequalities())
     b_tf = H_repr_tf[:, 0]
     A_tf = -1 * H_repr_tf[:, 1:]
     return HPolyhedron(A_tf, b_tf)
+
+
+def reflect_HPolyhedron(H: HPolyhedron) -> HPolyhedron:
+    V_repr = MatToArr(HPolyhedronToVRepr(H))
+    if V_repr.shape[0] < 8:
+        breakpoint()
+    vertices = V_repr[:, 1:]
+    vertices_transformed = []
+    for v_idx in range(vertices.shape[0]):
+        vertices_transformed.append(-1 * vertices[v_idx])
+    vertices_transformed = np.array(vertices_transformed)
+    return VerticesToHPolyhedron(vertices_transformed)
+
+
+def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
+    V_repr = MatToArr(HPolyhedronToVRepr(H))
+    vertices = V_repr[:, 1:]
+    vertices_transformed = []
+    for v_idx in range(vertices.shape[0]):
+        vertices_transformed.append(tf(X, vertices[v_idx]))
+    vertices_transformed = np.array(vertices_transformed)
+    return VerticesToHPolyhedron(vertices_transformed)
 
 
 def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron) -> np.ndarray:
