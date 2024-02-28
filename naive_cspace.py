@@ -30,7 +30,10 @@ import cdd
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
+from scipy.spatial import ConvexHull
 from tqdm import tqdm
 
 import components
@@ -101,7 +104,7 @@ class CSpaceGraph:
         return str(edge_strs)
 
 
-def GetVertices(H: HPolyhedron) -> np.ndarray:
+def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     V = VPolytope(H)
     vertices = V.vertices().T
     if vertices.shape[0] < 6:
@@ -119,9 +122,10 @@ def GetVertices(H: HPolyhedron) -> np.ndarray:
 
         vertices = MatToArr(HPolyhedronToVRepr(H))[:, 1:]
 
-    if vertices.shape[0] < 6:
-        breakpoint()
-    assert vertices.shape == (8, 3) or vertices.shape == (6, 3)
+    if assert_count:
+        if vertices.shape[0] < 6:
+            breakpoint()
+        assert vertices.shape == (8, 3) or vertices.shape == (6, 3)
     return vertices
 
 
@@ -153,7 +157,13 @@ def MakeWorkspaceObjectFromFaces(
 
 def is_face(geom_name):
     suffixes = ["_bottom", "_top", "_left", "_right", "_front", "_back", "_inside"]
-    return any([suffix in geom_name for suffix in suffixes])
+
+    def is_badface(gn):
+        return ("_top" in gn) and ("bottom_top" not in gn)
+
+    return any([suffix in geom_name for suffix in suffixes]) and (
+        not is_badface(geom_name)
+    )
 
 
 def internal_edge(e: Tuple[CSpaceVolume, CSpaceVolume], cspace: CSpaceVolume) -> bool:
@@ -171,7 +181,7 @@ def internal_edge(e: Tuple[CSpaceVolume, CSpaceVolume], cspace: CSpaceVolume) ->
             break
     if len(samples) == 0:
         return False  # probably true, but we are being conservative in pruning
-    for i in range(3):
+    for i in range(1000):
         samples.append(intersection.UniformSample(drake_rng, samples[-1]))
 
     for sample in samples:
@@ -188,6 +198,7 @@ def prune_edges(
     all_volume_geometries = sum([vol.geometry for vol in cspace_volumes], [])
     print(f"{len(all_volume_geometries)=}")
     full_cspace = CSpaceVolume("", all_volume_geometries)
+    render_cspace_volume(full_cspace)
     pruned_edges = []
     for e in tqdm(E):
         if not internal_edge(e, full_cspace):
@@ -247,8 +258,24 @@ def render_graph(g: CSpaceGraph):
         nx_graph.add_edge(e[0], e[1])
         label_dict[e[0]] = label_to_str(e[0].label)
         label_dict[e[1]] = label_to_str(e[1].label)
+    print(f"{nx.number_connected_components(nx_graph)=}")
     nx.draw(nx_graph, labels=label_dict, with_labels=True)
     plt.savefig("mode_graph.png")
+
+
+def render_cspace_volume(C: CSpaceVolume):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+    for geom in tqdm(C.geometry):
+        vertices = GetVertices(geom, assert_count=False)
+        try:
+            hull = ConvexHull(vertices)
+            for s in hull.simplices:
+                tri = Poly3DCollection([vertices[s]])
+                ax.add_collection3d(tri)
+        except:
+            pass
+    plt.show()
 
 
 def make_task_plan(
