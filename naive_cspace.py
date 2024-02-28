@@ -22,11 +22,20 @@ types:
 """
 
 import itertools
-from collections import dataclass
+from collections import defaultdict
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
-from pydrake.all import HPolyhedron, RigidTransform, VPolytope
+import cdd
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
+from tqdm import tqdm
 
 import components
+
+drake_rng = RandomGenerator(0)
 
 
 @dataclass
@@ -41,7 +50,7 @@ class CSpaceVolume:
     label: components.ContactState
     geometry: List[HPolyhedron]
 
-    def intersects(self, other: CSpaceVolume) -> bool:
+    def intersects(self, other: "CSpaceVolume") -> bool:
         for m_geom in self.geometry:
             for o_geom in other.geometry:
                 if m_geom.IntersectsWith(o_geom):
@@ -51,6 +60,34 @@ class CSpaceVolume:
     def sample(self) -> np.ndarray:
         raise NotImplementedError
 
+    def is_strict_interior(self, pt) -> bool:
+        # if point is exterior to all geometries, it cannot be strictly interior
+        coarse_exterior_check = [not geom.PointInSet(pt) for geom in self.geometry]
+        if all(coarse_exterior_check):
+            return False
+        # if point is strictly interior to any geometry, return true
+        results = defaultdict(list)
+        for direction in [0, 1, 2]:
+            for delta in [0.0001, -0.0001]:
+                pt_prime = np.copy(pt)
+                pt_prime[direction] += delta
+                for geom in self.geometry:
+                    results[(direction, delta)].append(geom.PointInSet(pt_prime))
+        for k, v in results.items():
+            # we found a delta such that pt + delta is exterior
+            # thus, the pt is a boundary pt
+            if not any(v):
+                return False
+        return True
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, CSpaceVolume):
+            return False
+        return self.label == other.label
+
+    def __hash__(self) -> int:
+        return hash(self.label)
+
 
 @dataclass
 class CSpaceGraph:
@@ -59,9 +96,33 @@ class CSpaceGraph:
 
     def __str__(self) -> str:
         edge_strs = []
-        for e in E:
-            edge_strs.append(e[0].label, e[1].label)
-        return edge_strs
+        for e in self.E:
+            edge_strs.append((e[0].label, e[1].label))
+        return str(edge_strs)
+
+
+def GetVertices(H: HPolyhedron) -> np.ndarray:
+    V = VPolytope(H)
+    vertices = V.vertices().T
+    if vertices.shape[0] < 6:
+
+        def MatToArr(m: cdd.Matrix) -> np.ndarray:
+            return np.array([m[i] for i in range(m.row_size)])
+
+        def HPolyhedronToVRepr(H: HPolyhedron) -> cdd.Matrix:
+            A, b = (H.A(), H.b())
+            H_repr = np.hstack((np.array([b]).T, -A))
+            mat = cdd.Matrix(H_repr, number_type="float")
+            mat.rep_type = cdd.RepType.INEQUALITY
+            poly = cdd.Polyhedron(mat)
+            return poly.get_generators()
+
+        vertices = MatToArr(HPolyhedronToVRepr(H))[:, 1:]
+
+    if vertices.shape[0] < 6:
+        breakpoint()
+    assert vertices.shape == (8, 3) or vertices.shape == (6, 3)
+    return vertices
 
 
 def minkowski_sum(
@@ -71,14 +132,82 @@ def minkowski_sum(
     B_vertices = GetVertices(B)
     A_vertices = GetVertices(A)
     volume_verts = []
-    for vB in B_vertices:
-        for vA in A_vertices:
-            volume_verts.append(vB - vA)
+    for vB_idx in range(B_vertices.shape[0]):
+        for vA_idx in range(A_vertices.shape[0]):
+            volume_verts.append(B_vertices[vB_idx] - A_vertices[vA_idx])
     volume_verts = np.array(volume_verts)
-    print(volume_verts.shape)
-    breakpoint()
-    volume_geometry = HPolyhedron(VPolytope(volume_verts))
+    volume_geometry = HPolyhedron(VPolytope(volume_verts.T))
+    volume_geometry = volume_geometry.ReduceInequalities()
     return CSpaceVolume(label, [volume_geometry])
+
+
+def MakeWorkspaceObjectFromFaces(
+    faces: Dict[str, Tuple[np.ndarray, np.ndarray]]
+) -> WorkspaceObject:
+    faces_H = dict()
+    for k, v in faces.items():
+        if is_face(k):
+            faces_H[k] = HPolyhedron(*v)
+    return WorkspaceObject("", None, faces_H)
+
+
+def is_face(geom_name):
+    suffixes = ["_bottom", "_top", "_left", "_right", "_front", "_back", "_inside"]
+    return any([suffix in geom_name for suffix in suffixes])
+
+
+def internal_edge(e: Tuple[CSpaceVolume, CSpaceVolume], cspace: CSpaceVolume) -> bool:
+    assert len(e[0].geometry) == 1 and len(e[1].geometry) == 1
+    intersection = e[0].geometry[0].Intersection(e[1].geometry[0])
+    assert not intersection.IsEmpty()
+    for i in range(15):
+        try:
+            samples = [
+                intersection.UniformSample(drake_rng, intersection.ChebyshevCenter())
+            ]
+        except:
+            samples = []
+        if len(samples) > 0:
+            break
+    if len(samples) == 0:
+        return False  # probably true, but we are being conservative in pruning
+    for i in range(3):
+        samples.append(intersection.UniformSample(drake_rng, samples[-1]))
+
+    for sample in samples:
+        # this edge corresponds to an external edge on the CObs
+        if not cspace.is_strict_interior(sample):
+            return False
+    return True
+
+
+def prune_edges(
+    cspace_volumes: List[CSpaceVolume],
+    E: List[Tuple[CSpaceVolume, CSpaceVolume]],
+) -> List[Tuple[CSpaceVolume, CSpaceVolume]]:
+    all_volume_geometries = sum([vol.geometry for vol in cspace_volumes], [])
+    print(f"{len(all_volume_geometries)=}")
+    full_cspace = CSpaceVolume("", all_volume_geometries)
+    pruned_edges = []
+    for e in tqdm(E):
+        if not internal_edge(e, full_cspace):
+            pruned_edges.append(e)
+    return pruned_edges
+
+
+def prune_vertices(V: List[CSpaceVolume]) -> List[CSpaceVolume]:
+    raise NotImplementedError
+    to_remove = []
+    for pair in itertools.combinations(V, 2):
+        if is_subset(pair[0], pair[1]):
+            to_remove.append(pair[0])
+        elif is_subset(pair[1], pair[0]):
+            to_remove.append(pair[1])
+    pruned = []
+    for v in V:
+        if v not in to_remove:
+            pruned.append(v)
+    return pruned
 
 
 def make_graph(
@@ -88,14 +217,38 @@ def make_graph(
     edges = []
     for manip_component in manipuland:
         for env_component in env:
+            print(f"{len(manip_component.faces.items())=}")
+            print(f"{len(env_component.faces.items())=}")
             for manip_face in manip_component.faces.items():
                 for env_face in env_component.faces.items():
-                    vol = minkowski_sum(*env_component, *manip_component)
+                    vol = minkowski_sum(*env_face, *manip_face)
                     volumes.append(vol)
     for pair in itertools.combinations(volumes, 2):
         if pair[0].intersects(pair[1]):
             edges.append(pair)
+    print(f"pre-prune length: {len(edges)}")
+    edges = prune_edges(volumes, edges)
     return CSpaceGraph(volumes, edges)
+
+
+def label_to_str(label: components.ContactState) -> str:
+    tag = ""
+    for contact in label:
+        A = contact[0][contact[0].find("::") + 2 :]
+        B = contact[1][contact[1].find("::") + 2 :]
+        tag += f"({A}, {B}), "
+    return tag
+
+
+def render_graph(g: CSpaceGraph):
+    nx_graph = nx.Graph()
+    label_dict = dict()
+    for e in g.E:
+        nx_graph.add_edge(e[0], e[1])
+        label_dict[e[0]] = label_to_str(e[0].label)
+        label_dict[e[1]] = label_to_str(e[1].label)
+    nx.draw(nx_graph, labels=label_dict, with_labels=True)
+    plt.savefig("mode_graph.png")
 
 
 def make_task_plan(

@@ -100,6 +100,7 @@ class PlanningResult:
         return f"{self.total_time=}, {self.num_posteriors=}, {traj_len=}"
 
 
+"""
 @dataclass
 class CFace:
     H: HPolyhedron
@@ -117,3 +118,4 @@ class CFace:
 class CVert:
     pose: np.ndarray
     label: ContactState
+"""
