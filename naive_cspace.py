@@ -22,6 +22,7 @@ types:
 """
 
 import itertools
+import random
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
@@ -30,6 +31,7 @@ import cdd
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import plotly.graph_objects as go
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
@@ -150,7 +152,7 @@ def MakeWorkspaceObjectFromFaces(
 ) -> WorkspaceObject:
     faces_H = dict()
     for k, v in faces.items():
-        if is_face(k):
+        if not is_face(k):
             faces_H[k] = HPolyhedron(*v)
     return WorkspaceObject("", None, faces_H)
 
@@ -158,12 +160,11 @@ def MakeWorkspaceObjectFromFaces(
 def is_face(geom_name):
     suffixes = ["_bottom", "_top", "_left", "_right", "_front", "_back", "_inside"]
 
-    def is_badface(gn):
-        return ("_top" in gn) and ("bottom_top" not in gn)
+    is_badface = ("_top" in geom_name) and ("bottom_top" not in geom_name)
+    is_chamfer = "chamfer" in geom_name
+    return any([suffix in geom_name for suffix in suffixes]) or is_chamfer
 
-    return any([suffix in geom_name for suffix in suffixes]) and (
-        not is_badface(geom_name)
-    )
+    # return any([suffix in geom_name for suffix in suffixes]) and (not is_badface)
 
 
 def internal_edge(e: Tuple[CSpaceVolume, CSpaceVolume], cspace: CSpaceVolume) -> bool:
@@ -198,7 +199,8 @@ def prune_edges(
     all_volume_geometries = sum([vol.geometry for vol in cspace_volumes], [])
     print(f"{len(all_volume_geometries)=}")
     full_cspace = CSpaceVolume("", all_volume_geometries)
-    render_cspace_volume(full_cspace)
+    plotly_render(full_cspace)
+    return E
     pruned_edges = []
     for e in tqdm(E):
         if not internal_edge(e, full_cspace):
@@ -260,22 +262,54 @@ def render_graph(g: CSpaceGraph):
         label_dict[e[1]] = label_to_str(e[1].label)
     print(f"{nx.number_connected_components(nx_graph)=}")
     nx.draw(nx_graph, labels=label_dict, with_labels=True)
-    plt.savefig("mode_graph.png")
+    plt.tight_layout()
+    plt.savefig("mode_graph.png", bbox_inches="tight", dpi=300)
 
 
 def render_cspace_volume(C: CSpaceVolume):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
-    for geom in tqdm(C.geometry):
+    colors = ["r", "g", "b", "black", "y", "p"]
+    for i, geom in enumerate(C.geometry):
         vertices = GetVertices(geom, assert_count=False)
         try:
             hull = ConvexHull(vertices)
+            color = colors[i % 3]
             for s in hull.simplices:
                 tri = Poly3DCollection([vertices[s]])
+                tri.set_color(color)
+                # tri.set_alpha(0.5)
                 ax.add_collection3d(tri)
         except:
             pass
     plt.show()
+
+
+def plotly_render(C: CSpaceVolume):
+    meshes = []
+    for geom in C.geometry:
+        try:
+            vertices = GetVertices(geom, assert_count=False)
+            hull = ConvexHull(vertices).simplices.T.tolist()
+            vertices = vertices.T.tolist()
+            meshes.append(
+                go.Mesh3d(
+                    x=vertices[0],
+                    y=vertices[1],
+                    z=vertices[2],
+                    color="lightpink",
+                    opacity=0.5,
+                    i=hull[0],
+                    j=hull[1],
+                    k=hull[2],
+                )
+            )
+        except Exception as e:
+            print(e)
+
+    print(f"{len(meshes)=}")
+    fig = go.Figure(data=meshes)
+    fig.write_html("cso.html")
 
 
 def make_task_plan(
