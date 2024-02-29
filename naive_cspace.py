@@ -253,7 +253,7 @@ def label_to_str(label: components.ContactState) -> str:
     return tag
 
 
-def render_graph(g: CSpaceGraph):
+def render_graph(g: CSpaceGraph, plotly: bool = True):
     nx_graph = nx.Graph()
     label_dict = dict()
     for e in g.E:
@@ -261,9 +261,43 @@ def render_graph(g: CSpaceGraph):
         label_dict[e[0]] = label_to_str(e[0].label)
         label_dict[e[1]] = label_to_str(e[1].label)
     print(f"{nx.number_connected_components(nx_graph)=}")
-    nx.draw(nx_graph, labels=label_dict, with_labels=True)
-    plt.tight_layout()
-    plt.savefig("mode_graph.png", bbox_inches="tight", dpi=300)
+    if not plotly:
+        nx.draw(nx_graph, labels=label_dict, with_labels=True)
+        plt.tight_layout()
+        plt.savefig("mode_graph.png", bbox_inches="tight", dpi=300)
+        return
+    edge_x = []
+    edge_y = []
+    pos = nx.spring_layout(nx_graph)
+    for edge in nx_graph.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y, line=dict(width=0.5, color="#888"), mode="lines"
+    )
+    node_x = [pos[node][0] for node in nx_graph.nodes()]
+    node_y = [pos[node][1] for node in nx_graph.nodes()]
+    labels = [label_dict[node] for node in nx_graph.nodes()]
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode="markers+text",
+        hoverinfo="text",
+        marker=dict(
+            showscale=False,
+            colorscale="YlGnBu",
+            reversescale=True,
+            color=[],
+            size=10,
+            line_width=2,
+        ),
+    )
+    node_trace.text = labels
+    fig = go.Figure(data=[edge_trace, node_trace])
+    fig.update_layout(showlegend=False)
+    fig.write_html("mode_graph.html")
 
 
 def render_cspace_volume(C: CSpaceVolume):
