@@ -107,7 +107,14 @@ class CSpaceGraph:
 
 
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
-    V = VPolytope(H)
+    try:
+        V = VPolytope(H.ReduceInequalities())
+    except:
+        # software engineering is my passion
+        try:
+            V = VPolytope(H.ReduceInequalities(tol=1e-6))
+        except Exception as e:
+            breakpoint()
     vertices = V.vertices().T
     if vertices.shape[0] < 6:
 
@@ -153,7 +160,7 @@ def MakeWorkspaceObjectFromFaces(
 ) -> WorkspaceObject:
     faces_H = dict()
     for k, v in faces.items():
-        if not is_face(k):
+        if is_face(k):
             faces_H[k] = HPolyhedron(*v)
     return WorkspaceObject("", None, faces_H)
 
@@ -163,7 +170,8 @@ def is_face(geom_name):
 
     is_badface = ("_top" in geom_name) and ("bottom_top" not in geom_name)
     is_chamfer = "chamfer" in geom_name
-    # return any([suffix in geom_name for suffix in suffixes])
+    return any([suffix in geom_name for suffix in suffixes])
+    """
     if ("left_chamfer" in geom_name and not "inside" in geom_name) or (
         "Box" in geom_name and not "_" in geom_name
     ):
@@ -171,6 +179,7 @@ def is_face(geom_name):
         return False
     else:
         return True
+    """
     # return any([suffix in geom_name for suffix in suffixes]) and (not is_badface)
 
 
@@ -189,7 +198,7 @@ def internal_edge(e: Tuple[CSpaceVolume, CSpaceVolume], cspace: CSpaceVolume) ->
             break
     if len(samples) == 0:
         return False  # probably true, but we are being conservative in pruning
-    for i in range(1000):
+    for i in range(100):
         samples.append(intersection.UniformSample(drake_rng, samples[-1]))
 
     for sample in samples:
@@ -207,7 +216,7 @@ def prune_edges(
     print(f"{len(all_volume_geometries)=}")
     full_cspace = CSpaceVolume("", all_volume_geometries)
     plotly_render(full_cspace)
-    return E
+    # return E
     pruned_edges = []
     for e in tqdm(E):
         if not internal_edge(e, full_cspace):
@@ -346,7 +355,7 @@ def plotly_render(C: CSpaceVolume):
                     x=vertices[0],
                     y=vertices[1],
                     z=vertices[2],
-                    color="black",
+                    color="lightpink",
                     opacity=1.0,
                     i=hull[0],
                     j=hull[1],
