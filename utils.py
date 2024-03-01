@@ -61,7 +61,7 @@ def envelope_analysis(data):
     ours_max = float("-inf")
     no_stiffness_max = float("-inf")
     no_gp_max = float("-inf")
-    for (params, results) in data.items():
+    for params, results in data.items():
         has_success = any([result.traj is not None for result in results])
         if params[1] == "True" and params[2] == "True" and has_success:
             ours_max = max(ours_max, 2 * float(params[0]))

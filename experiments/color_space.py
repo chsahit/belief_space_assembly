@@ -56,7 +56,7 @@ def generate_coloring(b: state.Particle) -> Coloring:
         motions = [ik_solver.update_motion_qd(m) for m in motions]
         posteriors = dynamics.parallel_f_bel(b, motions)
         scores = [int(p.partial_sat_score(CF_d)) for p in posteriors]
-        for (u, s) in zip(motions, scores):
+        for u, s in zip(motions, scores):
             colors.append(cmap[s])
             X_WGd = u.X_WCd.multiply(X_GC.inverse())
             diff = nominal.inverse().multiply(X_WGd)

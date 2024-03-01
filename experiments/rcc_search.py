@@ -112,7 +112,7 @@ def visualize_experiment_result(
     im_size = (density + 1) * block_width
     im = np.zeros((im_size, im_size))
 
-    for (x, z, score) in result:
+    for x, z, score in result:
         x_idx = ((x - x_bound[0]) / (x_bound[1] - x_bound[0])) * density
         start_x = int(x_idx * block_width)
         z_idx = ((z - z_bound[0]) / (z_bound[1] - z_bound[0])) * density

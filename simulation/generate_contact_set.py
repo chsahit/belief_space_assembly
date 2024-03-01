@@ -264,7 +264,7 @@ def _project_manipuland_to_contacts(
     verbose = (num_samples == 16) and ("top" in str(CF_d))
     verbose = False
     samples_noised = [generate_noised(p, X_WM, CF_d, verbose=verbose) for X_WM in X_WMs]
-    for (X_WMt, X_MMt) in samples_noised:
+    for X_WMt, X_MMt in samples_noised:
         X_WG = X_WMt.multiply(p.X_GM.inverse())
         q_r = ik_solver.gripper_to_joint_states(X_WG)
         new_p = p.deepcopy()

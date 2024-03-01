@@ -115,6 +115,7 @@ def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
             return np.array([m[i] for i in range(m.row_size)])
 
         def HPolyhedronToVRepr(H: HPolyhedron) -> cdd.Matrix:
+            print("CDD fallback")
             A, b = (H.A(), H.b())
             H_repr = np.hstack((np.array([b]).T, -A))
             mat = cdd.Matrix(H_repr, number_type="float")
@@ -162,8 +163,14 @@ def is_face(geom_name):
 
     is_badface = ("_top" in geom_name) and ("bottom_top" not in geom_name)
     is_chamfer = "chamfer" in geom_name
-    return any([suffix in geom_name for suffix in suffixes]) or is_chamfer
-
+    # return any([suffix in geom_name for suffix in suffixes])
+    if ("left_chamfer" in geom_name and not "inside" in geom_name) or (
+        "Box" in geom_name and not "_" in geom_name
+    ):
+        print(f"{geom_name=}")
+        return False
+    else:
+        return True
     # return any([suffix in geom_name for suffix in suffixes]) and (not is_badface)
 
 
@@ -322,24 +329,30 @@ def render_cspace_volume(C: CSpaceVolume):
 def plotly_render(C: CSpaceVolume):
     meshes = []
     for geom in C.geometry:
+        vertices = GetVertices(geom, assert_count=False)
         try:
-            vertices = GetVertices(geom, assert_count=False)
             hull = ConvexHull(vertices).simplices.T.tolist()
-            vertices = vertices.T.tolist()
+        except Exception as e:
+            try:
+                hull = ConvexHull(vertices, qhull_options="QJn").simplices.T.tolist()
+            except:
+                print("ignoring a hull")
+                hull = None
+
+        vertices = vertices.T.tolist()
+        if hull is not None:
             meshes.append(
                 go.Mesh3d(
                     x=vertices[0],
                     y=vertices[1],
                     z=vertices[2],
-                    color="lightpink",
-                    opacity=0.5,
+                    color="black",
+                    opacity=1.0,
                     i=hull[0],
                     j=hull[1],
                     k=hull[2],
                 )
             )
-        except Exception as e:
-            print(e)
 
     print(f"{len(meshes)=}")
     fig = go.Figure(data=meshes)

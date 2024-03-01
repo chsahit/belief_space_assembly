@@ -16,6 +16,7 @@ import mr
 warnings.simplefilter("ignore", category=ConvergenceWarning)
 gen_infer = np.random.default_rng(0)
 
+
 # Yoinked from https://peterroelants.github.io/posts/gaussian-process-tutorial/
 def exponentiated_quadratic(xa, xb):
     """Exponentiated quadratic  with σ=1"""

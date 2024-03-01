@@ -169,7 +169,7 @@ def show_planning_results(fname: str):
     stiff_std_low, stiff_std_high = [], []
     line_ngp_x, line_ngp_y = [], []
     ngp_std_low, ngp_std_high = [], []
-    for (params, results) in data.items():
+    for params, results in data.items():
         deviation = 2 * float(params[0])
         # results_succ = [result in results if (result.traj is not None)]
         # if len(results_succ) == 0:
