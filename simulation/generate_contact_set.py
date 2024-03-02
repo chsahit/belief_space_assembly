@@ -18,6 +18,7 @@ from pydrake.all import (
 
 import components
 import mr
+import naive_cspace
 import state
 import utils
 from simulation import hyperrectangle, ik_solver
@@ -210,6 +211,7 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
         return X_WM, RigidTransform()
 
 
+"""
 def make_cspace(
     p: state.Particle,
     CF_d: components.ContactState,
@@ -232,6 +234,29 @@ def make_cspace(
                 contact_manifold = _contact_manifold
     assert not contact_manifold.IsEmpty()
     return contact_manifold
+"""
+
+
+def make_cspace(
+    p: state.Particle,
+    CF_d: components.ContactState,
+    tf: RigidTransform = RigidTransform(),
+) -> HPolyhedron:
+    constraints = p.constraints
+    p_cspace = None
+    for env_poly, manip_poly_name in CF_d:
+        env_geometry = HPolyhedron(*constraints[env_poly])
+        manip_geometry = HPolyhedron(*p._manip_poly[manip_poly_name])
+        rotated_manip = naive_cspace.TF_HPolyhedron(manip_geometry, tf)
+        msum = naive_cspace.minkowski_sum(
+            "", env_geometry, "", manip_geometry
+        ).geometry[0]
+        if p_cspace is None:
+            p_cspace = msum
+        else:
+            p_cspace = p_cspace.Intersection(p_cspace)
+    assert not p_cspace.IsEmpty()
+    return p_cspace
 
 
 def compute_samples_from_contact_set(
