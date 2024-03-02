@@ -392,8 +392,6 @@ def make_task_plan(
             start_vtx = v
         if v.label == goal_mode:
             goal_vtx = v
-    print(start_vtx)
-    print(goal_vtx)
     assert (start_vtx is not None) and (goal_vtx is not None)
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=g)
     tp = [tp_vtx.label for tp_vtx in tp_vertices]

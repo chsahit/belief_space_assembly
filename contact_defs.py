@@ -132,7 +132,7 @@ bottom_faces = frozenset(
     )
 )
 
-bottom_faces_2 = frozenset((("bin_model::botom_top", "block::Box_bottom"),))
+bottom_faces_2 = frozenset((("bin_model::bottom_top", "block::Box_bottom"),))
 
 bottom_faces_3 = frozenset(
     (

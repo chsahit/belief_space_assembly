@@ -10,9 +10,10 @@ def make_cspace_graph():
     A = naive_cspace.MakeWorkspaceObjectFromFaces(p._manip_poly)
     graph = naive_cspace.make_graph([A], [B])
     naive_cspace.render_graph(graph)
-    naive_cspace.make_task_plan(
+    plan = naive_cspace.make_task_plan(
         graph, contact_defs.chamfer_init, contact_defs.bottom_faces_2
     )
+    print(plan)
 
 
 if __name__ == "__main__":
