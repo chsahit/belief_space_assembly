@@ -63,7 +63,8 @@ class CSpaceVolume:
         return False
 
     def sample(self) -> np.ndarray:
-        raise NotImplementedError
+        H = random.choice(self.geometry)
+        return H.UniformSample(drake_rng, mixing_steps=1000)
 
     def is_strict_interior(self, pt) -> bool:
         # if point is exterior to all geometries, it cannot be strictly interior
@@ -94,6 +95,10 @@ class CSpaceVolume:
         return hash(self.label)
 
 
+def g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
+    return np.linalg.norm(v1.sample() - v2.sample())
+
+
 @dataclass
 class CSpaceGraph:
     V: List[CSpaceVolume]
@@ -104,6 +109,12 @@ class CSpaceGraph:
         for e in self.E:
             edge_strs.append((e[0].label, e[1].label))
         return str(edge_strs)
+
+    def to_nx(self) -> nx.Graph:
+        nx_graph = nx.Graph()
+        for e in self.E:
+            nx_graph.add_edge(e[0], e[1])
+        return nx_graph
 
 
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
@@ -216,7 +227,7 @@ def prune_edges(
     print(f"{len(all_volume_geometries)=}")
     full_cspace = CSpaceVolume("", all_volume_geometries)
     plotly_render(full_cspace)
-    # return E
+    return E
     pruned_edges = []
     for e in tqdm(E):
         if not internal_edge(e, full_cspace):
@@ -369,6 +380,21 @@ def plotly_render(C: CSpaceVolume):
 
 
 def make_task_plan(
-    mode_graph: CSpaceGraph, start_mode: components.ContactState
+    mode_graph: CSpaceGraph,
+    start_mode: components.ContactState,
+    goal_mode: components.ContactState,
 ) -> List[components.ContactState]:
-    pass
+    G = mode_graph.to_nx()
+    start_vtx = None
+    goal_vtx = None
+    for v in G.nodes():
+        if v.label == start_mode:
+            start_vtx = v
+        if v.label == goal_mode:
+            goal_vtx = v
+    print(start_vtx)
+    print(goal_vtx)
+    assert (start_vtx is not None) and (goal_vtx is not None)
+    tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=g)
+    tp = [tp_vtx.label for tp_vtx in tp_vertices]
+    return tp
