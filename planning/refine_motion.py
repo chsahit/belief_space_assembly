@@ -142,11 +142,16 @@ def randomized_refine(
     max_attempts: int = 3,
 ) -> List[components.CompliantMotion]:
     start_time = time.time()
+    last_refined = None
     for attempt in range(max_attempts):
         print(f"{attempt=}")
         curr = b
         traj = []
-        for mode in modes:
+        for i, mode in enumerate(modes):
+            if i == 0:
+                last_refined = (None, mode)
+            else:
+                last_refined = (modes[i - 1], modes[i])
             print(f"{mode=}")
             m_best_score = 0.0
             while m_best_score < len(b.particles):
@@ -170,9 +175,11 @@ def randomized_refine(
             np = dynamics.get_posterior_count()
             dynamics.reset_posteriors()
             dynamics.reset_time()
-            return components.PlanningResult(traj, total_elapsed_time, sim_time, np)
+            return components.PlanningResult(
+                traj, total_elapsed_time, sim_time, np, last_refined
+            )
     tet = time.time() - start_time
     sim_time, np = (dynamics.get_time(), dynamics.get_posterior_count())
     dynamics.reset_time()
     dynamics.reset_posteriors()
-    return components.PlanningResult(None, tet, sim_time, np)
+    return components.PlanningResult(None, tet, sim_time, np, last_refined)

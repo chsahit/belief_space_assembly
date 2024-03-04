@@ -4,24 +4,33 @@ from pydrake.all import RigidTransform
 import components
 import contact_defs
 import dynamics
+import naive_cspace
 import state
 import utils
 import visualize
 from experiments import init_particle
-from planning import randomized_search, refine_motion
+from planning import cobs, randomized_search, refine_motion
 from simulation import diagram_factory
 
 
+def auto_tp_sd():
+    p0 = init_particle.init_peg(y=-0.03)
+    p1 = init_particle.init_peg(pitch=0)
+    p2 = init_particle.init_peg(y=0.03)
+    b = state.Belief([p0, p1, p2])
+    cobs.cobs(b, contact_defs.chamfer_init, contact_defs.bottom_faces_2)
+
+
 def simple_down():
+    p0 = init_particle.init_peg(y=-0.03)
+    p1 = init_particle.init_peg(pitch=0)
+    p2 = init_particle.init_peg(y=0.03)
+    b = state.Belief([p0, p1, p2])
     modes = [
         contact_defs.chamfer_touch_2,
         contact_defs.front_faces,
         contact_defs.bottom_faces_fully_constrained,
     ]
-    p0 = init_particle.init_peg(y=-0.03)
-    p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(y=0.03)
-    b = state.Belief([p0, p1, p2])
     # diagram_factory.initialize_factory(b.particles)
     result = refine_motion.randomized_refine(b, modes, max_attempts=10)
     if result.traj is not None:
@@ -38,4 +47,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    simple_down()
+    auto_tp_sd()

@@ -91,6 +91,7 @@ class PlanningResult:
     total_time: float
     sim_time: float
     num_posteriors: int
+    last_refined: Tuple[ContactState, ContactState]
 
     def __str__(self):
         if self.traj is None:

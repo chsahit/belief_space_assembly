@@ -165,6 +165,16 @@ def MakeWorkspaceObjectFromFaces(
     return WorkspaceObject("", None, faces_H)
 
 
+def MakeModeGraphFromFaces(
+    faces_env: Dict[str, Tuple[np.ndarray, np.ndarray]],
+    faces_manip: Dict[str, Tuple[np.ndarray, np.ndarray]],
+) -> CSpaceGraph:
+    B = MakeWorkspaceObjectFromFaces(faces_env)
+    A = MakeWorkspaceObjectFromFaces(faces_manip)
+    graph = make_graph([A], [B])
+    return graph
+
+
 def is_face(geom_name):
     suffixes = ["_bottom", "_top", "_left", "_right", "_front", "_back", "_inside"]
 
