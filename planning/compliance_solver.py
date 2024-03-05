@@ -116,10 +116,12 @@ def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
                 normals.append([dirs[x], dirs[y], dirs[z]])
 
     for i in range(3):
-        best_normal = compute_normal(pt, cspace, normals, 1e-4 * (10**i))
+        best_normal = compute_normal(pt, cspace, normals, 1e-4 * (10 ** i))
         if best_normal is not None:
             break
-    assert best_normal is not None
+    if best_normal is None:
+        print("warning: could not id normal vector")
+        return K, None
     best_normal = np.abs(best_normal / np.linalg.norm(best_normal))
     I3 = np.eye(3)
     vecs = np.concatenate((np.array([best_normal]), I3))

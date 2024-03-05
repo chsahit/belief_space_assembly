@@ -11,11 +11,18 @@ import numpy as np
 import plotly.graph_objects as go
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
+from pydrake.all import (
+    HPolyhedron,
+    Intersection,
+    RandomGenerator,
+    RigidTransform,
+    VPolytope,
+)
 from scipy.spatial import ConvexHull
 from tqdm import tqdm
 
 import components
+from simulation import hyperrectangle
 
 drake_rng = RandomGenerator(0)
 
@@ -62,6 +69,14 @@ class CSpaceVolume:
             if not any(v):
                 return False
         return True
+
+    def volume(self) -> float:
+        _, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(self.geometry[0])
+        return (
+            abs(bounds[0][0] - bounds[1][0])
+            * abs(bounds[0][1] - bounds[1][1])
+            * abs(bounds[0][2] - bounds[1][2])
+        )
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CSpaceVolume):
@@ -180,7 +195,7 @@ def is_face(geom_name):
 
     is_badface = ("_top" in geom_name) and ("bottom_top" not in geom_name)
     is_chamfer = "chamfer" in geom_name
-    return any([suffix in geom_name for suffix in suffixes])
+    return any([suffix in geom_name for suffix in suffixes]) and (not is_badface)
     """
     if ("left_chamfer" in geom_name and not "inside" in geom_name) or (
         "Box" in geom_name and not "_" in geom_name
@@ -223,9 +238,8 @@ def prune_edges(
     E: List[Tuple[CSpaceVolume, CSpaceVolume]],
 ) -> List[Tuple[CSpaceVolume, CSpaceVolume]]:
     all_volume_geometries = sum([vol.geometry for vol in cspace_volumes], [])
-    print(f"{len(all_volume_geometries)=}")
     full_cspace = CSpaceVolume("", all_volume_geometries)
-    plotly_render(full_cspace)
+    # plotly_render(full_cspace)
     return E
     pruned_edges = []
     for e in tqdm(E):
@@ -256,8 +270,6 @@ def make_graph(
     edges = []
     for manip_component in manipuland:
         for env_component in env:
-            print(f"{len(manip_component.faces.items())=}")
-            print(f"{len(env_component.faces.items())=}")
             for manip_face in manip_component.faces.items():
                 for env_face in env_component.faces.items():
                     vol = minkowski_sum(*env_face, *manip_face)
@@ -265,7 +277,6 @@ def make_graph(
     for pair in itertools.combinations(volumes, 2):
         if pair[0].intersects(pair[1]):
             edges.append(pair)
-    print(f"pre-prune length: {len(edges)}")
     edges = prune_edges(volumes, edges)
     return CSpaceGraph(volumes, edges)
 
@@ -394,4 +405,6 @@ def make_task_plan(
     assert (start_vtx is not None) and (goal_vtx is not None)
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=g)
     tp = [tp_vtx.label for tp_vtx in tp_vertices]
+    vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
+    print(f"{vols=}")
     return tp
