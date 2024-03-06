@@ -38,6 +38,7 @@ class WorkspaceObject:
 class CSpaceVolume:
     label: components.ContactState
     geometry: List[HPolyhedron]
+    reached: bool = False
 
     def intersects(self, other: "CSpaceVolume") -> bool:
         for m_geom in self.geometry:
@@ -72,11 +73,15 @@ class CSpaceVolume:
 
     def volume(self) -> float:
         _, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(self.geometry[0])
-        return (
+
+        vol = (
             abs(bounds[0][0] - bounds[1][0])
             * abs(bounds[0][1] - bounds[1][1])
             * abs(bounds[0][2] - bounds[1][2])
         )
+        if vol == 0:
+            vol += 1e-9
+        return vol
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CSpaceVolume):
@@ -88,13 +93,20 @@ class CSpaceVolume:
 
 
 def g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
-    return np.linalg.norm(v1.sample() - v2.sample())
+    new_contact_penalty = 0e-0 * int(not v2.reached)
+    low_measure_penalty = 1e-4 * (1.0 / v2.volume())
+    return (
+        np.linalg.norm(v1.sample() - v2.sample())
+        + low_measure_penalty
+        + new_contact_penalty
+    )
 
 
 @dataclass
 class CSpaceGraph:
     V: List[CSpaceVolume]
     E: List[Tuple[CSpaceVolume, CSpaceVolume]]
+    cache: Tuple[CSpaceVolume] = tuple()
 
     def __str__(self) -> str:
         edge_strs = []
@@ -105,6 +117,14 @@ class CSpaceGraph:
     def to_nx(self) -> nx.Graph:
         nx_graph = nx.Graph()
         for e in self.E:
+            if e[0].label in self.cache:
+                e[0].reached = True
+            else:
+                e[0].reached = False
+            if e[1].label in self.cache:
+                e[1].reached = True
+            else:
+                e[1].reached = False
             nx_graph.add_edge(e[0], e[1])
         return nx_graph
 
@@ -195,7 +215,7 @@ def is_face(geom_name):
 
     is_badface = ("_top" in geom_name) and ("bottom_top" not in geom_name)
     is_chamfer = "chamfer" in geom_name
-    return any([suffix in geom_name for suffix in suffixes]) and (not is_badface)
+    return any([suffix in geom_name for suffix in suffixes])  # and (not is_badface)
     """
     if ("left_chamfer" in geom_name and not "inside" in geom_name) or (
         "Box" in geom_name and not "_" in geom_name
@@ -405,6 +425,6 @@ def make_task_plan(
     assert (start_vtx is not None) and (goal_vtx is not None)
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=g)
     tp = [tp_vtx.label for tp_vtx in tp_vertices]
-    vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
-    print(f"{vols=}")
+    # vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
+    # print(f"{vols=}")
     return tp

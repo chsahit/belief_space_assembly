@@ -67,9 +67,11 @@ def sweep(dof, deviations, geometry, schedule):
             #     break
             print(str(experiment_results[-1]))
         print("\n")
+        """
         if all([result.traj is None for result in experiment_results]):
             print(f"stopping ({do_compliance=}, {do_gp=})")
             stopped_params.append((do_compliance, do_gp))
+        """
         results[experiment_label] = experiment_results
     fname = dof + "_" + geometry + "_" + "sweep_results.pkl"
     with open(fname, "wb") as f:

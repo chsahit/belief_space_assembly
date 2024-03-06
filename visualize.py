@@ -234,4 +234,4 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
 
 
 if __name__ == "__main__":
-    show_planning_results("pitch_peg_sweep_results_clear.pkl")
+    show_planning_results("pitch_peg_sweep_results.pkl")

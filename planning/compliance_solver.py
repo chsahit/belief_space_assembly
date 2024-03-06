@@ -116,7 +116,7 @@ def K_t_opt(p: state.Particle) -> Tuple[np.ndarray, np.ndarray]:
                 normals.append([dirs[x], dirs[y], dirs[z]])
 
     for i in range(3):
-        best_normal = compute_normal(pt, cspace, normals, 1e-4 * (10 ** i))
+        best_normal = compute_normal(pt, cspace, normals, 1e-4 * (10**i))
         if best_normal is not None:
             break
     if best_normal is None:
@@ -146,7 +146,7 @@ def solve_for_compliance(
     K_opt = np.zeros((6, 6))
     K_opt[:3, :3] = K_r
     K_opt[3:, 3:] = K_t
-    print(f"K_opt=\n{K_opt}")
+    print(f"K_opt diagonal={np.diag(K_opt)}")
     return K_opt, []
 
 

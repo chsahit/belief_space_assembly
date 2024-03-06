@@ -144,7 +144,8 @@ def randomized_refine(
     start_time = time.time()
     last_refined = None
     for attempt in range(max_attempts):
-        print(f"{attempt=}")
+        if attempt > 0:
+            print(f"{attempt=}")
         curr = b
         traj = []
         for i, mode in enumerate(modes):

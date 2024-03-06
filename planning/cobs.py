@@ -18,6 +18,7 @@ def cobs(
     total_tet = 0
     total_st = 0
     total_np = 0
+    vert_cache = []
     for tp_attempt in range(max_tp_attempts):
         modes = naive_cspace.make_task_plan(graph, init, goal)
         print(f"task plan = {modes}")
@@ -32,12 +33,16 @@ def cobs(
                 result.traj, total_tet, total_st, total_np, None
             )
         lr = result.last_refined
+        for m in modes:
+            if m == lr[1]:
+                break
+            vert_cache.append(m)
         edges = []
         for e in graph.E:
             if (e[0].label, e[1].label) == lr or (e[1].label, e[0].label) == lr:
-                print(f"deleting {e}")
                 continue
             else:
                 edges.append(e)
-        graph = naive_cspace.CSpaceGraph(graph.V, edges)
+        print(f"{vert_cache=}")
+        graph = naive_cspace.CSpaceGraph(graph.V, edges, vert_cache)
     return components.PlanningResult(None, total_tet, total_st, total_np, None)
