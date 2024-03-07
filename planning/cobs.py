@@ -14,7 +14,7 @@ def cobs(
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
     graph = naive_cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
-    max_tp_attempts = 10
+    max_tp_attempts = 15
     total_tet = 0
     total_st = 0
     total_np = 0
@@ -43,6 +43,6 @@ def cobs(
                 continue
             else:
                 edges.append(e)
-        print(f"{vert_cache=}")
+        # print(f"{vert_cache=}")
         graph = naive_cspace.CSpaceGraph(graph.V, edges, vert_cache)
     return components.PlanningResult(None, total_tet, total_st, total_np, None)

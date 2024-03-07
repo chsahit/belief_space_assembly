@@ -8,8 +8,8 @@ import visualize
 from experiments import init_particle
 from planning import cobs, refine_motion
 
-pitch_sweep_peg = ("pitch", [5, 9, 13], "peg")
-# pitch_sweep_peg = ("pitch", [1, 3, 5, 7, 9, 12, 15, 18], "peg")
+# pitch_sweep_peg = ("pitch", [5, 9, 13], "peg")
+pitch_sweep_peg = ("pitch", [1, 3, 5, 7, 9, 12], "peg")
 pitch_sweep_puzzle = ("pitch", [1.5, 2, 3, 3.5, 4], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
@@ -55,7 +55,7 @@ def sweep(dof, deviations, geometry, schedule):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(do_compliance), str(do_gp))
-        trials = 3
+        trials = 10
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")

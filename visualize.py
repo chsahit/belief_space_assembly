@@ -174,7 +174,8 @@ def show_planning_results(fname: str):
         # results_succ = [result in results if (result.traj is not None)]
         # if len(results_succ) == 0:
         #     continue
-        mu, std = utils.mu_std_result(results)
+        mu, std, sr = utils.mu_std_result(results)
+        print(f"{params=}, {sr=}")
         if params[1] == "True" and params[2] == "True":
             line_compliant_x.append(deviation)
             line_compliant_y.append(mu)
@@ -200,7 +201,7 @@ def show_planning_results(fname: str):
     plt.plot(line_stiff_x, line_stiff_y, color="g", label="no stiffness")
     plt.title("The effect of Uncertainty on Planning")
     plt.xlabel("Uncertainty (degrees)")
-    plt.ylabel("Planning Time")
+    plt.ylabel("Plan Length")
     plt.legend()
     plt.show()
     print("done")

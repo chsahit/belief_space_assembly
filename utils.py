@@ -46,15 +46,23 @@ def dump_traj(
 
 def mu_std_result(results):
     traj_lens = []
+    succs = 0.0
     for r in results:
         if r.traj is not None:
+            succs += 1.0
             traj_lens.append(len(r.traj))
+        """
         else:
             traj_lens.append(20)
+        """
+    if len(traj_lens) == 0:
+        print("setting to timeout")
+        traj_lens = [50]
     times = np.array(traj_lens)
-    times = np.array([result.total_time for result in results])
+    # times = np.array([result.total_time for result in results])
     mu, std = np.mean(times), np.std(times)
-    return mu, std
+    sr = succs / len(results)
+    return mu, std, sr
 
 
 def envelope_analysis(data):
