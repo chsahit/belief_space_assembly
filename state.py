@@ -226,3 +226,17 @@ class Belief:
                 )
             )
         return Belief(particles)
+
+    def mean(self) -> state.Particle:
+        avg_xyz = (1.0 / len(self.particles)) * sum(
+            [p.X_WG.translation() for p in self.particles]
+        )
+        best_particle = None
+        smallest_diff = float("inf")
+        for p in self.particles:
+            diff = np.linalg.norm(p.X_WG.translation() - avg_xyz)
+            if diff < smallest_diff:
+                smallest_diff = diff
+                best_particle = p
+        assert best_particle is not None
+        return best_particle
