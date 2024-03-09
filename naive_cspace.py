@@ -83,6 +83,26 @@ class CSpaceVolume:
             vol += 1e-9
         return vol
 
+    def normal(self) -> np.ndarray:
+        num_samples = 10
+        n_hat = np.array([0, 0, 0])
+        A = self.geometry[0].A()
+        b = self.geometry[0].b()
+        for s_idx in range(num_samples):
+            s = self.sample()
+            lb = float("inf")
+            s_n = None
+            for r in range(A.shape[0]):
+                plane_eqn = np.concatenate((A[r], -b[r]))
+                n = plane_eqn / np.linalg.norm(plane_eqn)
+                dist = abs(np.dot(r, s))
+                if dist < lb:
+                    lb = dist
+                    s_n = n
+            assert s_n is not None
+            n_hat += (1.0 / num_sample) * s_n
+        return n_hat
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, CSpaceVolume):
             return False
@@ -92,7 +112,7 @@ class CSpaceVolume:
         return hash(self.label)
 
 
-def g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
+def _g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
     new_contact_penalty = 0e-0 * int(not v2.reached)
     low_measure_penalty = 1e-4 * (1.0 / v2.volume())
     return (
@@ -100,6 +120,12 @@ def g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
         + low_measure_penalty
         + new_contact_penalty
     )
+
+
+def g(v1: CSpaceVolume, v2: CSpaceVolume) -> float:
+    n = v2.normal()
+    raise NotImplementedError
+    # check how well that normal aligns with j_hat, subtract from 1
 
 
 @dataclass

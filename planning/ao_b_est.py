@@ -16,7 +16,7 @@ from simulation import ik_solver
 
 gen = np.random.default_rng(1)
 Bound = Tuple[float, float]
-workspace = ([0.49, 0.51], [-0.01, 0.01], [-0.02, 0.22])
+workspace = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.21])
 
 
 @dataclass(frozen=True)
@@ -76,11 +76,11 @@ def sample_control(b: state.Belief) -> components.CompliantMotion:
     X_GC = RigidTransform()
     K = components.stiff
     r_vel = gen.uniform(low=-0.02, high=0.02, size=3)
-    t_vel = gen.uniform(low=-0.02, high=0.02, size=3)
+    t_vel = gen.uniform(low=-0.04, high=0.04, size=3)
     vel = np.concatenate((r_vel, t_vel))
     X_CCt = RigidTransform(mr.MatrixExp6(mr.VecTose3(vel)))
     X_WCt = b.mean().X_WG.multiply(X_GC).multiply(X_CCt)
-    t = gen.uniform(low=0.0, high=3.0)
+    t = gen.uniform(low=0.0, high=4.0)
     u = components.CompliantMotion(X_GC, X_WCt, K, timeout=t)
     return ik_solver.update_motion_qd(u)
 
@@ -107,7 +107,7 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 1600.0
+    b0: state.Belief, goal: components.ContactState, timeout: float = 1650.0
 ) -> components.PlanningResult:
     start_time = time.time()
     _tree = make_kdtree(*workspace, 10)
