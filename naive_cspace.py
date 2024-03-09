@@ -83,25 +83,38 @@ class CSpaceVolume:
             vol += 1e-9
         return vol
 
+    def _normal_candidate(self, sample, A, b) -> np.ndarray:
+        s_homog = np.concatenate((sample, np.array([1])))
+        lb = float("inf")
+        n_cand = None
+        for row in range(A.shape[0]):
+            plane_eqn = np.concatenate((A[row], np.array([-b[row]])))
+            dist = abs(np.dot(plane_eqn, s_homog)) / np.linalg.norm(A[row])
+            if dist < lb:
+                lb = dist
+                n_cand = A[row] / np.linalg.norm(A[row])
+        assert n_cand is not None
+        return n_cand
+
+    def _modal_vec(self, cands: List[np.ndarray]) -> np.ndarray:
+        scores = []
+        for cand_1 in cands:
+            c_scores = []
+            for cand_2 in cands:
+                v1 = cand_1 / np.linalg.norm(cand_1)
+                v2 = cand_2 / np.linalg.norm(cand_2)
+                c_scores.append(abs(np.dot(v1, v2)))
+            scores.append(sum(c_scores) / float(len(c_scores)))
+        highest_score = max(scores)
+        return cands[scores.index(highest_score)]
+
     def normal(self) -> np.ndarray:
-        num_samples = 10
-        n_hat = np.array([0, 0, 0])
+        n_hat = np.array([0.0, 0.0, 0.0])
         A = self.geometry[0].A()
         b = self.geometry[0].b()
-        for s_idx in range(num_samples):
-            s = self.sample()
-            lb = float("inf")
-            s_n = None
-            for r in range(A.shape[0]):
-                plane_eqn = np.concatenate((A[r], -b[r]))
-                n = plane_eqn / np.linalg.norm(plane_eqn)
-                dist = abs(np.dot(r, s))
-                if dist < lb:
-                    lb = dist
-                    s_n = n
-            assert s_n is not None
-            n_hat += (1.0 / num_sample) * s_n
-        return n_hat
+        samples = [self.sample() for i in range(10)]
+        n_cands = [self._normal_candidate(sample, A, b) for sample in samples]
+        return self._modal_vec(n_cands)
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CSpaceVolume):
@@ -122,10 +135,12 @@ def _g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
     )
 
 
-def g(v1: CSpaceVolume, v2: CSpaceVolume) -> float:
+def g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
     n = v2.normal()
-    raise NotImplementedError
-    # check how well that normal aligns with j_hat, subtract from 1
+    i_hat = np.array([1, 0, 0])
+    projection = np.dot(n, i_hat) * i_hat
+    bonus = 1e-4 * np.linalg.norm(projection)
+    return 1 - bonus
 
 
 @dataclass
@@ -450,6 +465,8 @@ def make_task_plan(
             goal_vtx = v
     assert (start_vtx is not None) and (goal_vtx is not None)
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=g)
+    normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
+    print(f"{normals=}")
     tp = [tp_vtx.label for tp_vtx in tp_vertices]
     # vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
     # print(f"{vols=}")
