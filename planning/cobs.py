@@ -11,6 +11,7 @@ def cobs(
     opt_compliance: bool = True,
 ) -> components.PlanningResult:
     print("warning, nominal particle hardedcoded to i=1")
+    configs = [p.X_WO.translation() for p in b0.particles]
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
     graph = naive_cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
@@ -20,7 +21,7 @@ def cobs(
     total_np = 0
     vert_cache = []
     for tp_attempt in range(max_tp_attempts):
-        modes = naive_cspace.make_task_plan(graph, init, goal)
+        modes = naive_cspace.make_task_plan(graph, init, goal, configs)
         print(f"task plan = {modes}")
         result = refine_motion.randomized_refine(
             b0, modes, search_compliance=opt_compliance, max_attempts=1

@@ -22,6 +22,7 @@ from scipy.spatial import ConvexHull
 from tqdm import tqdm
 
 import components
+import state
 from simulation import hyperrectangle
 
 drake_rng = RandomGenerator(0)
@@ -135,12 +136,19 @@ def _g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
     )
 
 
-def g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
+def g(v1: CSpaceVolume, v2: CSpaceVolume, uncertainty_dir: np.ndarray) -> float:
     n = v2.normal()
-    i_hat = np.array([1, 0, 0])
-    projection = np.dot(n, i_hat) * i_hat
+    projection = np.dot(n, uncertainty_dir) * uncertainty_dir
     bonus = 1e-4 * np.linalg.norm(projection)
     return 1 - bonus
+
+
+class Cost:
+    def __init__(self, uncertainty_dir):
+        self.uncertainty_dir = uncertainty_dir
+
+    def __call__(self, v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
+        return g(v1, v2, self.uncertainty_dir)
 
 
 @dataclass
@@ -450,12 +458,32 @@ def plotly_render(C: CSpaceVolume):
     fig.write_html("cso.html")
 
 
+def compute_uncertainty_dir(configs: List[np.ndarray]) -> np.ndarray:
+    max_dist = float("-inf")
+    worst_pair = None
+    for p1 in configs:
+        for p2 in configs:
+            dist = np.linalg.norm(p1 - p2)
+            if dist > max_dist:
+                max_dist = dist
+                worst_pair = (p1, p2)
+    if np.linalg.norm(p1 - p2) < 1e-9:
+        direction = np.array([0, 0, 1.0])
+    else:
+        direction = (p1 - p2) / np.linalg.norm(p1 - p2)
+    print(f"{direction=}")
+    assert abs(np.linalg.norm(direction) - 1) < 1e-4
+    return worst_pair[0] - worst_pair[1]
+
+
 def make_task_plan(
     mode_graph: CSpaceGraph,
     start_mode: components.ContactState,
     goal_mode: components.ContactState,
+    curr_configurations: List[np.ndarray],
 ) -> List[components.ContactState]:
     G = mode_graph.to_nx()
+    h = Cost(compute_uncertainty_dir(curr_configurations))
     start_vtx = None
     goal_vtx = None
     for v in G.nodes():
@@ -464,7 +492,7 @@ def make_task_plan(
         if v.label == goal_mode:
             goal_vtx = v
     assert (start_vtx is not None) and (goal_vtx is not None)
-    tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=g)
+    tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
     normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
     print(f"{normals=}")
     tp = [tp_vtx.label for tp_vtx in tp_vertices]

@@ -118,6 +118,10 @@ class Particle:
     def X_WM(self) -> RigidTransform:
         return self.X_WG.multiply(self.X_GM)
 
+    @property
+    def X_OM(self) -> RigidTransform:
+        return self.X_WO.InvertAndCompose(self.X_WM)
+
     def deepcopy(self) -> Particle:
         new_p = Particle(
             self.q_r.copy(),
