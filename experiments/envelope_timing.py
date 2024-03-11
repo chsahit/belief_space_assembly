@@ -60,7 +60,7 @@ def sweep(dof, deviations, geometry, schedule):
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
             plan_result = cobs.cobs(
-                b, contact_defs.chamfer_init, contact_defs.bottom_faces_2, do_compliance
+                b, contact_defs.fs, contact_defs.bottom_faces_2, do_compliance
             )
             experiment_results.append(plan_result)
             # if experiment_results[-1].traj is not None:

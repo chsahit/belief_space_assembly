@@ -22,6 +22,7 @@ from scipy.spatial import ConvexHull
 from tqdm import tqdm
 
 import components
+import contact_defs
 import state
 from simulation import hyperrectangle
 
@@ -110,6 +111,9 @@ class CSpaceVolume:
         return cands[scores.index(highest_score)]
 
     def normal(self) -> np.ndarray:
+        assert len(self.geometry) > 0 or "free" in str(self.label)
+        if len(self.geometry) == 0:
+            return np.zeros((3,))
         n_hat = np.array([0.0, 0.0, 0.0])
         A = self.geometry[0].A()
         b = self.geometry[0].b()
@@ -137,7 +141,10 @@ def _g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
 
 
 def g(v1: CSpaceVolume, v2: CSpaceVolume, uncertainty_dir: np.ndarray) -> float:
-    n = v2.normal()
+    if len(v2.geometry) > 0:
+        n = v2.normal()
+    else:
+        n = v1.normal()
     projection = np.dot(n, uncertainty_dir) * uncertainty_dir
     bonus = 1e-4 * np.linalg.norm(projection)
     return 1 - bonus
@@ -175,6 +182,11 @@ class CSpaceGraph:
             else:
                 e[1].reached = False
             nx_graph.add_edge(e[0], e[1])
+        fc = None
+        for v in self.V:
+            if v.label == contact_defs.chamfer_init:
+                fc = v
+        nx_graph.add_edge(CSpaceVolume(contact_defs.fs, []), v)
         return nx_graph
 
 

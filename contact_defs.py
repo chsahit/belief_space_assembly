@@ -166,3 +166,4 @@ front_faces = frozenset(
 )
 
 chamfer_init = frozenset((("bin_model::front_chamfer_inside", "block::Box_bottom"),))
+fs = frozenset((("free", "free"),))

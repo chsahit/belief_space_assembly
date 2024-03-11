@@ -1,4 +1,5 @@
 import components
+import dynamics
 import naive_cspace
 import state
 from planning import refine_motion
@@ -11,39 +12,52 @@ def cobs(
     opt_compliance: bool = True,
 ) -> components.PlanningResult:
     print("warning, nominal particle hardedcoded to i=1")
-    configs = [p.X_WO.translation() for p in b0.particles]
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
     graph = naive_cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
     max_tp_attempts = 15
-    total_tet = 0
-    total_st = 0
-    total_np = 0
+    t = components.Time(0, 0, 0)
     vert_cache = []
     for tp_attempt in range(max_tp_attempts):
-        modes = naive_cspace.make_task_plan(graph, init, goal, configs)
-        print(f"task plan = {modes}")
-        result = refine_motion.randomized_refine(
-            b0, modes, search_compliance=opt_compliance, max_attempts=1
-        )
-        total_tet += result.total_time
-        total_st = result.sim_time
-        total_np = result.num_posteriors
-        if result.traj is not None:
-            return components.PlanningResult(
-                result.traj, total_tet, total_st, total_np, None
+        goal_achieved = False
+        refine_from = init
+        b_curr = b0
+        trajectory = []
+        while not goal_achieved:
+            configs = [p.X_WO.translation() for p in b_curr.particles]
+            nominal_plan = naive_cspace.make_task_plan(
+                graph, refine_from, goal, configs
             )
-        lr = result.last_refined
-        for m in modes:
-            if m == lr[1]:
+            print(f"task plan = {nominal_plan}")
+            intermediate_result = refine_motion.randomized_refine(
+                b_curr,
+                [nominal_plan[1]],
+                search_compliance=opt_compliance,
+                max_attempts=1,
+            )
+            t.add_result(intermediate_result)
+            if intermediate_result.traj is None:
                 break
-            vert_cache.append(m)
-        edges = []
-        for e in graph.E:
-            if (e[0].label, e[1].label) == lr or (e[1].label, e[0].label) == lr:
-                continue
-            else:
-                edges.append(e)
-        # print(f"{vert_cache=}")
-        graph = naive_cspace.CSpaceGraph(graph.V, edges, vert_cache)
-    return components.PlanningResult(None, total_tet, total_st, total_np, None)
+            trajectory.extend(intermediate_result.traj)
+            if nominal_plan[1] == goal:
+                goal_achieved = True
+                break
+            for u in intermediate_result.traj:
+                b_curr = dynamics.f_bel(b_curr, u)
+            edges = []
+            lr = intermediate_result.last_refined
+            for e in graph.E:
+                labels_a = (e[0].label, e[1].label)
+                labels_b = (e[1].label, e[0].label)
+                delete_edge = labels_a == lr or labels_b == lr
+                if not delete_edge:
+                    edges.append(e)
+            graph = naive_cspace.CSpaceGraph(graph.V, edges, [])
+            refine_from = nominal_plan[1]
+        if goal_achieved:
+            return components.PlanningResult(
+                trajectory, t.total_time, t.sim_time, t.num_posteriors, None
+            )
+    return components.PlanningResult(
+        None, t.total_time, t.sim_time, t.num_posteriors, None
+    )

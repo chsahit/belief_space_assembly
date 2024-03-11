@@ -101,6 +101,18 @@ class PlanningResult:
         return f"{self.total_time=}, {self.num_posteriors=}, {traj_len=}"
 
 
+@dataclass
+class Time:
+    total_time: float
+    sim_time: float
+    num_posteriors: float
+
+    def add_result(self, result: PlanningResult):
+        self.total_time += result.total_time
+        self.sim_time += result.sim_time
+        self.num_posteriors += result.num_posteriors
+
+
 """
 @dataclass
 class CFace:
