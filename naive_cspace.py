@@ -186,7 +186,7 @@ class CSpaceGraph:
         for v in self.V:
             if v.label == contact_defs.chamfer_init:
                 fc = v
-        nx_graph.add_edge(CSpaceVolume(contact_defs.fs, []), v)
+        nx_graph.add_edge(CSpaceVolume(contact_defs.fs, []), fc)
         return nx_graph
 
 

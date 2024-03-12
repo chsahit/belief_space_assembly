@@ -14,12 +14,12 @@ from simulation import diagram_factory
 
 
 def auto_tp_sd():
-    p0 = init_particle.init_peg(y=-0.005)
+    p0 = init_particle.init_peg(pitch=-10)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(y=0.005)
+    p2 = init_particle.init_peg(pitch=10)
     b = state.Belief([p0, p1, p2])
-    # cobs.cobs(b, contact_defs.chamfer_init, contact_defs.bottom_faces_2)
-    result = ao_b_est.b_est(b, contact_defs.bottom_faces_2)
+    result = cobs.cobs(b, contact_defs.fs, contact_defs.bottom_faces_2)
+    # result = ao_b_est.b_est(b, contact_defs.bottom_faces_2)
     if result.traj is not None:
         visualize.play_motions_on_belief(state.Belief([p0, p1, p2]), result.traj)
         input()

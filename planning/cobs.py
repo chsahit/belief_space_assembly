@@ -1,8 +1,26 @@
+from typing import Tuple
+
+import networkx as nx
+
 import components
 import dynamics
 import naive_cspace
 import state
 from planning import refine_motion
+
+
+def prune_edge(
+    graph_init: nx.Graph, lr: Tuple[components.ContactState, components.ContactState]
+) -> nx.Graph:
+    edges = []
+    for e in graph_init.E:
+        labels_a = (e[0].label, e[1].label)
+        labels_b = (e[1].label, e[0].label)
+        delete_edge = labels_a == lr or labels_b == lr
+        if not delete_edge:
+            edges.append(e)
+    graph = naive_cspace.CSpaceGraph(graph_init.V, edges, [])
+    return graph
 
 
 def cobs(
@@ -37,6 +55,9 @@ def cobs(
             )
             t.add_result(intermediate_result)
             if intermediate_result.traj is None:
+                lr = list(intermediate_result.last_refined)
+                lr[0] = nominal_plan[0]
+                graph = prune_edge(graph, tuple(lr))
                 break
             trajectory.extend(intermediate_result.traj)
             if nominal_plan[1] == goal:
@@ -44,15 +65,6 @@ def cobs(
                 break
             for u in intermediate_result.traj:
                 b_curr = dynamics.f_bel(b_curr, u)
-            edges = []
-            lr = intermediate_result.last_refined
-            for e in graph.E:
-                labels_a = (e[0].label, e[1].label)
-                labels_b = (e[1].label, e[0].label)
-                delete_edge = labels_a == lr or labels_b == lr
-                if not delete_edge:
-                    edges.append(e)
-            graph = naive_cspace.CSpaceGraph(graph.V, edges, [])
             refine_from = nominal_plan[1]
         if goal_achieved:
             return components.PlanningResult(
