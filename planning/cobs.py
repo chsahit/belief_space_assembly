@@ -3,6 +3,7 @@ from typing import Tuple
 import networkx as nx
 
 import components
+import contact_defs
 import dynamics
 import naive_cspace
 import state
@@ -25,7 +26,6 @@ def prune_edge(
 
 def cobs(
     b0: state.Belief,
-    init: components.ContactState,
     goal: components.ContactState,
     opt_compliance: bool = True,
 ) -> components.PlanningResult:
@@ -38,7 +38,7 @@ def cobs(
     vert_cache = []
     for tp_attempt in range(max_tp_attempts):
         goal_achieved = False
-        refine_from = init
+        refine_from = contact_defs.fs
         b_curr = b0
         trajectory = []
         while not goal_achieved:
