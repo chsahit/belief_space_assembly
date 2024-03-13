@@ -277,16 +277,6 @@ def is_face(geom_name):
     is_badface = ("_top" in geom_name) and ("bottom_top" not in geom_name)
     is_chamfer = "chamfer" in geom_name
     return any([suffix in geom_name for suffix in suffixes])  # and (not is_badface)
-    """
-    if ("left_chamfer" in geom_name and not "inside" in geom_name) or (
-        "Box" in geom_name and not "_" in geom_name
-    ):
-        print(f"{geom_name=}")
-        return False
-    else:
-        return True
-    """
-    # return any([suffix in geom_name for suffix in suffixes]) and (not is_badface)
 
 
 def internal_edge(e: Tuple[CSpaceVolume, CSpaceVolume], cspace: CSpaceVolume) -> bool:
@@ -329,28 +319,46 @@ def prune_edges(
     return pruned_edges
 
 
-def prune_vertices(V: List[CSpaceVolume]) -> List[CSpaceVolume]:
-    raise NotImplementedError
-    to_remove = []
-    for pair in itertools.combinations(V, 2):
-        if is_subset(pair[0], pair[1]):
-            to_remove.append(pair[0])
-        elif is_subset(pair[1], pair[0]):
-            to_remove.append(pair[1])
-    pruned = []
-    for v in V:
-        if v not in to_remove:
-            pruned.append(v)
-    return pruned
+def is_subset(H_A: HPolyhedron, H_B: HPolyhedron) -> bool:
+    vertices = GetVertices(H_A)
+    for v_idx in range(vertices.shape[0]):
+        if not H_B.PointInSet(vertices[v_idx]):
+            return False
+    return True
 
 
 def make_graph(
     manipuland: List[WorkspaceObject], env: List[WorkspaceObject]
 ) -> CSpaceGraph:
+    to_prune = []
+    ec = env[0]
+    for env_face_A in ec.faces.items():
+        for env_face_B in ec.faces.items():
+            if env_face_A[0] == env_face_B[0]:
+                continue
+            H_A = env_face_A[1]
+            H_B = env_face_B[1]
+            """
+            if "front_bottom" in env_face_A[0] and "bottom_top" in env_face_B[0]:
+                breakpoint()
+            """
+            if is_subset(H_A, H_B):
+                to_prune.append(env_face_A[0])
+            if is_subset(H_B, H_A):
+                to_prune.append(env_face_B[0])
+
+    to_prune = set(to_prune)
+    print(f"{to_prune=}")
+    ec_pruned_dict = dict()
+    for ef in ec.faces.items():
+        if ef[0] in to_prune:
+            continue
+        ec_pruned_dict[ef[0]] = ef[1]
+    env_pruned = [WorkspaceObject("env", [], ec_pruned_dict)]
     volumes = []
     edges = []
     for manip_component in manipuland:
-        for env_component in env:
+        for env_component in env_pruned:
             for manip_face in manip_component.faces.items():
                 for env_face in env_component.faces.items():
                     vol = minkowski_sum(*env_face, *manip_face)
