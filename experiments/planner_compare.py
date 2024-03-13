@@ -14,7 +14,8 @@ z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
 y_sweep_peg = ("y", [0.01, 0.02, 0.03], "peg")
 
-planners = {"b_est", ao_b_est.b_est, "cobs", cobs.cobs}
+planners = {"b_est": ao_b_est.b_est, "cobs": cobs.cobs}
+planners = {"cobs": cobs.cobs}
 
 
 def sweep(dof, deviations, geometry):
@@ -53,11 +54,4 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
-    # visualize.show_planning_results("pitch_peg_sweep_results.pkl")
-    # sweep(*pitch_sweep_puzzle, puzzle_schedule)
-    sweep(*pitch_sweep_peg, peg_schedule)
-    # sweep(*x_sweep_puzzle, puzzle_schedule)
-    # sweep(*x_sweep_peg, peg_schedule)
-    # sweep(*z_sweep_peg, peg_schedule)
-    # sweep(*z_sweep_puzzle, puzzle_schedule)
-    # sweep(*y_sweep_peg, peg_schedule)
+    sweep(*pitch_sweep_peg)

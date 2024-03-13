@@ -107,7 +107,7 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 1650.0
+    b0: state.Belief, goal: components.ContactState, timeout: float = 1000.0
 ) -> components.PlanningResult:
     start_time = time.time()
     _tree = make_kdtree(*workspace, 10)

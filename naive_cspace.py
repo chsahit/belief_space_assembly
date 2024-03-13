@@ -479,13 +479,14 @@ def compute_uncertainty_dir(configs: List[np.ndarray]) -> np.ndarray:
             if dist > max_dist:
                 max_dist = dist
                 worst_pair = (p1, p2)
-    if np.linalg.norm(p1 - p2) < 1e-9:
+    direction = worst_pair[0] - worst_pair[1]
+    if np.linalg.norm(direction) < 1e-9:
         direction = np.array([0, 0, 1.0])
     else:
-        direction = (p1 - p2) / np.linalg.norm(p1 - p2)
+        direction = direction / np.linalg.norm(direction)
     print(f"{direction=}")
     assert abs(np.linalg.norm(direction) - 1) < 1e-4
-    return worst_pair[0] - worst_pair[1]
+    return direction
 
 
 def make_task_plan(

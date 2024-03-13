@@ -42,7 +42,7 @@ def cobs(
         b_curr = b0
         trajectory = []
         while not goal_achieved:
-            configs = [p.X_WO.translation() for p in b_curr.particles]
+            configs = [p.X_OM.translation() for p in b_curr.particles]
             nominal_plan = naive_cspace.make_task_plan(
                 graph, refine_from, goal, configs
             )
