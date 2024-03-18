@@ -23,6 +23,7 @@ from tqdm import tqdm
 
 import components
 import contact_defs
+import puzzle_contact_defs
 import state
 from simulation import hyperrectangle
 
@@ -34,6 +35,32 @@ class WorkspaceObject:
     name: str
     geometry: HPolyhedron
     faces: Dict[str, HPolyhedron]
+
+
+def largest_normal(H: HPolyhedron) -> np.ndarray:
+    vertices = GetVertices(H, assert_count=False)
+    try:
+        hull = ConvexHull(vertices)
+        simplices = hull.simplices
+        assert len(simplices) > 0
+    except:
+        print("warning, couldn't compute simplical facets")
+        return np.array([0, 0, 1])
+    biggest_triangle = None
+    biggest_vol = float("-inf")
+    for s in simplices:
+        triangle = vertices[s]
+        ab = triangle[1] - triangle[0]
+        ac = triangle[2] - triangle[0]
+        vol = 0.5 * np.linalg.norm(np.cross(ab, ac))
+        if vol > biggest_vol:
+            biggest_triangle = triangle
+            biggest_vol = vol
+    n = np.cross(
+        biggest_triangle[1] - biggest_triangle[0],
+        biggest_triangle[2] - biggest_triangle[0],
+    )
+    return n/np.linalg.norm(n)
 
 
 @dataclass
@@ -114,6 +141,7 @@ class CSpaceVolume:
         assert len(self.geometry) > 0 or "free" in str(self.label)
         if len(self.geometry) == 0:
             return np.zeros((3,))
+        return largest_normal(self.geometry[0])
         n_hat = np.array([0.0, 0.0, 0.0])
         A = self.geometry[0].A()
         b = self.geometry[0].b()
@@ -184,7 +212,10 @@ class CSpaceGraph:
             nx_graph.add_edge(e[0], e[1])
         fc = None
         for v in self.V:
-            if v.label == contact_defs.chamfer_init:
+            if (
+                v.label == contact_defs.chamfer_init
+                or v.label == puzzle_contact_defs.top_touch
+            ):
                 fc = v
         nx_graph.add_edge(CSpaceVolume(contact_defs.fs, []), fc)
         return nx_graph
@@ -513,6 +544,7 @@ def make_task_plan(
         if v.label == goal_mode:
             goal_vtx = v
     assert (start_vtx is not None) and (goal_vtx is not None)
+    print("computing task plan")
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
     normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
     print(f"{normals=}")

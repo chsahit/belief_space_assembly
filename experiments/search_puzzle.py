@@ -8,8 +8,19 @@ import state
 import utils
 import visualize
 from experiments import init_particle
-from planning import randomized_search, refine_motion
+from planning import cobs, randomized_search, refine_motion
 from simulation import diagram_factory
+
+
+def run_cobs():
+    p0 = init_particle.init_puzzle(pitch=2.0)
+    p1 = init_particle.init_puzzle(pitch=0.0)
+    p2 = init_particle.init_puzzle(pitch=-2.0)
+    b = state.Belief([p0, p1, p2])
+    result = cobs.cobs(b, puzzle_contact_defs.side)
+    if result.traj is not None:
+        visualize.play_motions_on_belief(state.Belief([p0, p1, p2]), result.traj)
+        input()
 
 
 def simple_down():
@@ -34,4 +45,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    simple_down()
+    run_cobs()
