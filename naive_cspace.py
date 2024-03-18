@@ -60,7 +60,7 @@ def largest_normal(H: HPolyhedron) -> np.ndarray:
         biggest_triangle[1] - biggest_triangle[0],
         biggest_triangle[2] - biggest_triangle[0],
     )
-    return n/np.linalg.norm(n)
+    return n / np.linalg.norm(n)
 
 
 @dataclass
