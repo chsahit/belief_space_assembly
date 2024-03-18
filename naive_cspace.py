@@ -223,6 +223,12 @@ class CSpaceGraph:
 
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     try:
+        V = VPolytope(H.ReduceInequalities(tol=1e-6))
+    except:
+        return None
+    vertices = V.vertices().T
+    """
+    try:
         V = VPolytope(H.ReduceInequalities())
     except:
         # software engineering is my passion
@@ -230,8 +236,10 @@ def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
             V = VPolytope(H.ReduceInequalities(tol=1e-6))
         except Exception as e:
             breakpoint()
-    vertices = V.vertices().T
-    if vertices.shape[0] < 6:
+    """
+    # vertices = V.vertices().T
+    """
+    if vertices.shape[0] < 6 and assert_count:
 
         def MatToArr(m: cdd.Matrix) -> np.ndarray:
             return np.array([m[i] for i in range(m.row_size)])
@@ -246,11 +254,11 @@ def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
             return poly.get_generators()
 
         vertices = MatToArr(HPolyhedronToVRepr(H))[:, 1:]
-
     if assert_count:
         if vertices.shape[0] < 6:
             breakpoint()
         assert vertices.shape == (8, 3) or vertices.shape == (6, 3)
+    """
     return vertices
 
 
@@ -544,6 +552,7 @@ def make_task_plan(
         if v.label == goal_mode:
             goal_vtx = v
     assert (start_vtx is not None) and (goal_vtx is not None)
+    do_backchain(mode_graph)
     print("computing task plan")
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
     normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
@@ -552,3 +561,62 @@ def make_task_plan(
     # vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
     # print(f"{vols=}")
     return tp
+
+
+def is_boundary(pt: np.ndarray, V: List[CSpaceVolume]) -> bool:
+    peturbations = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+        [1, 1, 0],
+        [1, 0, 1],
+        [0, 1, 1],
+        [1, 1, 1],
+        [1, -1, 0],
+        [1, 0, -1],
+        [0, 1, -1],
+    ]
+    for sgn in [-1, 1]:
+        for peturb in peturbations:
+            pt_prime = pt + 1e-8 * sgn * np.array(peturb)
+            for v in V:
+                if v.geometry[0].PointInSet(pt_prime):
+                    return False
+    return True
+
+
+def do_backchain(
+    init_graph: CSpaceGraph, goal: components.ContactState = contact_defs.bottom_faces_2
+) -> CSpaceGraph:
+    neighbors = set()
+    G_v = None
+    for v in init_graph.V:
+        if v.label == goal:
+            G_v = v
+    assert G_v is not None
+    for e in init_graph.E:
+        if e[0].label == goal:
+            neighbors.add(e[1])
+        elif e[1].label == goal:
+            neighbors.add(e[0])
+    vtx_pts = []
+    for e1, e2 in itertools.combinations(neighbors, 2):
+        intersection = G_v.geometry[0].Intersection(
+            e1.geometry[0].Intersection(e2.geometry[0])
+        )
+        e12_verts = GetVertices(intersection, assert_count=False)
+        if e12_verts is None:
+            continue
+        for vtx_idx in range(e12_verts.shape[0]):
+            vtx_pts.append(e12_verts[vtx_idx])
+    print(f"{len(vtx_pts)=}")
+    boundary_vtx_points = [pt for pt in vtx_pts if is_boundary(pt, init_graph.V)]
+    print(f"{boundary_vtx_points=}")
+    reachable_neighbors = []
+    for neighbor in neighbors:
+        for boundary_pt in boundary_vtx_points:
+            if neighbor.geometry[0].PointInSet(boundary_pt):
+                reachable_neighbors.append(neighbor)
+                break
+    print(f"{reachable_neighbors=}")
+    breakpoint()
