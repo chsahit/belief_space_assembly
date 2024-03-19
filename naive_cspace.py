@@ -1,8 +1,9 @@
 import itertools
 import random
+import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 
 import cdd
 import matplotlib.pyplot as plt
@@ -597,37 +598,53 @@ def is_boundary(pt: np.ndarray, V: List[CSpaceVolume]) -> bool:
 def do_backchain(
     init_graph: CSpaceGraph, goal: components.ContactState = contact_defs.bottom_faces_2
 ) -> CSpaceGraph:
-    full_cspace = CSpaceVolume("", sum([v.geometry for v in init_graph.V], []))
-    neighbors = set()
     G_v = None
     for v in init_graph.V:
         if v.label == goal:
             G_v = v
+            break
     assert G_v is not None
+    N_valid, bad_edges = generate_pruned_neighbors(v, init_graph, [])
+    print(f"{len(N_valid)=}")
+    breakpoint()
+
+
+def generate_pruned_neighbors(
+    v: CSpaceVolume,
+    init_graph: CSpaceGraph,
+    bad_edges: List[Tuple[CSpaceVolume]] = [],
+) -> Set[CSpaceVolume]:
+    neighbors = set()
     for e in init_graph.E:
-        if e[0].label == goal:
+        if (e in bad_edges) or (e[::-1] in bad_edges):
+            continue
+        if e[0].label == v.label:
             neighbors.add(e[1])
-        elif e[1].label == goal:
+        elif e[1].label == v.label:
             neighbors.add(e[0])
-    vtx_pts = []
+    candidate_pts = dict()
     for e1, e2 in itertools.combinations(neighbors, 2):
-        intersection = G_v.geometry[0].Intersection(
+        intersection = v.geometry[0].Intersection(
             e1.geometry[0].Intersection(e2.geometry[0])
         )
         e12_verts = GetVertices(intersection, assert_count=False)
-        if e12_verts is None:
+        if e12_verts is not None:
+            v_list = [e12_verts[v_idx] for v_idx in range(e12_verts.shape[0])]
+            candidate_pts[(e1, e2)] = v_list
+    pruned_neighbors = set()
+    s = time.time()
+    for edges, cands in candidate_pts.items():
+        if (edges[0] in pruned_neighbors) and (edges[1] in pruned_neighbors):
             continue
-        for vtx_idx in range(e12_verts.shape[0]):
-            vtx_pts.append(e12_verts[vtx_idx])
-    print(f"{len(vtx_pts)=}")
-    plotly_render(full_cspace, pts=vtx_pts)
-    boundary_vtx_points = [pt for pt in vtx_pts if is_boundary(pt, init_graph.V)]
-    print(f"{boundary_vtx_points=}")
-    reachable_neighbors = []
-    for neighbor in neighbors:
-        for boundary_pt in boundary_vtx_points:
-            if neighbor.geometry[0].PointInSet(boundary_pt):
-                reachable_neighbors.append(neighbor)
+        for cand in cands:
+            if is_boundary(cand, init_graph.V):
+                pruned_neighbors.add(edges[0])
+                pruned_neighbors.add(edges[1])
                 break
-    print(f"{reachable_neighbors=}")
-    breakpoint()
+    new_bad_edges = set()
+    for n in neighbors:
+        if not n in pruned_neighbors:
+            new_bad_edges.add((v, n))
+    new_bad_edges = new_bad_edges.union(bad_edges)
+    print(f"{len(new_bad_edges)=}")
+    return pruned_neighbors, new_bad_edges
