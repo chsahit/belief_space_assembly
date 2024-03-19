@@ -484,7 +484,7 @@ def render_cspace_volume(C: CSpaceVolume):
     plt.show()
 
 
-def plotly_render(C: CSpaceVolume):
+def plotly_render(C: CSpaceVolume, pts=List[np.ndarray]):
     meshes = []
     for geom in C.geometry:
         vertices = GetVertices(geom, assert_count=False)
@@ -505,13 +505,17 @@ def plotly_render(C: CSpaceVolume):
                     y=vertices[1],
                     z=vertices[2],
                     color="lightpink",
-                    opacity=1.0,
+                    opacity=0.5,
                     i=hull[0],
                     j=hull[1],
                     k=hull[2],
                 )
             )
 
+    p_x = [pt[0] for pt in pts]
+    p_y = [pt[1] for pt in pts]
+    p_z = [pt[2] for pt in pts]
+    meshes.append(go.Scatter3d(x=p_x, y=p_y, z=p_z, mode="markers"))
     print(f"{len(meshes)=}")
     fig = go.Figure(data=meshes)
     fig.write_html("cso.html")
@@ -576,18 +580,24 @@ def is_boundary(pt: np.ndarray, V: List[CSpaceVolume]) -> bool:
         [1, 0, -1],
         [0, 1, -1],
     ]
-    for sgn in [-1, 1]:
-        for peturb in peturbations:
-            pt_prime = pt + 1e-8 * sgn * np.array(peturb)
-            for v in V:
-                if v.geometry[0].PointInSet(pt_prime):
-                    return False
+
+    for v in V:
+        colliding = True
+        for sgn in [-1, 1]:
+            for peturb in peturbations:
+                pt_prime = pt + 1e-5 * sgn * np.array(peturb)
+                if not v.geometry[0].PointInSet(pt_prime):
+                    colliding = False
+                    break
+        if colliding:
+            return False
     return True
 
 
 def do_backchain(
     init_graph: CSpaceGraph, goal: components.ContactState = contact_defs.bottom_faces_2
 ) -> CSpaceGraph:
+    full_cspace = CSpaceVolume("", sum([v.geometry for v in init_graph.V], []))
     neighbors = set()
     G_v = None
     for v in init_graph.V:
@@ -610,6 +620,7 @@ def do_backchain(
         for vtx_idx in range(e12_verts.shape[0]):
             vtx_pts.append(e12_verts[vtx_idx])
     print(f"{len(vtx_pts)=}")
+    plotly_render(full_cspace, pts=vtx_pts)
     boundary_vtx_points = [pt for pt in vtx_pts if is_boundary(pt, init_graph.V)]
     print(f"{boundary_vtx_points=}")
     reachable_neighbors = []
