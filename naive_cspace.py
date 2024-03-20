@@ -1,12 +1,10 @@
 import itertools
-import multiprocessing
 import random
 import time
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 
-import cdd
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -82,26 +80,6 @@ class CSpaceVolume:
         H = random.choice(self.geometry)
         return H.UniformSample(drake_rng, mixing_steps=1000)
 
-    def is_strict_interior(self, pt) -> bool:
-        # if point is exterior to all geometries, it cannot be strictly interior
-        coarse_exterior_check = [not geom.PointInSet(pt) for geom in self.geometry]
-        if all(coarse_exterior_check):
-            return False
-        # if point is strictly interior to any geometry, return true
-        results = defaultdict(list)
-        for direction in [0, 1, 2]:
-            for delta in [0.0001, -0.0001]:
-                pt_prime = np.copy(pt)
-                pt_prime[direction] += delta
-                for geom in self.geometry:
-                    results[(direction, delta)].append(geom.PointInSet(pt_prime))
-        for k, v in results.items():
-            # we found a delta such that pt + delta is exterior
-            # thus, the pt is a boundary pt
-            if not any(v):
-                return False
-        return True
-
     def volume(self) -> float:
         _, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(self.geometry[0])
 
@@ -114,42 +92,11 @@ class CSpaceVolume:
             vol += 1e-9
         return vol
 
-    def _normal_candidate(self, sample, A, b) -> np.ndarray:
-        s_homog = np.concatenate((sample, np.array([1])))
-        lb = float("inf")
-        n_cand = None
-        for row in range(A.shape[0]):
-            plane_eqn = np.concatenate((A[row], np.array([-b[row]])))
-            dist = abs(np.dot(plane_eqn, s_homog)) / np.linalg.norm(A[row])
-            if dist < lb:
-                lb = dist
-                n_cand = A[row] / np.linalg.norm(A[row])
-        assert n_cand is not None
-        return n_cand
-
-    def _modal_vec(self, cands: List[np.ndarray]) -> np.ndarray:
-        scores = []
-        for cand_1 in cands:
-            c_scores = []
-            for cand_2 in cands:
-                v1 = cand_1 / np.linalg.norm(cand_1)
-                v2 = cand_2 / np.linalg.norm(cand_2)
-                c_scores.append(abs(np.dot(v1, v2)))
-            scores.append(sum(c_scores) / float(len(c_scores)))
-        highest_score = max(scores)
-        return cands[scores.index(highest_score)]
-
     def normal(self) -> np.ndarray:
         assert len(self.geometry) > 0 or "free" in str(self.label)
         if len(self.geometry) == 0:
             return np.zeros((3,))
         return largest_normal(self.geometry[0])
-        n_hat = np.array([0.0, 0.0, 0.0])
-        A = self.geometry[0].A()
-        b = self.geometry[0].b()
-        samples = [self.sample() for i in range(10)]
-        n_cands = [self._normal_candidate(sample, A, b) for sample in samples]
-        return self._modal_vec(n_cands)
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CSpaceVolume):
@@ -158,16 +105,6 @@ class CSpaceVolume:
 
     def __hash__(self) -> int:
         return hash(self.label)
-
-
-def _g(v1: CSpaceVolume, v2: CSpaceVolume, attrs) -> float:
-    new_contact_penalty = 0e-0 * int(not v2.reached)
-    low_measure_penalty = 1e-4 * (1.0 / v2.volume())
-    return (
-        np.linalg.norm(v1.sample() - v2.sample())
-        + low_measure_penalty
-        + new_contact_penalty
-    )
 
 
 def g(v1: CSpaceVolume, v2: CSpaceVolume, uncertainty_dir: np.ndarray) -> float:
@@ -288,16 +225,11 @@ def MakeModeGraphFromFaces(
     B = MakeWorkspaceObjectFromFaces(faces_env)
     A = MakeWorkspaceObjectFromFaces(faces_manip)
     graph = make_graph([A], [B])
-    # print(f"pruning graph, init edge count: {len(graph.E)}")
-    # graph = parallel_refine_graph(graph)
-    # print(f"remaining edge count: {len(graph.E)}")
-
     return graph
 
 
 def is_face(geom_name):
     suffixes = ["_bottom", "_top", "_left", "_right", "_front", "_back", "_inside"]
-
     is_badface = ("_top" in geom_name) and ("bottom_top" not in geom_name)
     is_chamfer = "chamfer" in geom_name
     return any([suffix in geom_name for suffix in suffixes])  # and (not is_badface)
@@ -452,34 +384,6 @@ def compute_uncertainty_dir(configs: List[np.ndarray]) -> np.ndarray:
     return direction
 
 
-def check_edge_validity(
-    e: Tuple[CSpaceVolume, CSpaceVolume], mode_graph, validated
-) -> List[Tuple[CSpaceVolume, CSpaceVolume]]:
-    if e[0].label == "fs" or e[1].label == "fs":
-        return [e]
-    if e in validated or e[::-1] in validated:
-        return [e]
-    v1, v2 = e
-    e_query = v1.geometry[0].Intersection(v2.geometry[0])
-    for e in mode_graph.E:
-        if e == (v1, v2) or e == (v2, v1):
-            continue
-        if e[0] == v1 or e[0] == v2:
-            v3 = e[1]
-        elif e[1] == v1 or e[1] == v2:
-            v3 = e[0]
-        else:
-            continue
-        intersection = e_query.Intersection(v3.geometry[0])
-        vertices = GetVertices(intersection)
-        if vertices is None:
-            continue
-        for vtx in vertices:
-            if is_boundary(vtx, mode_graph.V):
-                return [e_query, e]
-    return []
-
-
 def make_task_plan(
     mode_graph: CSpaceGraph,
     start_mode: components.ContactState,
@@ -505,177 +409,3 @@ def make_task_plan(
     # vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
     # print(f"{vols=}")
     return tp
-
-
-def is_boundary(pt: np.ndarray, V: List[CSpaceVolume]) -> bool:
-    peturbations = [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-        [1, 1, 0],
-        [1, 0, 1],
-        [0, 1, 1],
-        [1, 1, 1],
-        [1, -1, 0],
-        [1, 0, -1],
-        [0, 1, -1],
-    ]
-    signs = [-1, 1]
-    for v in V:
-        if not v.geometry[0].PointInSet(pt):
-            continue
-        colliding = True
-        for sgn, peturb in itertools.product(signs, peturbations):
-            pt_prime = pt + 1e-5 * sgn * np.array(peturb)
-            if not v.geometry[0].PointInSet(pt_prime):
-                colliding = False
-                break
-        if colliding:
-            return False
-    return True
-
-
-def do_backchain(
-    init_graph: CSpaceGraph, goal: components.ContactState = contact_defs.bottom_faces_2
-) -> CSpaceGraph:
-    G_v = None
-    for v in init_graph.V:
-        if v.label == goal:
-            G_v = v
-            break
-    assert G_v is not None
-    to_visit = set([G_v])
-    visited = set()
-    seen_edges = set()
-    tried_triples = set()
-    i = 0
-    while not len(to_visit) == 0:
-        i += 1
-        v = to_visit.pop()
-        N_valid, seen_edges, tried_triples = generate_pruned_neighbors(
-            v, init_graph, seen_edges, tried_triples
-        )
-        visited.add(v)
-        for neighbor in N_valid:
-            if neighbor in to_visit or neighbor in visited:
-                continue
-            to_visit.add(neighbor)
-        if i % 10 == 0:
-            print(f"{len(to_visit)=}")
-            print(f"{len(visited)=}")
-            print(f"{len(seen_edges)=}")
-            print(f"{len(tried_triples)=}")
-    breakpoint()
-    return CSpaceGraph(init_graph.V, list(seen_edges))
-
-
-def generate_pruned_neighbors(
-    v: CSpaceVolume,
-    init_graph: CSpaceGraph,
-    seen_edges: Set[Tuple[CSpaceVolume, CSpaceVolume]],
-    tried_triples: Set[Tuple[CSpaceVolume, CSpaceVolume, CSpaceVolume]],
-) -> Set[CSpaceVolume]:
-    if v.label == "fs":
-        return set(), set()
-    neighbors = set()
-    for e in init_graph.E:
-        if (e in seen_edges) or (e[::-1] in seen_edges):
-            continue
-        if e[0].label == v.label:
-            neighbors.add(e[1])
-        elif e[1].label == v.label:
-            neighbors.add(e[0])
-    candidate_pts = dict()
-    for e1, e2 in itertools.combinations(neighbors, 2):
-        skip = False
-        for triple in itertools.permutations([v, e1, e2]):
-            if triple in tried_triples:
-                skip = True
-                break
-        if skip:
-            continue
-        tried_triples.add((v, e1, e2))
-        intersection = v.geometry[0].Intersection(
-            e1.geometry[0].Intersection(e2.geometry[0])
-        )
-        e12_verts = GetVertices(intersection, assert_count=False)
-        if e12_verts is not None:
-            v_list = [e12_verts[v_idx] for v_idx in range(e12_verts.shape[0])]
-            candidate_pts[(e1, e2)] = v_list
-    pruned_neighbors = set()
-    s = time.time()
-    for edges, cands in candidate_pts.items():
-        if (edges[0] in pruned_neighbors) and (edges[1] in pruned_neighbors):
-            continue
-        for cand in cands:
-            if is_boundary(cand, init_graph.V):
-                pruned_neighbors.add(edges[0])
-                pruned_neighbors.add(edges[1])
-                break
-    new_seen_edges = set([(v, n) for n in pruned_neighbors])
-    seen_edges = seen_edges.union(new_seen_edges)
-    return pruned_neighbors, seen_edges, tried_triples
-
-
-def refine_graph(init_graph: CSpaceGraph) -> CSpaceGraph:
-    new_edges = []
-    tried_triples = set()
-    for e in tqdm(init_graph.E):
-        (v1, v2) = e
-        if e in new_edges or e[::-1] in new_edges:
-            continue
-        intersecting_edges = []
-        for e_n in init_graph.E:
-            if e_n == e:
-                continue
-            if (v1 in e_n) or (v2 in e_n):
-                intersecting_edges.append(e_n)
-        for ie in intersecting_edges:
-            (va, vb) = ie
-            if va.label == v1 or va.label == v2:
-                v3 = vb
-            else:
-                v3 = va
-
-            triples = set(itertools.permutations([v1, v2, v3]))
-            if len(triples.intersection(tried_triples)) > 0:
-                continue
-            intersection = v1.geometry[0].Intersection(
-                v2.geometry[0].Intersection(v3.geometry[0])
-            )
-            tried_triples.add((v1, v2, v3))
-            vertices = GetVertices(intersection, assert_count=False)
-            if vertices is None:
-                continue
-            edge_certified = False
-            for cand in vertices:
-                if is_boundary(cand, init_graph.V):
-                    new_edges.append(e)
-                    new_edges.append(ie)
-                    edge_certified = True
-                    break
-            if edge_certified:
-                break
-    breakpoint()
-    return CSpaceGraph(init_graph.V, new_edges)
-
-
-def parallel_refine_graph(init_graph: CSpaceGraph) -> CSpaceGraph:
-    p = multiprocessing.Pool(multiprocessing.cpu_count())
-    num_edges = len(init_graph.E)
-    last_idx = 0
-    validated = set()
-    for i in tqdm(range(0, num_edges, 1000)):
-        last_idx = i
-        args = [(e, init_graph, validated) for e in init_graph.E[i : i + 1000]]
-        new_validated = p.starmap(check_edge_validity, args)
-        new_edges = set(sum(new_validated, []))
-        validated = validated.union(new_edges)
-        print(f"{len(validated)=}")
-    args = [(e, init_graph, validated) for e in init_graph.E[last_idx:]]
-    new_validated = p.starmap(check_edge_validity, args)
-    new_edges = set(sum(new_validated, []))
-    validated = validated.union(new_edges)
-    print(f"{len(validated)=}")
-
-    return CSpaceGraph(init_graph.V, validated)

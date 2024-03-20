@@ -25,23 +25,6 @@ def prune_edge(
     return graph
 
 
-def virtual_refine(graph, plan, validated_cache):
-    lr = None
-    for i in range(2, len(plan)):
-        lifted_edge = (plan[i - 1], plan[i])
-        edge = graph.ground(lifted_edge)
-        if edge in validated_cache or edge[::-1] in validated_cache:
-            continue
-        newly_vald = naive_cspace.check_edge_validity(edge, graph, validated_cache)
-        if len(newly_vald) == 0:
-            # print(f"virtual refine failed on {lifted_edge}")
-            lr = lifted_edge
-            break
-        for n_e in newly_vald:
-            validated_cache.add(n_e)
-    return lr, validated_cache
-
-
 def cobs(
     b0: state.Belief,
     goal: components.ContactState,
