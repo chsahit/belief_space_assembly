@@ -1,4 +1,5 @@
 import itertools
+import multiprocessing
 import random
 import time
 from collections import defaultdict
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
+import tqdm
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from pydrake.all import (
@@ -308,6 +310,10 @@ def MakeModeGraphFromFaces(
     B = MakeWorkspaceObjectFromFaces(faces_env)
     A = MakeWorkspaceObjectFromFaces(faces_manip)
     graph = make_graph([A], [B])
+    print(f"pruning graph, init edge count: {len(graph.E)}")
+    graph = parallel_refine_graph(graph)
+    print(f"remaining edge count: {len(graph.E)}")
+
     return graph
 
 
@@ -541,6 +547,41 @@ def compute_uncertainty_dir(configs: List[np.ndarray]) -> np.ndarray:
     return direction
 
 
+def check_edge_validity(
+    e: Tuple[CSpaceVolume, CSpaceVolume], mode_graph, validated
+) -> List[Tuple[CSpaceVolume, CSpaceVolume]]:
+    if e[0].label == "fs" or e[1].label == "fs":
+        return [e]
+    if e in validated or e[::-1] in validated:
+        return []
+    v1, v2 = e
+    e_query = v1.geometry[0].Intersection(v2.geometry[0])
+    for e in mode_graph.E:
+        if e == (v1, v2) or e == (v2, v1):
+            continue
+        if e[0] == v1 or e[0] == v2:
+            v3 = e[1]
+        elif e[1] == v1 or e[1] == v2:
+            v3 = e[0]
+        else:
+            continue
+        intersection = e_query.Intersection(v3.geometry[0])
+        vertices = GetVertices(intersection)
+        if vertices is None:
+            continue
+        for vtx in vertices:
+            if is_boundary(vtx, mode_graph.V):
+                return [e_query, e]
+    return []
+
+
+def iterative_shortest_path(mode_graph, G_nx, start_vtx, goal_vtx, h):
+    successful_plan_found = False
+    cache = []
+    while not successful_plan_found:
+        return None
+
+
 def make_task_plan(
     mode_graph: CSpaceGraph,
     start_mode: components.ContactState,
@@ -557,7 +598,7 @@ def make_task_plan(
         if v.label == goal_mode:
             goal_vtx = v
     assert (start_vtx is not None) and (goal_vtx is not None)
-    do_backchain(mode_graph)
+    # do_backchain(mode_graph)
     print("computing task plan")
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
     normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
@@ -581,15 +622,16 @@ def is_boundary(pt: np.ndarray, V: List[CSpaceVolume]) -> bool:
         [1, 0, -1],
         [0, 1, -1],
     ]
-
+    signs = [-1, 1]
     for v in V:
+        if not v.geometry[0].PointInSet(pt):
+            continue
         colliding = True
-        for sgn in [-1, 1]:
-            for peturb in peturbations:
-                pt_prime = pt + 1e-5 * sgn * np.array(peturb)
-                if not v.geometry[0].PointInSet(pt_prime):
-                    colliding = False
-                    break
+        for sgn, peturb in itertools.product(signs, peturbations):
+            pt_prime = pt + 1e-5 * sgn * np.array(peturb)
+            if not v.geometry[0].PointInSet(pt_prime):
+                colliding = False
+                break
         if colliding:
             return False
     return True
@@ -604,19 +646,42 @@ def do_backchain(
             G_v = v
             break
     assert G_v is not None
-    N_valid, bad_edges = generate_pruned_neighbors(v, init_graph, [])
-    print(f"{len(N_valid)=}")
+    to_visit = set([G_v])
+    visited = set()
+    seen_edges = set()
+    tried_triples = set()
+    i = 0
+    while not len(to_visit) == 0:
+        i += 1
+        v = to_visit.pop()
+        N_valid, seen_edges, tried_triples = generate_pruned_neighbors(
+            v, init_graph, seen_edges, tried_triples
+        )
+        visited.add(v)
+        for neighbor in N_valid:
+            if neighbor in to_visit or neighbor in visited:
+                continue
+            to_visit.add(neighbor)
+        if i % 10 == 0:
+            print(f"{len(to_visit)=}")
+            print(f"{len(visited)=}")
+            print(f"{len(seen_edges)=}")
+            print(f"{len(tried_triples)=}")
     breakpoint()
+    return CSpaceGraph(init_graph.V, list(seen_edges))
 
 
 def generate_pruned_neighbors(
     v: CSpaceVolume,
     init_graph: CSpaceGraph,
-    bad_edges: List[Tuple[CSpaceVolume]] = [],
+    seen_edges: Set[Tuple[CSpaceVolume, CSpaceVolume]],
+    tried_triples: Set[Tuple[CSpaceVolume, CSpaceVolume, CSpaceVolume]],
 ) -> Set[CSpaceVolume]:
+    if v.label == "fs":
+        return set(), set()
     neighbors = set()
     for e in init_graph.E:
-        if (e in bad_edges) or (e[::-1] in bad_edges):
+        if (e in seen_edges) or (e[::-1] in seen_edges):
             continue
         if e[0].label == v.label:
             neighbors.add(e[1])
@@ -624,6 +689,14 @@ def generate_pruned_neighbors(
             neighbors.add(e[0])
     candidate_pts = dict()
     for e1, e2 in itertools.combinations(neighbors, 2):
+        skip = False
+        for triple in itertools.permutations([v, e1, e2]):
+            if triple in tried_triples:
+                skip = True
+                break
+        if skip:
+            continue
+        tried_triples.add((v, e1, e2))
         intersection = v.geometry[0].Intersection(
             e1.geometry[0].Intersection(e2.geometry[0])
         )
@@ -641,10 +714,70 @@ def generate_pruned_neighbors(
                 pruned_neighbors.add(edges[0])
                 pruned_neighbors.add(edges[1])
                 break
-    new_bad_edges = set()
-    for n in neighbors:
-        if not n in pruned_neighbors:
-            new_bad_edges.add((v, n))
-    new_bad_edges = new_bad_edges.union(bad_edges)
-    print(f"{len(new_bad_edges)=}")
-    return pruned_neighbors, new_bad_edges
+    new_seen_edges = set([(v, n) for n in pruned_neighbors])
+    seen_edges = seen_edges.union(new_seen_edges)
+    return pruned_neighbors, seen_edges, tried_triples
+
+
+def refine_graph(init_graph: CSpaceGraph) -> CSpaceGraph:
+    new_edges = []
+    tried_triples = set()
+    for e in tqdm(init_graph.E):
+        (v1, v2) = e
+        if e in new_edges or e[::-1] in new_edges:
+            continue
+        intersecting_edges = []
+        for e_n in init_graph.E:
+            if e_n == e:
+                continue
+            if (v1 in e_n) or (v2 in e_n):
+                intersecting_edges.append(e_n)
+        for ie in intersecting_edges:
+            (va, vb) = ie
+            if va.label == v1 or va.label == v2:
+                v3 = vb
+            else:
+                v3 = va
+
+            triples = set(itertools.permutations([v1, v2, v3]))
+            if len(triples.intersection(tried_triples)) > 0:
+                continue
+            intersection = v1.geometry[0].Intersection(
+                v2.geometry[0].Intersection(v3.geometry[0])
+            )
+            tried_triples.add((v1, v2, v3))
+            vertices = GetVertices(intersection, assert_count=False)
+            if vertices is None:
+                continue
+            edge_certified = False
+            for cand in vertices:
+                if is_boundary(cand, init_graph.V):
+                    new_edges.append(e)
+                    new_edges.append(ie)
+                    edge_certified = True
+                    break
+            if edge_certified:
+                break
+    breakpoint()
+    return CSpaceGraph(init_graph.V, new_edges)
+
+
+def parallel_refine_graph(init_graph: CSpaceGraph) -> CSpaceGraph:
+    p = multiprocessing.Pool(multiprocessing.cpu_count())
+    num_edges = len(init_graph.E)
+    last_idx = 0
+    validated = set()
+    for i in tqdm(range(0, num_edges, 1000)):
+        last_idx = i
+        args = [(e, init_graph, validated) for e in init_graph.E[i : i + 1000]]
+        new_validated = p.starmap(check_edge_validity, args)
+        new_edges = set(sum(new_validated, []))
+        validated = validated.union(new_edges)
+        print(f"{len(validated)=}")
+    args = [(e, init_graph, validated) for e in init_graph.E[last_idx:]]
+    new_validated = p.starmap(check_edge_validity, args)
+    new_edges = set(sum(new_validated, []))
+    validated = validated.union(new_edges)
+    print(f"{len(validated)=}")
+
+    return CSpaceGraph(init_graph.V, refined_edges)
