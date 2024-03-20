@@ -68,6 +68,7 @@ class CSpaceVolume:
     label: components.ContactState
     geometry: List[HPolyhedron]
     reached: bool = False
+    largest_normal: np.ndarray = None
 
     def intersects(self, other: "CSpaceVolume") -> bool:
         for m_geom in self.geometry:
@@ -96,7 +97,9 @@ class CSpaceVolume:
         assert len(self.geometry) > 0 or "free" in str(self.label)
         if len(self.geometry) == 0:
             return np.zeros((3,))
-        return largest_normal(self.geometry[0])
+        if self.largest_normal is None:
+            self.largest_normal = largest_normal(self.geometry[0])
+        return self.largest_normal
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CSpaceVolume):
@@ -249,7 +252,6 @@ def make_graph(
     for pair in itertools.combinations(volumes, 2):
         if pair[0].intersects(pair[1]):
             edges.append(pair)
-    edges = prune_edges(volumes, edges)
     return CSpaceGraph(volumes, edges)
 
 
