@@ -11,7 +11,8 @@ from planning import refine_motion
 
 
 def prune_edge(
-    graph_init: nx.Graph, lr: Tuple[components.ContactState, components.ContactState]
+    graph_init: naive_cspace.CSpaceGraph,
+    lr: Tuple[components.ContactState, components.ContactState],
 ) -> nx.Graph:
     edges = []
     for e in graph_init.E:
@@ -22,6 +23,23 @@ def prune_edge(
             edges.append(e)
     graph = naive_cspace.CSpaceGraph(graph_init.V, edges, [])
     return graph
+
+
+def virtual_refine(graph, plan, validated_cache):
+    lr = None
+    for i in range(2, len(plan)):
+        lifted_edge = (plan[i - 1], plan[i])
+        edge = graph.ground(lifted_edge)
+        if edge in validated_cache or edge[::-1] in validated_cache:
+            continue
+        newly_vald = naive_cspace.check_edge_validity(edge, graph, validated_cache)
+        if len(newly_vald) == 0:
+            # print(f"virtual refine failed on {lifted_edge}")
+            lr = lifted_edge
+            break
+        for n_e in newly_vald:
+            validated_cache.add(n_e)
+    return lr, validated_cache
 
 
 def cobs(
@@ -36,6 +54,7 @@ def cobs(
     max_tp_attempts = 15
     t = components.Time(0, 0, 0)
     vert_cache = []
+    validated_cache = set()
     for tp_attempt in range(max_tp_attempts):
         goal_achieved = False
         refine_from = contact_defs.fs
@@ -46,6 +65,10 @@ def cobs(
             nominal_plan = naive_cspace.make_task_plan(
                 graph, refine_from, goal, configs
             )
+            lr, validated_cache = virtual_refine(graph, nominal_plan, validated_cache)
+            if lr is not None:
+                graph = prune_edge(graph, lr)
+                continue
             print(f"task plan = {nominal_plan}")
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,

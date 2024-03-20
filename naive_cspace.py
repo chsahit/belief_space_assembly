@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
-import tqdm
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from pydrake.all import (
@@ -223,6 +222,17 @@ class CSpaceGraph:
         nx_graph.add_edge(CSpaceVolume(contact_defs.fs, []), fc)
         return nx_graph
 
+    def ground(
+        self, lifted_edge: Tuple[components.ContactState, components.ContactState]
+    ) -> Tuple[CSpaceVolume, CSpaceVolume]:
+        for e in self.E:
+            lp1 = (e[0].label, e[1].label) == lifted_edge
+            lp2 = (e[1].label, e[0].label) == lifted_edge
+            if lp1 or lp2:
+                return e
+        breakpoint()
+        raise Exception("edge not found")
+
 
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     try:
@@ -310,9 +320,9 @@ def MakeModeGraphFromFaces(
     B = MakeWorkspaceObjectFromFaces(faces_env)
     A = MakeWorkspaceObjectFromFaces(faces_manip)
     graph = make_graph([A], [B])
-    print(f"pruning graph, init edge count: {len(graph.E)}")
-    graph = parallel_refine_graph(graph)
-    print(f"remaining edge count: {len(graph.E)}")
+    # print(f"pruning graph, init edge count: {len(graph.E)}")
+    # graph = parallel_refine_graph(graph)
+    # print(f"remaining edge count: {len(graph.E)}")
 
     return graph
 
@@ -542,7 +552,7 @@ def compute_uncertainty_dir(configs: List[np.ndarray]) -> np.ndarray:
         direction = np.array([0, 0, 1.0])
     else:
         direction = direction / np.linalg.norm(direction)
-    print(f"{direction=}")
+    # print(f"{direction=}")
     assert abs(np.linalg.norm(direction) - 1) < 1e-4
     return direction
 
@@ -553,7 +563,7 @@ def check_edge_validity(
     if e[0].label == "fs" or e[1].label == "fs":
         return [e]
     if e in validated or e[::-1] in validated:
-        return []
+        return [e]
     v1, v2 = e
     e_query = v1.geometry[0].Intersection(v2.geometry[0])
     for e in mode_graph.E:
@@ -573,13 +583,6 @@ def check_edge_validity(
             if is_boundary(vtx, mode_graph.V):
                 return [e_query, e]
     return []
-
-
-def iterative_shortest_path(mode_graph, G_nx, start_vtx, goal_vtx, h):
-    successful_plan_found = False
-    cache = []
-    while not successful_plan_found:
-        return None
 
 
 def make_task_plan(
@@ -602,7 +605,7 @@ def make_task_plan(
     print("computing task plan")
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
     normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
-    print(f"{normals=}")
+    # print(f"{normals=}")
     tp = [tp_vtx.label for tp_vtx in tp_vertices]
     # vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
     # print(f"{vols=}")
@@ -780,4 +783,4 @@ def parallel_refine_graph(init_graph: CSpaceGraph) -> CSpaceGraph:
     validated = validated.union(new_edges)
     print(f"{len(validated)=}")
 
-    return CSpaceGraph(init_graph.V, refined_edges)
+    return CSpaceGraph(init_graph.V, validated)
