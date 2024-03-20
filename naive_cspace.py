@@ -240,38 +240,6 @@ def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     except:
         return None
     vertices = V.vertices().T
-    """
-    try:
-        V = VPolytope(H.ReduceInequalities())
-    except:
-        # software engineering is my passion
-        try:
-            V = VPolytope(H.ReduceInequalities(tol=1e-6))
-        except Exception as e:
-            breakpoint()
-    """
-    # vertices = V.vertices().T
-    """
-    if vertices.shape[0] < 6 and assert_count:
-
-        def MatToArr(m: cdd.Matrix) -> np.ndarray:
-            return np.array([m[i] for i in range(m.row_size)])
-
-        def HPolyhedronToVRepr(H: HPolyhedron) -> cdd.Matrix:
-            print("CDD fallback")
-            A, b = (H.A(), H.b())
-            H_repr = np.hstack((np.array([b]).T, -A))
-            mat = cdd.Matrix(H_repr, number_type="float")
-            mat.rep_type = cdd.RepType.INEQUALITY
-            poly = cdd.Polyhedron(mat)
-            return poly.get_generators()
-
-        vertices = MatToArr(HPolyhedronToVRepr(H))[:, 1:]
-    if assert_count:
-        if vertices.shape[0] < 6:
-            breakpoint()
-        assert vertices.shape == (8, 3) or vertices.shape == (6, 3)
-    """
     return vertices
 
 
@@ -335,86 +303,13 @@ def is_face(geom_name):
     return any([suffix in geom_name for suffix in suffixes])  # and (not is_badface)
 
 
-def internal_edge(e: Tuple[CSpaceVolume, CSpaceVolume], cspace: CSpaceVolume) -> bool:
-    assert len(e[0].geometry) == 1 and len(e[1].geometry) == 1
-    intersection = e[0].geometry[0].Intersection(e[1].geometry[0])
-    assert not intersection.IsEmpty()
-    for i in range(15):
-        try:
-            samples = [
-                intersection.UniformSample(drake_rng, intersection.ChebyshevCenter())
-            ]
-        except:
-            samples = []
-        if len(samples) > 0:
-            break
-    if len(samples) == 0:
-        return False  # probably true, but we are being conservative in pruning
-    for i in range(100):
-        samples.append(intersection.UniformSample(drake_rng, samples[-1]))
-
-    for sample in samples:
-        # this edge corresponds to an external edge on the CObs
-        if not cspace.is_strict_interior(sample):
-            return False
-    return True
-
-
-def prune_edges(
-    cspace_volumes: List[CSpaceVolume],
-    E: List[Tuple[CSpaceVolume, CSpaceVolume]],
-) -> List[Tuple[CSpaceVolume, CSpaceVolume]]:
-    all_volume_geometries = sum([vol.geometry for vol in cspace_volumes], [])
-    full_cspace = CSpaceVolume("", all_volume_geometries)
-    # plotly_render(full_cspace)
-    return E
-    pruned_edges = []
-    for e in tqdm(E):
-        if not internal_edge(e, full_cspace):
-            pruned_edges.append(e)
-    return pruned_edges
-
-
-def is_subset(H_A: HPolyhedron, H_B: HPolyhedron) -> bool:
-    vertices = GetVertices(H_A)
-    for v_idx in range(vertices.shape[0]):
-        if not H_B.PointInSet(vertices[v_idx]):
-            return False
-    return True
-
-
 def make_graph(
     manipuland: List[WorkspaceObject], env: List[WorkspaceObject]
 ) -> CSpaceGraph:
-    to_prune = []
-    ec = env[0]
-    for env_face_A in ec.faces.items():
-        for env_face_B in ec.faces.items():
-            if env_face_A[0] == env_face_B[0]:
-                continue
-            H_A = env_face_A[1]
-            H_B = env_face_B[1]
-            """
-            if "front_bottom" in env_face_A[0] and "bottom_top" in env_face_B[0]:
-                breakpoint()
-            """
-            if is_subset(H_A, H_B):
-                to_prune.append(env_face_A[0])
-            if is_subset(H_B, H_A):
-                to_prune.append(env_face_B[0])
-
-    to_prune = set(to_prune)
-    print(f"{to_prune=}")
-    ec_pruned_dict = dict()
-    for ef in ec.faces.items():
-        if ef[0] in to_prune:
-            continue
-        ec_pruned_dict[ef[0]] = ef[1]
-    env_pruned = [WorkspaceObject("env", [], ec_pruned_dict)]
     volumes = []
     edges = []
     for manip_component in manipuland:
-        for env_component in env_pruned:
+        for env_component in env:
             for manip_face in manip_component.faces.items():
                 for env_face in env_component.faces.items():
                     vol = minkowski_sum(*env_face, *manip_face)

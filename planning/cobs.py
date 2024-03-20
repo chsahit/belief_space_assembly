@@ -65,10 +65,6 @@ def cobs(
             nominal_plan = naive_cspace.make_task_plan(
                 graph, refine_from, goal, configs
             )
-            lr, validated_cache = virtual_refine(graph, nominal_plan, validated_cache)
-            if lr is not None:
-                graph = prune_edge(graph, lr)
-                continue
             print(f"task plan = {nominal_plan}")
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
