@@ -1,0 +1,114 @@
+from collections import defaultdict
+from typing import Dict, List, Tuple
+
+import numpy as np
+import trimesh
+from pydrake.all import HPolyhedron
+
+import components
+
+gen = np.random.default_rng(1)
+
+Hull = Tuple[List[np.ndarray], List[List[float]]]
+Face = Tuple[int, ...]
+Facet = Tuple[int, ...]
+
+
+def make_face_facet_mapping(mesh: trimesh.Trimesh) -> Dict[Face, Facet]:
+    face_mapping = dict()
+    for i, facet in enumerate(mesh.facets):
+        for face_idx in range(facet.shape[0]):
+            face = facet[face_idx]
+            assert face not in face_mapping.keys()
+            face_mapping[face] = i
+    return face_mapping
+
+
+def label_facets(mesh: trimesh.Trimesh, V) -> Dict[int, components.ContactState]:
+    label_dict = dict()
+    for i, facet in enumerate(mesh.facets):
+        sampled_pts = []
+        intersection = None
+        for face_idx in range(facet.shape[0]):
+            face = facet[face_idx]
+            verts = mesh.vertices[mesh.faces[face]]
+            for sample_idx in range(3):
+                w = gen.uniform(low=0, high=1, size=3)
+                w /= np.sum(w)
+                # equiv to np.dot(w, verts) I think?
+                pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]
+                sampled_pts.append(pt)
+        for pt in sampled_pts:
+            pt_contact = set()
+            for v in V:
+                if v.geometry[0].Scale(1).PointInSet(pt):
+                    pt_contact = pt_contact.union(v.label)
+            if intersection is None:
+                intersection = pt_contact
+            else:
+                intersection = intersection.intersection(pt_contact)
+        label_dict[i] = intersection
+    # TODO: I don't think the goal state is in here :(
+    return label_dict
+
+
+def label_face(mesh, face_id, V) -> components.ContactState:
+    verts = mesh.vertices[mesh.faces[face_id]]
+    sampled_pts = []
+    label = set()
+    for sample_idx in range(5):
+        w = gen.uniform(low=0, high=1, size=3)
+        w /= np.sum(w)
+        pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]
+        sampled_pts.append(pt)
+    for pt in sampled_pts:
+        for v in V:
+            if v.geometry[0].PointInSet(pt):
+                label = label.union(v.label)
+    if len(label) > 0:
+        return frozenset(label)
+    for pt in sampled_pts:
+        for v in V:
+            if v.geometry[0].Scale(1.01).PointInSet(pt):
+                label = label.union(v.label)
+    assert (len(label)) > 0
+    return frozenset(label)
+
+
+def cspace_vols_to_graph(hulls: List[Hull], V):
+    meshes = []
+    for hull in hulls:
+        mesh = trimesh.Trimesh(vertices=hull[0], faces=hull[1])
+        if not mesh.is_volume:
+            mesh.fix_normals()
+        meshes.append(mesh)
+    joined_mesh = meshes[0]
+    for mesh in meshes[1:]:
+        joined_mesh = joined_mesh.union(mesh)
+    joined_mesh.fix_normals()
+    joined_mesh.update_faces(joined_mesh.unique_faces())
+    joined_mesh = joined_mesh.process()
+    face_adjacency = joined_mesh.face_adjacency
+    """
+    joined_mesh_obj = joined_mesh.export(file_type="obj")
+    with open("cspace.obj", "w") as f:
+        f.write(joined_mesh_obj)
+    """
+    print(f"{joined_mesh.triangles.shape=}")
+    face_id_to_label = dict()
+    label_to_neighbors = defaultdict(set)
+    for face in range(joined_mesh.faces.shape[0]):
+        face_id_to_label[face] = label_face(joined_mesh, face, V)
+    for pair_idx in range(face_adjacency.shape[0]):
+        l0 = face_id_to_label[face_adjacency[pair_idx][0]]
+        l1 = face_id_to_label[face_adjacency[pair_idx][1]]
+        if l0 != l1:
+            label_to_neighbors[l0].add(l1)
+            label_to_neighbors[l1].add(l0)
+    """
+    for k, v in label_to_neighbors.items():
+        print(f"{k=},")
+        print(f"{v=}")
+    """
+    return label_to_neighbors
+    # breakpoint()

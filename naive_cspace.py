@@ -23,6 +23,7 @@ from tqdm import tqdm
 
 import components
 import contact_defs
+import cspace_faces
 import puzzle_contact_defs
 import state
 from simulation import hyperrectangle
@@ -173,6 +174,18 @@ class CSpaceGraph:
         breakpoint()
         raise Exception("edge not found")
 
+    def to_hulls(self):
+        hulls = list()
+        for v in self.V:
+            geom = v.geometry[0]
+            verts = GetVertices(geom, assert_count=False)
+            try:
+                scipy_hull = ConvexHull(verts)
+                hulls.append((verts, scipy_hull.simplices))
+            except:
+                pass
+        return hulls
+
 
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     try:
@@ -228,7 +241,55 @@ def MakeModeGraphFromFaces(
     B = MakeWorkspaceObjectFromFaces(faces_env)
     A = MakeWorkspaceObjectFromFaces(faces_manip)
     graph = make_graph([A], [B])
+    l2n = cspace_faces.cspace_vols_to_graph(graph.to_hulls(), graph.V)
+    vis_graph(l2n)
+    breakpoint()
     return graph
+
+
+def vis_graph(label_graph: Dict[components.ContactState, Set[components.ContactState]]):
+    nx_graph = nx.Graph()
+    edges = set()
+    for k, v in label_graph.items():
+        for n in v:
+            if (k, n) in edges or (n, k) in edges:
+                continue
+            edges.add((k, n))
+            nx_graph.add_edge(k, n)
+    print(len(edges))
+    breakpoint()
+    pos = nx.spring_layout(nx_graph)
+    edge_x = []
+    edge_y = []
+    for edge in nx_graph.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y, line=dict(width=0.5, color="#888"), mode="lines"
+    )
+    node_x = [pos[node][0] for node in nx_graph.nodes()]
+    node_y = [pos[node][1] for node in nx_graph.nodes()]
+    labels = [str(node) for node in nx_graph.nodes()]
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode="markers+text",
+        hoverinfo="text",
+        marker=dict(
+            showscale=False,
+            colorscale="YlGnBu",
+            reversescale=True,
+            color=[],
+            size=10,
+            line_width=2,
+        ),
+    )
+    node_trace.text = labels
+    fig = go.Figure(data=[edge_trace, node_trace])
+    fig.update_layout(showlegend=False)
+    fig.write_html("mode_graph.html")
 
 
 def is_face(geom_name):
