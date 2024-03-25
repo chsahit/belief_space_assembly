@@ -186,6 +186,20 @@ class CSpaceGraph:
                 pass
         return hulls
 
+    def GetNode(self, label: components.ContactState) -> CSpaceVolume:
+        for v in self.V:
+            if v.label == label:
+                return v
+        print(f"warning, {label} not found")
+
+    def N(self, v) -> List[CSpaceVolume]:
+        neighbors = []
+        for e in self.E:
+            if e[0] == v:
+                neighbors.append(e[1])
+            if e[1] == v:
+                neighbors.append(e[0])
+        return neighbors
 
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     try:
@@ -242,9 +256,29 @@ def MakeModeGraphFromFaces(
     A = MakeWorkspaceObjectFromFaces(faces_manip)
     graph = make_graph([A], [B])
     l2n = cspace_faces.cspace_vols_to_graph(graph.to_hulls(), graph.V)
-    vis_graph(l2n)
+    updated_graph = update_edges(graph, l2n)
+    render_graph(updated_graph)
+    # vis_graph(l2n)
     breakpoint()
-    return graph
+    return updated_graph
+
+
+def update_edges(graph, edges_dict):
+    print("updating edges")
+    edges = set()
+    for label, n_labels in tqdm(edges_dict.items()):
+        for n_label in n_labels:
+            for v1_label in label:
+                for v2_label in n_label:
+                    if v1_label == v2_label:
+                        continue
+                    v1l = frozenset((v1_label,))
+                    v2l = frozenset((v2_label,))
+                    edge = (graph.GetNode(v1l), graph.GetNode(v2l))
+                    if (edge in edges) or (edge[::-1] in edges):
+                        continue
+                    edges.add(edge)
+    return CSpaceGraph(graph.V, list(edges))
 
 
 def vis_graph(label_graph: Dict[components.ContactState, Set[components.ContactState]]):
