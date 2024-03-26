@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 
 import networkx as nx
 
@@ -7,7 +7,25 @@ import contact_defs
 import dynamics
 import naive_cspace
 import state
+import visualize
 from planning import refine_motion
+from simulation import generate_contact_set, ik_solver
+
+
+def show_task_plan(p_repr: state.Particle, task_plan: List[components.ContactState]):
+    nominal_poses = []
+    for step in task_plan[1:]:
+        X_WG = generate_contact_set.project_manipuland_to_contacts(p_repr, step)
+        q_r = ik_solver.gripper_to_joint_states(X_WG[0])
+        nominal_poses.append((X_WG, q_r))
+    sample_particles = []
+    for pose in nominal_poses:
+        p_pose = p_repr.deepcopy()
+        p_pose.q_r = pose[1]
+        sample_particles.append(p_pose)
+    for particle in sample_particles:
+        visualize.show_particle(particle)
+    breakpoint()
 
 
 def prune_edge(
@@ -49,6 +67,7 @@ def cobs(
                 graph, refine_from, goal, configs
             )
             print(f"task plan = {nominal_plan}")
+            show_task_plan(p_repr, nominal_plan)
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
                 [nominal_plan[1]],
