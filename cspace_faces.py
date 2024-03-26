@@ -106,9 +106,11 @@ def cspace_vols_to_graph(hulls: List[Hull], V):
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
     face_adjacency = joined_mesh.face_adjacency
+    """
     joined_mesh_obj = joined_mesh.export(file_type="obj")
     with open("cspace.obj", "w") as f:
         f.write(joined_mesh_obj)
+    """
     print(f"{joined_mesh.triangles.shape=}")
     face_id_to_label = dict()
     label_to_neighbors = defaultdict(set)

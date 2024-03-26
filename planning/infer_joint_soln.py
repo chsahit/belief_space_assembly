@@ -100,6 +100,8 @@ def infer(
 
     test_points = np.array(test_points)
     all_samples_r6 = np.array(all_samples_r6)
+    if np.isnan(all_samples_r6).any() or np.isnan(all_scores).any():
+        breakpoint()
 
     # do regression
     test_points_out, _ = gp_sklearn(
