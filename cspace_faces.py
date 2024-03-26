@@ -1,3 +1,4 @@
+import pickle
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
@@ -75,6 +76,22 @@ def label_face(mesh, face_id, V) -> components.ContactState:
     return frozenset(label)
 
 
+def serialize_faces(face_id_to_label, mesh):
+    label_to_face_id = defaultdict(set)
+    label_to_verts = defaultdict(list)
+    for f, l in face_id_to_label.items():
+        f_verts = None
+        label_to_face_id[l].add(f)
+    for l, fid_set in label_to_face_id.items():
+        for f in fid_set:
+            f_verts = mesh.vertices[mesh.faces[f]]
+            for contact in l:
+                contact_set = frozenset((contact,))
+                label_to_verts[contact_set].append(f_verts)
+    with open("cspace_surface.pkl", "wb") as f:
+        pickle.dump(label_to_verts, f)
+
+
 def cspace_vols_to_graph(hulls: List[Hull], V):
     meshes = []
     for hull in hulls:
@@ -89,16 +106,15 @@ def cspace_vols_to_graph(hulls: List[Hull], V):
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
     face_adjacency = joined_mesh.face_adjacency
-    """
     joined_mesh_obj = joined_mesh.export(file_type="obj")
     with open("cspace.obj", "w") as f:
         f.write(joined_mesh_obj)
-    """
     print(f"{joined_mesh.triangles.shape=}")
     face_id_to_label = dict()
     label_to_neighbors = defaultdict(set)
     for face in range(joined_mesh.faces.shape[0]):
         face_id_to_label[face] = label_face(joined_mesh, face, V)
+    serialize_faces(face_id_to_label, joined_mesh)
     for pair_idx in range(face_adjacency.shape[0]):
         l0 = face_id_to_label[face_adjacency[pair_idx][0]]
         l1 = face_id_to_label[face_adjacency[pair_idx][1]]

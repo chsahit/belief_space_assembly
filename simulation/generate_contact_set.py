@@ -1,3 +1,4 @@
+import pickle
 import random
 from typing import List
 
@@ -263,6 +264,9 @@ def compute_samples_from_contact_set(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[np.ndarray]:
     contact_manifold = make_cspace(p, CF_d)
+    if len(CF_d) == 1:
+        samples = sample_from_contact_triangle(p, CF_d, num_samples=num_samples)
+        return samples
     samples = []
     cm_hyper_rect, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(contact_manifold)
     interior_pts = rejection_sample(contact_manifold, bounds, num_samples=num_samples)
@@ -277,6 +281,26 @@ def compute_samples_from_contact_set(
         interior_pt -= step_size * random_direction
         assert contact_manifold.PointInSet(interior_pt)
         samples.append(interior_pt)
+    return samples
+
+
+def sample_from_contact_triangle(
+    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
+) -> List[np.ndarray]:
+    triangles = None
+    samples = []
+    with open("cspace_surface.pkl", "rb") as f:
+        triangles = pickle.load(f)
+    assert triangles is not None
+    triangles_cf = triangles[CF_d]
+    if len(triangles_cf) == 0:
+        breakpoint()
+    for i in range(num_samples):
+        verts = random.choice(triangles_cf)
+        w = gen.uniform(low=0, high=1, size=3)
+        w /= np.sum(w)
+        pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]
+        samples.append(pt)
     return samples
 
 

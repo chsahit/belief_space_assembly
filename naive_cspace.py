@@ -201,6 +201,7 @@ class CSpaceGraph:
                 neighbors.append(e[0])
         return neighbors
 
+
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     try:
         V = VPolytope(H.ReduceInequalities(tol=1e-6))
@@ -259,7 +260,6 @@ def MakeModeGraphFromFaces(
     updated_graph = update_edges(graph, l2n)
     render_graph(updated_graph)
     # vis_graph(l2n)
-    breakpoint()
     return updated_graph
 
 
