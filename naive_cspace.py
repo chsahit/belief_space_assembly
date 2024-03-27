@@ -345,11 +345,6 @@ def make_graph(
                 for env_face in env_component.faces.items():
                     vol = minkowski_sum(*env_face, *manip_face)
                     volumes.append(vol)
-    """
-    for pair in itertools.combinations(volumes, 2):
-        if pair[0].intersects(pair[1]):
-            edges.append(pair)
-    """
     return CSpaceGraph(volumes, edges)
 
 
@@ -500,11 +495,7 @@ def make_task_plan(
         if v.label == goal_mode:
             goal_vtx = v
     assert (start_vtx is not None) and (goal_vtx is not None)
-    # do_backchain(mode_graph)
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
     normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
-    # print(f"{normals=}")
     tp = [tp_vtx.label for tp_vtx in tp_vertices]
-    # vols = [tp_vtx.volume() for tp_vtx in tp_vertices]
-    # print(f"{vols=}")
     return tp
