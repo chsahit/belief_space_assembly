@@ -146,20 +146,11 @@ def play_motions_on_belief(
 
 
 def show_particle(p: state.Particle):
-    # diagram, _ = p.make_plant(vis=True)
-    # simulator = Simulator(diagram)
-    # simulator.Initialize()
     u = components.CompliantMotion(
         RigidTransform(), p.X_WG, components.stiff, timeout=0.0
     )
     u = ik_solver.update_motion_qd(u)
     dynamics.simulate(p, u, vis=True)
-    """
-    meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
-    meshcat_vis.StartRecording()
-    simulator.AdvanceTo(0.000)
-    meshcat_vis.PublishRecording()
-    """
 
 
 def show_planning_results(fname: str):

@@ -118,8 +118,7 @@ def g(v1: CSpaceVolume, v2: CSpaceVolume, uncertainty_dir: np.ndarray) -> float:
         n = v1.normal()
     projection = np.dot(n, uncertainty_dir) * uncertainty_dir
     bonus = 1e-4 * np.linalg.norm(projection)
-    # bottom_bonus = "b1_top" in str(v2.label) or "b1_top" in str(v1.label)
-    return 1 - bonus  # - (0.9 * int(bottom_bonus))
+    return 1 - bonus
 
 
 class Cost:
@@ -145,22 +144,10 @@ class CSpaceGraph:
     def to_nx(self) -> nx.Graph:
         nx_graph = nx.Graph()
         for e in self.E:
-            if e[0].label in self.cache:
-                e[0].reached = True
-            else:
-                e[0].reached = False
-            if e[1].label in self.cache:
-                e[1].reached = True
-            else:
-                e[1].reached = False
             nx_graph.add_edge(e[0], e[1])
-        fc = None
-        for v in self.V:
-            if (
-                v.label == contact_defs.chamfer_init
-                or v.label == puzzle_contact_defs.top_touch
-            ):
-                fc = v
+        fc_a = self.GetNode(contact_defs.chamfer_init)
+        fc_b = self.GetNode(puzzle_contact_defs.top_touch)a
+        fc = next([fc_a, fc_b])
         nx_graph.add_edge(CSpaceVolume(contact_defs.fs, []), fc)
         return nx_graph
 
