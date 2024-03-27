@@ -18,6 +18,7 @@ def run_cobs():
     p2 = init_particle.init_puzzle(pitch=-2.0)
     b = state.Belief([p0, p1, p2])
     result = cobs.cobs(b, puzzle_contact_defs.side)
+    # result = cobs.cobs(b, puzzle_contact_defs.s_bottom)
     if result.traj is not None:
         visualize.play_motions_on_belief(state.Belief([p0, p1, p2]), result.traj)
         input()

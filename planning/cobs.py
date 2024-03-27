@@ -67,7 +67,8 @@ def cobs(
                 graph, refine_from, goal, configs
             )
             print(f"task plan = {nominal_plan}")
-            show_task_plan(p_repr, nominal_plan)
+            if refine_from == contact_defs.fs:
+                show_task_plan(p_repr, nominal_plan)
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
                 [nominal_plan[1]],

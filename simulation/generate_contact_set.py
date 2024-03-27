@@ -5,6 +5,7 @@ from typing import List
 import cdd
 import matplotlib.pyplot as plt
 import numpy as np
+import trimesh
 from pydrake.all import (
     ConvexSet,
     HPolyhedron,
@@ -295,12 +296,18 @@ def sample_from_contact_triangle(
     triangles_cf = triangles[CF_d]
     if len(triangles_cf) == 0:
         breakpoint()
-    for i in range(num_samples):
+    sample_attempts = 0
+    while True:
+        sample_attempts += 1
         verts = random.choice(triangles_cf)
         w = gen.uniform(low=0, high=1, size=3)
         w /= np.sum(w)
         pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]
+        if (pt[1] > 0.035 or pt[0] > 0.57 or pt[1] < -0.035):
+            continue
         samples.append(pt)
+        if len(samples) == num_samples:
+            break
     return samples
 
 

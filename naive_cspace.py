@@ -118,7 +118,8 @@ def g(v1: CSpaceVolume, v2: CSpaceVolume, uncertainty_dir: np.ndarray) -> float:
         n = v1.normal()
     projection = np.dot(n, uncertainty_dir) * uncertainty_dir
     bonus = 1e-4 * np.linalg.norm(projection)
-    return 1 - bonus
+    # bottom_bonus = "b1_top" in str(v2.label) or "b1_top" in str(v1.label)
+    return 1 - bonus # - (0.9 * int(bottom_bonus))
 
 
 class Cost:
