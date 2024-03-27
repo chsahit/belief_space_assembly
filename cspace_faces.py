@@ -75,6 +75,7 @@ def _label_face(mesh, face_id, V) -> components.ContactState:
     assert (len(label)) > 0
     return frozenset(label)
 
+
 def label_face(mesh, face_id, V) -> components.ContactState:
     verts = mesh.vertices[mesh.faces[face_id]]
     sampled_pts = []
@@ -102,7 +103,6 @@ def label_face(mesh, face_id, V) -> components.ContactState:
         # return _label_face(mesh, face_id, V)
         # return frozenset((("invalid", "invalid"), ))
     return frozenset(label)
-
 
 
 def serialize_faces(face_id_to_label, mesh):

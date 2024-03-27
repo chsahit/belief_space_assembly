@@ -64,27 +64,6 @@ class ObjectPose(NamedTuple):
         )
 
 
-@dataclass(frozen=True)
-class TreeNode:
-    u: CompliantMotion
-    u_pred: "TreeNode"
-    score: int
-
-    @property
-    def r7_repr(self) -> np.ndarray:
-        # this is copy pasted from utils.py :(
-        X = self.u.X_WCd
-        quat = X.rotation().ToQuaternion()
-        quat = np.array([quat.w(), quat.x(), quat.y(), quat.z()])
-        return np.concatenate((quat, X.translation()))
-
-
-@dataclass
-class Tree:
-    p: "Particle"
-    nodes: List[TreeNode]
-
-
 @dataclass
 class PlanningResult:
     traj: List[CompliantMotion]
@@ -111,24 +90,3 @@ class Time:
         self.total_time += result.total_time
         self.sim_time += result.sim_time
         self.num_posteriors += result.num_posteriors
-
-
-"""
-@dataclass
-class CFace:
-    H: HPolyhedron
-    neighbor_faces: List[CFace]
-    neighbors: List[Any]
-
-    def __eq___(self, other):
-        if not isinstance(other, CFace):
-            return False
-        # TODO: this should normalize the A, b repr before checking
-        return (np.isclose(self.A(), other.A())) and (np.isclose(self.b(), other.b()))
-
-
-@dataclass
-class CVert:
-    pose: np.ndarray
-    label: ContactState
-"""
