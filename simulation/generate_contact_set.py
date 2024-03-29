@@ -5,24 +5,12 @@ from typing import List
 import cdd
 import matplotlib.pyplot as plt
 import numpy as np
-import trimesh
-from pydrake.all import (
-    ConvexSet,
-    HPolyhedron,
-    Intersection,
-    MinkowskiSum,
-    RandomGenerator,
-    RigidTransform,
-    RotationMatrix,
-    Simulator,
-    VPolytope,
-)
+from pydrake.all import ConvexSet, HPolyhedron, RandomGenerator, RigidTransform
 
 import components
 import cspace
 import mr
 import state
-import utils
 from simulation import hyperrectangle, ik_solver
 
 random.seed(0)
@@ -31,7 +19,6 @@ drake_rng = RandomGenerator()
 
 
 def rejection_sample(cvx_set: ConvexSet, bounds, num_samples=1):
-    mixing_amount = 400  # can just be num samples
     valid_samples = []
     while len(valid_samples) < num_samples:
         sample = gen.uniform(bounds[0], bounds[1])
@@ -151,7 +138,6 @@ def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron) -> np.ndarray:
 
 
 def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
-    constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
     # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
@@ -189,32 +175,6 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
         return X_WM, RigidTransform()
 
 
-"""
-def make_cspace(
-    p: state.Particle,
-    CF_d: components.ContactState,
-    tf: RigidTransform = RigidTransform(),
-) -> Intersection:
-    contact_manifold = None
-    constraints = p.constraints
-    for env_poly, manip_poly_name in CF_d:
-        A_env, b_env = constraints[env_poly]
-        env_geometry = HPolyhedron(A_env, b_env)
-        A_manip, b_manip = p._manip_poly[manip_poly_name]
-        rotatated_manip = tf_HPolyhedron(HPolyhedron(A_manip, b_manip), tf)
-        manip_geometry = reflect_HPolyhedron(rotatated_manip)
-        minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
-        if contact_manifold is None:
-            contact_manifold = minkowski_sum
-        else:
-            _contact_manifold = Intersection(contact_manifold, minkowski_sum)
-            if not _contact_manifold.IsEmpty():
-                contact_manifold = _contact_manifold
-    assert not contact_manifold.IsEmpty()
-    return contact_manifold
-"""
-
-
 def make_cspace(
     p: state.Particle,
     CF_d: components.ContactState,
@@ -226,7 +186,7 @@ def make_cspace(
         env_geometry = HPolyhedron(*constraints[env_poly])
         manip_geometry = HPolyhedron(*p._manip_poly[manip_poly_name])
         rotated_manip = cspace.TF_HPolyhedron(manip_geometry, tf)
-        msum = cspace.minkowski_sum("", env_geometry, "", manip_geometry).geometry
+        msum = cspace.minkowski_sum("", env_geometry, "", rotated_manip).geometry
         if p_cspace is None:
             p_cspace = msum
         else:
@@ -285,7 +245,7 @@ def sample_from_contact_triangle(
     return samples
 
 
-def _project_manipuland_to_contacts(
+def project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[RigidTransform]:
     projections = []
@@ -301,13 +261,4 @@ def _project_manipuland_to_contacts(
         new_p = p.deepcopy()
         new_p.q_r = q_r
         projections.append(X_WG)
-    return projections
-
-
-def project_manipuland_to_contacts(
-    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
-) -> List[RigidTransform]:
-    offset = RigidTransform([0, 0, 0.000])
-    projections_pre = _project_manipuland_to_contacts(p, CF_d, num_samples=num_samples)
-    projections = [p.multiply(offset) for p in projections_pre]
     return projections

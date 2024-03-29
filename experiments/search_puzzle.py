@@ -1,15 +1,9 @@
-import numpy as np
-from pydrake.all import RigidTransform
-
-import components
-import dynamics
 import puzzle_contact_defs
 import state
 import utils
 import visualize
 from experiments import init_particle
 from planning import cobs, randomized_search, refine_motion
-from simulation import diagram_factory
 
 
 def run_cobs():

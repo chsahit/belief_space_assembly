@@ -40,7 +40,7 @@ def GP(X1, y1, X2, kernel_func):
     # Solve
     try:
         solved = scipy.linalg.solve(Sigma11_ridge, Sigma12, assume_a="pos").T
-    except Exception as e:
+    except Exception:
         solved = scipy.linalg.solve(Sigma11_ridge, Sigma12).T
     # Compute posterior mean
     μ2 = solved @ y1

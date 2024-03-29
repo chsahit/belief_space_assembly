@@ -1,16 +1,13 @@
 import os
 import random
-import time
 
 import numpy as np
-from pydrake.all import RigidTransform
 
 import components
 import dynamics
 import state
-import visualize
 from planning import compliance_solver, infer_joint_soln
-from simulation import generate_contact_set, ik_solver
+from simulation import ik_solver
 
 random.seed(0)
 gen = np.random.default_rng(0)

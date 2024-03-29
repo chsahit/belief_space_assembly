@@ -7,7 +7,6 @@ import components
 import dynamics
 import state
 import utils
-import visualize
 from simulation import generate_contact_set, ik_solver
 
 np.set_printoptions(precision=5, suppress=True)
@@ -21,7 +20,6 @@ def evaluate_K(
 ) -> List[components.CompliantMotion]:
     scores = []
     negative_motions = []
-    nominal = p.X_WG
     if targets is None:
         targets = generate_contact_set.project_manipuland_to_contacts(
             p, CF_d, num_samples=32
@@ -89,7 +87,7 @@ def K_r_opt(p: state.Particle) -> np.ndarray:
         delta_neg = utils.xyz_rpy_deg([0, 0, 0], -rpy)
         cspace_pos = generate_contact_set.make_cspace(p, p.contacts, delta_pos)
         cspace_neg = generate_contact_set.make_cspace(p, p.contacts, delta_neg)
-        if cspace_pos.PointInSet(p.X_WM.translation()) and cspace_pos.PointInSet(
+        if cspace_pos.PointInSet(p.X_WM.translation()) and cspace_neg.PointInSet(
             p.X_WM.translation()
         ):
             K.append(components.soft[i])

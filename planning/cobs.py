@@ -54,8 +54,6 @@ def cobs(
     graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
     max_tp_attempts = 15
     t = components.Time(0, 0, 0)
-    vert_cache = []
-    validated_cache = set()
     for tp_attempt in range(max_tp_attempts):
         goal_achieved = False
         refine_from = contact_defs.fs
@@ -66,8 +64,8 @@ def cobs(
                 graph, refine_from, goal, b_curr.direction()
             )
             print(f"task plan = {nominal_plan}")
-            if refine_from == contact_defs.fs:
-                show_task_plan(p_repr, nominal_plan)
+            # if refine_from == contact_defs.fs:
+            #     show_task_plan(p_repr, nominal_plan)
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
                 [nominal_plan[1]],

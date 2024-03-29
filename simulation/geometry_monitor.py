@@ -4,18 +4,12 @@ from pydrake.all import (
     BasicVector,
     EventStatus,
     HPolyhedron,
-    JacobianWrtVariable,
     LeafSystem,
-    MinkowskiSum,
     MultibodyPlant,
     QueryObject,
-    RigidTransform,
     SceneGraphInspector,
     VPolytope,
 )
-
-import utils
-from simulation import hyperrectangle
 
 
 class GeometryMonitor(LeafSystem):
@@ -40,7 +34,6 @@ class GeometryMonitor(LeafSystem):
         )
         self._state_port = self.DeclareVectorInputPort("state", BasicVector(18))
         self.DeclareForcedPublishEvent(self.inspect_geometry)
-        self.J = None
 
     def _set_constraints(self, query_obj: QueryObject, inspector: SceneGraphInspector):
         self.constraints = dict()
@@ -55,28 +48,14 @@ class GeometryMonitor(LeafSystem):
                 )
             if "block" in name and (not name[-3:].isnumeric()):
                 frame_id_local = inspector.GetFrameId(g_id)
-                body = self.plant.GetBodyFromFrameId(frame_id_local)
-                frame_id_body = self.plant.GetBodyFrameIdOrThrow(body.index())
-                success = False
-                for i in range(2):
-                    if i % 2 == 1:
-                        f = frame_id_local
-                    else:
-                        f = frame_id_body
 
-                    polyhedron = HPolyhedron(
-                        query_obj, g_id, reference_frame=frame_id_local
-                    )
-                    self.manip_poly[name] = (polyhedron.A(), polyhedron.b())
-                    success = self.aa_compute_fine_geometries(
-                        name, self.manip_poly, polyhedron.A(), polyhedron.b()
-                    )
-                    if success:
-                        break
-                if not success:
-                    from remote_pdb import set_trace
-
-                    set_trace()
+                polyhedron = HPolyhedron(
+                    query_obj, g_id, reference_frame=frame_id_local
+                )
+                self.manip_poly[name] = (polyhedron.A(), polyhedron.b())
+                success = self.aa_compute_fine_geometries(
+                    name, self.manip_poly, polyhedron.A(), polyhedron.b()
+                )
 
         if self.manip_poly is None:
             print("warning, manipulator geometry not cached")
@@ -86,7 +65,7 @@ class GeometryMonitor(LeafSystem):
         contact_state = []
         try:
             sdf_data = query_obj.ComputeSignedDistancePairwiseClosestPoints(0.005)
-        except Exception as e:  # sometimes GJK likes to crash :(
+        except Exception:  # sometimes GJK likes to crash :(
             print("GJK crash :(")
             sdf_data = []
         for dist in sdf_data:
@@ -106,22 +85,6 @@ class GeometryMonitor(LeafSystem):
         query_obj = self._geom_port.Eval(context)
         q = self._state_port.Eval(context)
         self.plant.SetPositionsAndVelocities(self.plant_context, q)
-        G = self.plant.GetBodyByName("panda_hand", self.panda).body_frame()
-        J = self.plant.CalcJacobianSpatialVelocity(
-            self.plant_context,
-            JacobianWrtVariable.kQDot,
-            G,
-            np.array([0, 0, 0]),
-            self.plant.world_frame(),
-            self.plant.world_frame(),
-        )
-        panda_start_pos = self.plant.GetJointByName(
-            "panda_joint1", self.panda
-        ).position_start()
-        panda_end_pos = self.plant.GetJointByName(
-            "panda_joint7", self.panda
-        ).position_start()
-        self.J = J[:, panda_start_pos : panda_end_pos + 1]
         inspector = query_obj.inspector()
         self._set_constraints(query_obj, inspector)
         self._set_contacts(query_obj, inspector)
@@ -191,8 +154,7 @@ class GeometryMonitor(LeafSystem):
                     if env_poly_name not in self.constraints.keys():
                         continue
                     env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.1)
-                    minkowski_sum = MinkowskiSum(env_poly, m_poly)
-                    if minkowski_sum.PointInSet(X_WM.translation()):
+                    if env_poly.IntersectsWith(m_poly):
                         cspace_sdf[(env_poly_name, m_poly_name)] = -1
         self.sdf.update(cspace_sdf)
 

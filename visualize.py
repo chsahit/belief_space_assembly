@@ -2,26 +2,18 @@ import pickle
 from typing import List
 
 import networkx as nx
-import numpy as np
 import plotly.graph_objects as go
-from PIL import Image
 from pydrake.all import (
-    AddMultibodyPlantSceneGraph,
     CollisionFilterDeclaration,
-    ContactModel,
     ContactVisualizer,
     DiagramBuilder,
-    HPolyhedron,
-    IllustrationProperties,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
-    Parser,
     RigidTransform,
     Role,
     RoleAssign,
     Simulator,
-    VPolytope,
 )
 
 import components
@@ -234,7 +226,7 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
         dynamics.simulate(p_vis, u_noop, vis=True)
 
 
-def render_graph(g: nx.Graph, label_dict):
+def render_graph(nx_graph: nx.Graph, label_dict):
     edge_x = []
     edge_y = []
     pos = nx.spring_layout(nx_graph)

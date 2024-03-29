@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import random
-from itertools import product
 from typing import Dict, List
 
 import numpy as np
 import numpy.linalg as la
-from pydrake.all import HPolyhedron, RigidTransform, Simulator, System, VPolytope
+from pydrake.all import RigidTransform, System
 
 import components
 from simulation import plant_builder
@@ -35,7 +34,6 @@ class Particle:
         self._manip_poly = None
         self.trajectory = []
         self._sim_id = None
-        self._J = None
 
     def make_plant(
         self,
@@ -67,15 +65,8 @@ class Particle:
         geom_monitor.ForcedPublish(geom_monitor.GetMyContextFromRoot(diagram_context))
         self._contacts = geom_monitor.contacts
         self._sdf = geom_monitor.sdf
-        self._J = geom_monitor.J
         self._constraints = geom_monitor.constraints
         self._manip_poly = geom_monitor.manip_poly
-
-    @property
-    def J(self) -> np.ndarray:
-        if self._J is None:
-            self._update_contact_data()
-        return self._J
 
     @property
     def contacts(self) -> components.ContactState:
@@ -184,26 +175,7 @@ class Belief:
         cs = self.particles[0].epsilon_contacts(epsilon)
         for i in range(1, len(self.particles)):
             cs = cs.intersection(self.particles[i].epsilon_contacts(epsilon))
-        filtered_cs = []
-        for c in cs:
-            if "Box" not in str(c) or True:
-                filtered_cs.append(c)
-        filtered_cs = frozenset(filtered_cs)
-        return filtered_cs
-
-    def score(
-        self,
-        CF_d: components.ContactState,
-        epsilon: float = 0.001,
-        delta: float = 0.001,
-    ) -> float:
-        assert len(self.particles) > 0
-        num_sat = [
-            int(p.satisfies_contact(CF_d, epsilon=epsilon)) for p in self.particles
-        ]
-        ratio_satisfiying = float(sum(num_sat)) / float(len(self.particles))
-        num_contacts = len(self.contact_state())
-        return ratio_satisfiying + (delta * num_contacts)
+        return frozenset(cs)
 
     @staticmethod
     def make_particles(
@@ -228,7 +200,7 @@ class Belief:
             )
         return Belief(particles)
 
-    def mean(self) -> state.Particle:
+    def mean(self) -> Particle:
         avg_xyz = (1.0 / len(self.particles)) * sum(
             [p.X_WG.translation() for p in self.particles]
         )
@@ -245,7 +217,7 @@ class Belief:
     def direction(self) -> np.ndarray:
         qs = np.array([p.X_WM.translation() for p in self.particles])
         qs_normalized = qs - np.mean(qs)
-        cov = np.cov(qs, rowvar=True)
+        cov = np.cov(qs_normalized, rowvar=True)
         evals, evecs = la.eig(cov)
         idx = np.argsort(evals)
         return evecs[idx[0]]

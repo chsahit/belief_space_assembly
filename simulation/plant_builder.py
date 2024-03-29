@@ -1,42 +1,25 @@
-import os
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
-    CameraInfo,
-    ClippingRange,
     ContactModel,
     ContactVisualizer,
     CoulombFriction,
-    DepthRange,
-    DepthRenderCamera,
     Diagram,
     DiagramBuilder,
     DiscreteContactApproximation,
-    FirstOrderLowPassFilter,
-    JointActuatorIndex,
-    JointStiffnessController,
-    MakeRenderEngineGl,
-    MakeRenderEngineVtk,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
     ModelInstanceIndex,
     MultibodyPlant,
     Parser,
-    PdControllerGains,
     ProximityProperties,
-    RenderCameraCore,
-    RenderEngineGlParams,
-    RenderEngineVtkParams,
-    RgbdSensor,
-    RgbdSensorDiscrete,
     RigidTransform,
     Role,
     RoleAssign,
     SceneGraph,
-    Sphere,
 )
 
 import utils

@@ -1,14 +1,11 @@
-import numpy as np
 from pydrake.all import RigidTransform
 
 import components
-import contact_defs
 import dynamics
 import puzzle_contact_defs
 import state
 import utils
 import visualize
-from planning import search
 from simulation import generate_contact_set, ik_solver
 
 

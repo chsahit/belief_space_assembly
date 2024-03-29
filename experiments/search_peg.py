@@ -1,9 +1,4 @@
-import numpy as np
-from pydrake.all import RigidTransform
-
-import components
 import contact_defs
-import dynamics
 import state
 import utils
 import visualize
@@ -33,7 +28,6 @@ def simple_down():
         contact_defs.front_faces,
         contact_defs.bottom_faces_fully_constrained,
     ]
-    # diagram_factory.initialize_factory(b.particles)
     result = refine_motion.randomized_refine(b, modes, max_attempts=10)
     if result.traj is not None:
         print("visualize")

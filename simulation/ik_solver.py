@@ -19,10 +19,7 @@ from pydrake.all import (
     Solve,
 )
 
-import components
 import utils
-
-# import visualize
 
 
 def gripper_to_joint_states(
@@ -106,7 +103,7 @@ def get_geometry_ids(diagram: Diagram) -> Tuple[GeometryId, Dict[str, GeometryId
     return manipuland_id, g_id_map
 
 
-def axis_align_particle(p: state.Particle) -> state.Particle:
+def axis_align_particle(p: "state.Particle") -> "state.Particle":
     X_WM = p.X_WG.multiply(p.X_GM)
     X_WM_aa = RigidTransform(X_WM.GetAsMatrix4())
     # TODO: make a manip_geom dataclass so i dont have these if/elifs everywhere
@@ -128,7 +125,7 @@ def axis_align_particle(p: state.Particle) -> state.Particle:
     return new_p
 
 
-def step_sim(p: state.Particle) -> RigidTransform:
+def step_sim(p: "state.Particle") -> RigidTransform:
     # print("before step: ")
     # visualize.show_particle(p)
     diagram, _ = p.make_plant()

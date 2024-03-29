@@ -1,23 +1,17 @@
-import itertools
 import pickle
-import random
-import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Tuple
 
-import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import trimesh
 from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
 from scipy.spatial import ConvexHull
-from tqdm import tqdm
 
 import components
 import contact_defs
 import puzzle_contact_defs
-import state
 import utils
 
 drake_rng = RandomGenerator(0)
@@ -283,6 +277,6 @@ def make_task_plan(
             goal_vtx = v
     assert (start_vtx is not None) and (goal_vtx is not None)
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
-    normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
+    # normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
     tp = [tp_vtx.label for tp_vtx in tp_vertices]
     return tp

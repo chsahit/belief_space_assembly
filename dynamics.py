@@ -4,11 +4,9 @@ import sys
 import time
 from typing import List, Tuple
 
-import numpy as np
-from pydrake.all import MathematicalProgram, Simulator, Solve
+from pydrake.all import Simulator
 
 import components
-import mr
 import state
 from counters import *
 
@@ -178,7 +176,7 @@ def visualize_trajectory(
             simulator.AdvanceTo(t_boundary)
         except Exception as e:
             print(f"EXCEPTION: {e}")
-            print(f"{motion.X_WCd=}, {motion.X_GC}")
+            print(f"{u.X_WCd=}, {u.X_GC}")
             return None
     meshcat_vis.PublishRecording()
     with open(name, "w") as f:

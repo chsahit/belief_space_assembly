@@ -1,20 +1,9 @@
 import time
-from typing import Dict, List, Tuple
-
-import numpy as np
-from pydrake.all import (
-    Expression,
-    MathematicalProgram,
-    RigidTransform,
-    RigidTransform_,
-    Solve,
-)
-from tqdm import tqdm
+from typing import List
 
 import components
 import dynamics
 import state
-import utils
 from planning import randomized_search
 
 
@@ -57,11 +46,11 @@ def randomized_refine(
         if curr.satisfies_contact(modes[-1]):
             total_elapsed_time = time.time() - start_time
             sim_time = dynamics.get_time()
-            np = dynamics.get_posterior_count()
+            n_p = dynamics.get_posterior_count()
             dynamics.reset_posteriors()
             dynamics.reset_time()
             return components.PlanningResult(
-                traj, total_elapsed_time, sim_time, np, last_refined
+                traj, total_elapsed_time, sim_time, n_p, last_refined
             )
     tet = time.time() - start_time
     sim_time, np = (dynamics.get_time(), dynamics.get_posterior_count())
