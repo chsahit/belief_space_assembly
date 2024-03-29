@@ -113,7 +113,3 @@ def dump_mesh(mesh: trimesh.Trimesh):
     joined_mesh_obj = mesh.export(file_type="obj")
     with open("cspace.obj", "w") as f:
         f.write(joined_mesh_obj)
-
-
-if __name__ == "__main__":
-    post_process_rt_pickle("rot_uncertain.pkl")

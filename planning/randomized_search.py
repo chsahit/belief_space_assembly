@@ -1,4 +1,3 @@
-import os
 import random
 
 import numpy as np
@@ -13,15 +12,6 @@ random.seed(0)
 gen = np.random.default_rng(0)
 
 solve_for_compliance = compliance_solver.solve_for_compliance
-
-
-if os.uname()[1] == "londonsystem":
-    compliance_samples = 16
-    refinement_samples = 32
-else:
-    compliance_samples = 16
-    refinement_samples = 32
-print(f"{compliance_samples=}, {refinement_samples=}")
 
 
 def score_tree_root(

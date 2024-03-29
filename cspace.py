@@ -27,7 +27,7 @@ def TF_HPolyhedron(H: HPolyhedron, X_MMt: RigidTransform) -> HPolyhedron:
         homogenous = np.array([vert[0], vert[1], vert[2], 1])
         homogenous_tf = tf @ homogenous
         vertices_tf.append(homogenous_tf[:3])
-    return HPolyhedron(VPolytope(np.array(vertices_tf)))
+    return HPolyhedron(VPolytope(np.array(vertices_tf).T))
 
 
 class CSpaceVolume:
@@ -88,7 +88,6 @@ class CSpaceGraph:
         for v in self.V:
             if v.label == label:
                 return v
-        print(f"warning, {label} not found")
 
     def N(self, v) -> List[CSpaceVolume]:
         neighbors = []
@@ -124,7 +123,6 @@ class Cost:
         if v2.geometry is not None:
             n = v2.normal()
         else:
-            print(f"warning, edge cost of {v1.label}, {v2.label} being computed")
             n = v1.normal()
         projection = np.dot(n, self.uncertainty_dir) * self.uncertainty_dir
         bonus = 1e-4 * np.linalg.norm(projection)
@@ -203,7 +201,6 @@ def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     joined_mesh = joined_mesh.process()
     face_adjacency = joined_mesh.face_adjacency
     # utils.dump_mesh(joined_mesh)
-    print(f"{joined_mesh.triangles.shape=}")
     face_id_to_label = dict()
     label_to_neighbors = defaultdict(set)
     for face in range(joined_mesh.faces.shape[0]):

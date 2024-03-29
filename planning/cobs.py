@@ -39,7 +39,7 @@ def prune_edge(
         delete_edge = labels_a == lr or labels_b == lr
         if not delete_edge:
             edges.append(e)
-    graph = cspace.CSpaceGraph(graph_init.V, edges, [])
+    graph = cspace.CSpaceGraph(graph_init.V, edges)
     return graph
 
 
@@ -48,7 +48,6 @@ def cobs(
     goal: components.ContactState,
     opt_compliance: bool = True,
 ) -> components.PlanningResult:
-    print("warning, nominal particle hardedcoded to i=1")
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
     graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
