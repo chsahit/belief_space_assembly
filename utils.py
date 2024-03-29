@@ -2,7 +2,15 @@ import pickle
 from typing import List
 
 import numpy as np
-from pydrake.all import Quaternion, RigidTransform, RollPitchYaw, RotationMatrix
+import trimesh
+from pydrake.all import (
+    HPolyhedron,
+    Quaternion,
+    RigidTransform,
+    RollPitchYaw,
+    RotationMatrix,
+    VPolytope,
+)
 
 import components
 
@@ -81,6 +89,30 @@ def envelope_analysis(data):
     print(f"{ours_max=}")
     print(f"{no_stiffness_max=}")
     print(f"{no_gp_max=}")
+
+
+def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
+    try:
+        V = VPolytope(H.ReduceInequalities(tol=1e-6))
+    except:
+        return None
+    vertices = V.vertices().T
+    return vertices
+
+
+def label_to_str(label: components.ContactState) -> str:
+    tag = ""
+    for contact in label:
+        A = contact[0][contact[0].find("::") + 2 :]
+        B = contact[1][contact[1].find("::") + 2 :]
+        tag += f"({A}, {B}), "
+    return tag
+
+
+def dump_mesh(mesh: trimesh.Trimesh):
+    joined_mesh_obj = mesh.export(file_type="obj")
+    with open("cspace.obj", "w") as f:
+        f.write(joined_mesh_obj)
 
 
 if __name__ == "__main__":

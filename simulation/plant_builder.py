@@ -40,7 +40,7 @@ from pydrake.all import (
 )
 
 import utils
-from simulation import controller, full_joint_stiffness, geometry_monitor
+from simulation import full_joint_stiffness, geometry_monitor
 
 timestep = 0.005
 contact_model = ContactModel.kHydroelasticWithFallback

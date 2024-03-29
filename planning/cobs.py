@@ -4,8 +4,8 @@ import networkx as nx
 
 import components
 import contact_defs
+import cspace
 import dynamics
-import naive_cspace
 import state
 import visualize
 from planning import refine_motion
@@ -29,7 +29,7 @@ def show_task_plan(p_repr: state.Particle, task_plan: List[components.ContactSta
 
 
 def prune_edge(
-    graph_init: naive_cspace.CSpaceGraph,
+    graph_init: cspace.CSpaceGraph,
     lr: Tuple[components.ContactState, components.ContactState],
 ) -> nx.Graph:
     edges = []
@@ -39,7 +39,7 @@ def prune_edge(
         delete_edge = labels_a == lr or labels_b == lr
         if not delete_edge:
             edges.append(e)
-    graph = naive_cspace.CSpaceGraph(graph_init.V, edges, [])
+    graph = cspace.CSpaceGraph(graph_init.V, edges, [])
     return graph
 
 
@@ -51,7 +51,7 @@ def cobs(
     print("warning, nominal particle hardedcoded to i=1")
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
-    graph = naive_cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
+    graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
     max_tp_attempts = 15
     t = components.Time(0, 0, 0)
     vert_cache = []
@@ -62,9 +62,8 @@ def cobs(
         b_curr = b0
         trajectory = []
         while not goal_achieved:
-            configs = [p.X_OM.translation() for p in b_curr.particles]
-            nominal_plan = naive_cspace.make_task_plan(
-                graph, refine_from, goal, configs
+            nominal_plan = cspace.make_task_plan(
+                graph, refine_from, goal, b_curr.direction()
             )
             print(f"task plan = {nominal_plan}")
             if refine_from == contact_defs.fs:

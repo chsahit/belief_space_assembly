@@ -5,10 +5,11 @@ from itertools import product
 from typing import Dict, List
 
 import numpy as np
+import numpy.linalg as la
 from pydrake.all import HPolyhedron, RigidTransform, Simulator, System, VPolytope
 
 import components
-from simulation import diagram_factory, plant_builder
+from simulation import plant_builder
 
 
 class Particle:
@@ -42,10 +43,6 @@ class Particle:
         collision: bool = False,
         meshcat_instance=None,
     ) -> System:
-        if (self._sim_id is not None) and (not vis):
-            if collision:
-                return diagram_factory.collision_diagrams[self._sim_id], None
-            return diagram_factory.sim_diagrams[self._sim_id], None
         return plant_builder.make_plant(
             self.q_r,
             self.X_GM,
@@ -244,3 +241,11 @@ class Belief:
                 best_particle = p
         assert best_particle is not None
         return best_particle
+
+    def direction(self) -> np.ndarray:
+        qs = np.array([p.X_WM.translation() for p in self.particles])
+        qs_normalized = qs - np.mean(qs)
+        cov = np.cov(qs, rowvar=True)
+        evals, evecs = la.eig(cov)
+        idx = np.argsort(evals)
+        return evecs[idx[0]]

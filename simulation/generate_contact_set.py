@@ -19,8 +19,8 @@ from pydrake.all import (
 )
 
 import components
+import cspace
 import mr
-import naive_cspace
 import state
 import utils
 from simulation import hyperrectangle, ik_solver
@@ -85,30 +85,6 @@ def Scale(H: HPolyhedron, scale: float = 100) -> HPolyhedron:
     b = H.b()
     b *= scale
     return HPolyhedron(H.A(), b)
-
-
-"""
-def reflect_HPolyhedron(H: HPolyhedron) -> HPolyhedron:
-    H_big = Scale(H)
-    vrep = VPolytope(H_big)
-    verts = vrep.vertices()
-    assert verts.shape[1] == 8
-    transformed_verts = np.array([-1 * vert for vert in verts.T])
-    transformed_vrep = VPolytope(transformed_verts.T)
-    transformed_hrep = Scale(HPolyhedron(transformed_vrep), 0.01)
-    return transformed_hrep
-
-
-def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
-    H_big = Scale(H)
-    vrep = VPolytope(H_big)
-    verts = vrep.vertices()
-    assert verts.shape[1] == 8
-    transformed_verts = np.array([tf(X, vert) for vert in verts.T])
-    transformed_vrep = VPolytope(transformed_verts.T)
-    transformed_hrep = Scale(HPolyhedron(transformed_vrep), 0.01)
-    return transformed_hrep
-"""
 
 
 def MatToArr(m: cdd.Matrix) -> np.ndarray:
@@ -249,10 +225,8 @@ def make_cspace(
     for env_poly, manip_poly_name in CF_d:
         env_geometry = HPolyhedron(*constraints[env_poly])
         manip_geometry = HPolyhedron(*p._manip_poly[manip_poly_name])
-        rotated_manip = naive_cspace.TF_HPolyhedron(manip_geometry, tf)
-        msum = naive_cspace.minkowski_sum(
-            "", env_geometry, "", manip_geometry
-        ).geometry[0]
+        rotated_manip = cspace.TF_HPolyhedron(manip_geometry, tf)
+        msum = cspace.minkowski_sum("", env_geometry, "", manip_geometry).geometry
         if p_cspace is None:
             p_cspace = msum
         else:

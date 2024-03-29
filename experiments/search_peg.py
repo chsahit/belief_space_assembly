@@ -4,13 +4,11 @@ from pydrake.all import RigidTransform
 import components
 import contact_defs
 import dynamics
-import naive_cspace
 import state
 import utils
 import visualize
 from experiments import init_particle
 from planning import ao_b_est, cobs, randomized_search, refine_motion
-from simulation import diagram_factory
 
 
 def auto_tp_sd():

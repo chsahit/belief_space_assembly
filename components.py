@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from typing import FrozenSet, List, NamedTuple, Tuple
+from typing import Dict, FrozenSet, List, NamedTuple, Tuple
 
 import numpy as np
 from pydrake.all import HPolyhedron, RigidTransform, RollPitchYaw
 
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
+Hull = Tuple[np.ndarray, List[List[float]]]
 
 stiff = np.array([60.0, 60.0, 60.0, 400.0, 400.0, 400.0])
 soft = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 100.0])
@@ -90,3 +91,9 @@ class Time:
         self.total_time += result.total_time
         self.sim_time += result.sim_time
         self.num_posteriors += result.num_posteriors
+
+
+@dataclass(frozen=True)
+class WorkspaceObject:
+    name: str
+    faces: Dict[str, HPolyhedron]

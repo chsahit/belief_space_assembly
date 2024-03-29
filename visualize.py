@@ -1,7 +1,9 @@
 import pickle
 from typing import List
 
+import networkx as nx
 import numpy as np
+import plotly.graph_objects as go
 from PIL import Image
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
@@ -26,7 +28,7 @@ import components
 import dynamics
 import state
 import utils
-from simulation import controller, ik_solver, plant_builder
+from simulation import ik_solver, plant_builder
 
 
 # yoinked from https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
@@ -230,6 +232,41 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
         p_vis.env_geom = "assets/floor.sdf"
         p_vis.X_WO = RigidTransform([0.5, 0, -1.0])
         dynamics.simulate(p_vis, u_noop, vis=True)
+
+
+def render_graph(g: nx.Graph, label_dict):
+    edge_x = []
+    edge_y = []
+    pos = nx.spring_layout(nx_graph)
+    for edge in nx_graph.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y, line=dict(width=0.5, color="#888"), mode="lines"
+    )
+    node_x = [pos[node][0] for node in nx_graph.nodes()]
+    node_y = [pos[node][1] for node in nx_graph.nodes()]
+    labels = [label_dict[node] for node in nx_graph.nodes()]
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode="markers+text",
+        hoverinfo="text",
+        marker=dict(
+            showscale=False,
+            colorscale="YlGnBu",
+            reversescale=True,
+            color=[],
+            size=10,
+            line_width=2,
+        ),
+    )
+    node_trace.text = labels
+    fig = go.Figure(data=[edge_trace, node_trace])
+    fig.update_layout(showlegend=False)
+    fig.write_html("mode_graph.html")
 
 
 if __name__ == "__main__":
