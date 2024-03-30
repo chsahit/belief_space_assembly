@@ -198,10 +198,10 @@ def make_cspace(
 def compute_samples_from_contact_set(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[np.ndarray]:
-    contact_manifold = make_cspace(p, CF_d)
     if len(CF_d) == 1:
         samples = sample_from_contact_triangle(p, CF_d, num_samples=num_samples)
         return samples
+    contact_manifold = make_cspace(p, CF_d)
     samples = []
     cm_hyper_rect, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(contact_manifold)
     interior_pts = rejection_sample(contact_manifold, bounds, num_samples=num_samples)

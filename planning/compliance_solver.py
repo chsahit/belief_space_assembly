@@ -25,13 +25,14 @@ def evaluate_K(
             p, CF_d, num_samples=32
         )
 
-    X_GC = RigidTransform([0, 0, 0.15])
+    X_GC = RigidTransform([0, 0, 0.0])
     targets = [target.multiply(X_GC) for target in targets]
+    # visualize.visualize_targets(p, targets)
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
     motions = [ik_solver.update_motion_qd(m) for m in motions]
-    if "left" in str(CF_d) and False:
-        p_out = dynamics.simulate(p, motions[0], vis=True)
-        print(f"{p_out.sdf=}")
+    # for m in motions:
+    #     dynamics.simulate(p, m, vis=True)
+    # breakpoint()
     P_next = dynamics.f_cspace(p, motions)
     U = []
     for i, p_next in enumerate(P_next):
@@ -176,8 +177,3 @@ def hybrid_solve_for_compliance(
             K_opt = K_curr
     print(f"K_opt=\n{K_opt}")
     return K_opt, validated_samples
-
-
-def solve_for_compliance_b(b: state.Belief) -> np.ndarray:
-    # idea, average compliance across particles?
-    pass

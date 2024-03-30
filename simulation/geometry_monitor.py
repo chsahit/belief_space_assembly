@@ -5,6 +5,7 @@ from pydrake.all import (
     EventStatus,
     HPolyhedron,
     LeafSystem,
+    MinkowskiSum,
     MultibodyPlant,
     QueryObject,
     SceneGraphInspector,
@@ -153,8 +154,9 @@ class GeometryMonitor(LeafSystem):
                     env_poly_name = r_ec + "_" + direction_a
                     if env_poly_name not in self.constraints.keys():
                         continue
-                    env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.1)
-                    if env_poly.IntersectsWith(m_poly):
+                    env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.2)
+                    minkowski_sum = MinkowskiSum(env_poly, m_poly)
+                    if minkowski_sum.PointInSet(X_WM.translation() - 1e-3):
                         cspace_sdf[(env_poly_name, m_poly_name)] = -1
         self.sdf.update(cspace_sdf)
 
