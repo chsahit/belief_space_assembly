@@ -5,24 +5,12 @@ from typing import List
 import cdd
 import matplotlib.pyplot as plt
 import numpy as np
-import trimesh
-from pydrake.all import (
-    ConvexSet,
-    HPolyhedron,
-    Intersection,
-    MinkowskiSum,
-    RandomGenerator,
-    RigidTransform,
-    RotationMatrix,
-    Simulator,
-    VPolytope,
-)
+from pydrake.all import ConvexSet, HPolyhedron, RandomGenerator, RigidTransform
 
 import components
+import cspace
 import mr
-import naive_cspace
 import state
-import utils
 from simulation import hyperrectangle, ik_solver
 
 random.seed(0)
@@ -31,7 +19,6 @@ drake_rng = RandomGenerator()
 
 
 def rejection_sample(cvx_set: ConvexSet, bounds, num_samples=1):
-    mixing_amount = 400  # can just be num samples
     valid_samples = []
     while len(valid_samples) < num_samples:
         sample = gen.uniform(bounds[0], bounds[1])
@@ -85,30 +72,6 @@ def Scale(H: HPolyhedron, scale: float = 100) -> HPolyhedron:
     b = H.b()
     b *= scale
     return HPolyhedron(H.A(), b)
-
-
-"""
-def reflect_HPolyhedron(H: HPolyhedron) -> HPolyhedron:
-    H_big = Scale(H)
-    vrep = VPolytope(H_big)
-    verts = vrep.vertices()
-    assert verts.shape[1] == 8
-    transformed_verts = np.array([-1 * vert for vert in verts.T])
-    transformed_vrep = VPolytope(transformed_verts.T)
-    transformed_hrep = Scale(HPolyhedron(transformed_vrep), 0.01)
-    return transformed_hrep
-
-
-def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
-    H_big = Scale(H)
-    vrep = VPolytope(H_big)
-    verts = vrep.vertices()
-    assert verts.shape[1] == 8
-    transformed_verts = np.array([tf(X, vert) for vert in verts.T])
-    transformed_vrep = VPolytope(transformed_verts.T)
-    transformed_hrep = Scale(HPolyhedron(transformed_vrep), 0.01)
-    return transformed_hrep
-"""
 
 
 def MatToArr(m: cdd.Matrix) -> np.ndarray:
@@ -175,7 +138,6 @@ def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron) -> np.ndarray:
 
 
 def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
-    constraints = p.constraints
     relaxed_CF_d = relax_CF(CF_d)
     r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
     # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
@@ -213,32 +175,6 @@ def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
         return X_WM, RigidTransform()
 
 
-"""
-def make_cspace(
-    p: state.Particle,
-    CF_d: components.ContactState,
-    tf: RigidTransform = RigidTransform(),
-) -> Intersection:
-    contact_manifold = None
-    constraints = p.constraints
-    for env_poly, manip_poly_name in CF_d:
-        A_env, b_env = constraints[env_poly]
-        env_geometry = HPolyhedron(A_env, b_env)
-        A_manip, b_manip = p._manip_poly[manip_poly_name]
-        rotatated_manip = tf_HPolyhedron(HPolyhedron(A_manip, b_manip), tf)
-        manip_geometry = reflect_HPolyhedron(rotatated_manip)
-        minkowski_sum = MinkowskiSum(env_geometry, manip_geometry)
-        if contact_manifold is None:
-            contact_manifold = minkowski_sum
-        else:
-            _contact_manifold = Intersection(contact_manifold, minkowski_sum)
-            if not _contact_manifold.IsEmpty():
-                contact_manifold = _contact_manifold
-    assert not contact_manifold.IsEmpty()
-    return contact_manifold
-"""
-
-
 def make_cspace(
     p: state.Particle,
     CF_d: components.ContactState,
@@ -249,10 +185,8 @@ def make_cspace(
     for env_poly, manip_poly_name in CF_d:
         env_geometry = HPolyhedron(*constraints[env_poly])
         manip_geometry = HPolyhedron(*p._manip_poly[manip_poly_name])
-        rotated_manip = naive_cspace.TF_HPolyhedron(manip_geometry, tf)
-        msum = naive_cspace.minkowski_sum(
-            "", env_geometry, "", manip_geometry
-        ).geometry[0]
+        rotated_manip = cspace.TF_HPolyhedron(manip_geometry, tf)
+        msum = cspace.minkowski_sum("", env_geometry, "", rotated_manip).geometry
         if p_cspace is None:
             p_cspace = msum
         else:
@@ -264,10 +198,10 @@ def make_cspace(
 def compute_samples_from_contact_set(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[np.ndarray]:
-    contact_manifold = make_cspace(p, CF_d)
     if len(CF_d) == 1:
         samples = sample_from_contact_triangle(p, CF_d, num_samples=num_samples)
         return samples
+    contact_manifold = make_cspace(p, CF_d)
     samples = []
     cm_hyper_rect, bounds = hyperrectangle.CalcAxisAlignedBoundingBox(contact_manifold)
     interior_pts = rejection_sample(contact_manifold, bounds, num_samples=num_samples)
@@ -303,7 +237,7 @@ def sample_from_contact_triangle(
         w = gen.uniform(low=0, high=1, size=3)
         w /= np.sum(w)
         pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]
-        if (pt[1] > 0.035 or pt[0] > 0.57 or pt[1] < -0.035):
+        if pt[1] > 0.035 or pt[0] > 0.57 or pt[1] < -0.035:
             continue
         samples.append(pt)
         if len(samples) == num_samples:
@@ -311,7 +245,7 @@ def sample_from_contact_triangle(
     return samples
 
 
-def _project_manipuland_to_contacts(
+def project_manipuland_to_contacts(
     p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
 ) -> List[RigidTransform]:
     projections = []
@@ -327,13 +261,4 @@ def _project_manipuland_to_contacts(
         new_p = p.deepcopy()
         new_p.q_r = q_r
         projections.append(X_WG)
-    return projections
-
-
-def project_manipuland_to_contacts(
-    p: state.Particle, CF_d: components.ContactState, num_samples: int = 1
-) -> List[RigidTransform]:
-    offset = RigidTransform([0, 0, 0.000])
-    projections_pre = _project_manipuland_to_contacts(p, CF_d, num_samples=num_samples)
-    projections = [p.multiply(offset) for p in projections_pre]
     return projections

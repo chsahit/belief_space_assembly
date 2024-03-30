@@ -1,5 +1,6 @@
-import contact_defs
 import naive_cspace
+
+import contact_defs
 from experiments import init_particle
 
 

@@ -1,16 +1,9 @@
-import numpy as np
-from pydrake.all import RigidTransform
-
-import components
 import contact_defs
-import dynamics
-import naive_cspace
 import state
 import utils
 import visualize
 from experiments import init_particle
 from planning import ao_b_est, cobs, randomized_search, refine_motion
-from simulation import diagram_factory
 
 
 def auto_tp_sd():
@@ -35,7 +28,6 @@ def simple_down():
         contact_defs.front_faces,
         contact_defs.bottom_faces_fully_constrained,
     ]
-    # diagram_factory.initialize_factory(b.particles)
     result = refine_motion.randomized_refine(b, modes, max_attempts=10)
     if result.traj is not None:
         print("visualize")

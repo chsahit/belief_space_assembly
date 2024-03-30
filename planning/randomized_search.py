@@ -1,87 +1,17 @@
-import os
 import random
-import time
 
 import numpy as np
-from pydrake.all import RigidTransform
 
 import components
 import dynamics
 import state
-import visualize
 from planning import compliance_solver, infer_joint_soln
-from simulation import generate_contact_set, ik_solver
+from simulation import ik_solver
 
 random.seed(0)
 gen = np.random.default_rng(0)
 
 solve_for_compliance = compliance_solver.solve_for_compliance
-
-
-if os.uname()[1] == "londonsystem":
-    compliance_samples = 16
-    refinement_samples = 32
-else:
-    compliance_samples = 16
-    refinement_samples = 32
-print(f"{compliance_samples=}, {refinement_samples=}")
-
-
-def solve_for_compliance_dep(
-    p: state.Particle, CF_d: components.ContactState
-) -> np.ndarray:
-    targets = generate_contact_set.project_manipuland_to_contacts(
-        p, CF_d, num_samples=compliance_samples
-    )
-    """
-    if "top" in str(CF_d):
-        visualize.visualize_targets(p, targets)
-    """
-    # targets = apply_noise(targets)
-    K_opt = np.copy(components.stiff)
-    validated_samples, _ = compliance_solver.evaluate_K(p, CF_d, K_opt, targets=targets)
-    succ_count = len(validated_samples)
-    print(f"{K_opt=}, {succ_count=}")
-    if succ_count == len(targets):
-        return K_opt, validated_samples
-    for i in range(6):
-        K_curr = np.copy(K_opt)
-        K_curr[i] = components.soft[i]
-        curr_validated_samples, _ = compliance_solver.evaluate_K(
-            p, CF_d, K_curr, targets=targets
-        )
-        curr_succ_count = len(curr_validated_samples)
-        if curr_succ_count == len(targets):
-            return K_curr, curr_validated_samples
-        if curr_succ_count > succ_count:
-            succ_count = curr_succ_count
-            validated_samples = curr_validated_samples
-            K_opt = K_curr
-            print(f"{K_opt=}, {succ_count=}")
-
-    if succ_count == 0:
-        K_opt_soft = np.copy(components.soft)
-        validated_samples_soft, _ = compliance_solver.evaluate_K(
-            p, CF_d, K_opt_soft, targets=targets
-        )
-        succ_count_soft = len(validated_samples_soft)
-        print(f"{K_opt_soft=}, {succ_count_soft=}")
-        for i in range(6):
-            K_curr = np.copy(K_opt_soft)
-            K_curr[i] = components.stiff[i]
-            curr_validated_samples_soft, _ = compliance_solver.evaluate_K(
-                p, CF_d, K_opt_soft, targets=targets
-            )
-            curr_succ_count_soft = len(curr_validated_samples_soft)
-            if curr_succ_count_soft > succ_count_soft:
-                succ_count_soft = curr_succ_count_soft
-                K_opt_soft = K_curr
-                validated_samples_soft = curr_validated_samples_soft
-                print(f"{K_opt_soft=}, {succ_count_soft=}")
-        if succ_count_soft > succ_count:
-            K_opt = K_opt_soft
-            validated_samples = validated_samples_soft
-    return K_opt, validated_samples
 
 
 def score_tree_root(

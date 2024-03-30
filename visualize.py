@@ -1,32 +1,26 @@
 import pickle
 from typing import List
 
-import numpy as np
-from PIL import Image
+import networkx as nx
+import plotly.graph_objects as go
 from pydrake.all import (
-    AddMultibodyPlantSceneGraph,
     CollisionFilterDeclaration,
-    ContactModel,
     ContactVisualizer,
     DiagramBuilder,
-    HPolyhedron,
-    IllustrationProperties,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
-    Parser,
     RigidTransform,
     Role,
     RoleAssign,
     Simulator,
-    VPolytope,
 )
 
 import components
 import dynamics
 import state
 import utils
-from simulation import controller, ik_solver, plant_builder
+from simulation import ik_solver, plant_builder
 
 
 # yoinked from https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
@@ -146,20 +140,11 @@ def play_motions_on_belief(
 
 
 def show_particle(p: state.Particle):
-    # diagram, _ = p.make_plant(vis=True)
-    # simulator = Simulator(diagram)
-    # simulator.Initialize()
     u = components.CompliantMotion(
         RigidTransform(), p.X_WG, components.stiff, timeout=0.0
     )
     u = ik_solver.update_motion_qd(u)
     dynamics.simulate(p, u, vis=True)
-    """
-    meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
-    meshcat_vis.StartRecording()
-    simulator.AdvanceTo(0.000)
-    meshcat_vis.PublishRecording()
-    """
 
 
 def show_planning_results(fname: str):
@@ -236,9 +221,45 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
             RigidTransform(), p_vis.X_WG, components.stiff, timeout=0.001
         )
         u_noop.q_d = p_vis.q_r
-        p_vis.env_geom = "assets/floor.sdf"
+        # p_vis.env_geom = "assets/floor.sdf"
         p_vis.X_WO = RigidTransform([0.5, 0, -1.0])
         dynamics.simulate(p_vis, u_noop, vis=True)
+    breakpoint()
+
+
+def render_graph(nx_graph: nx.Graph, label_dict):
+    edge_x = []
+    edge_y = []
+    pos = nx.spring_layout(nx_graph)
+    for edge in nx_graph.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y, line=dict(width=0.5, color="#888"), mode="lines"
+    )
+    node_x = [pos[node][0] for node in nx_graph.nodes()]
+    node_y = [pos[node][1] for node in nx_graph.nodes()]
+    labels = [label_dict[node] for node in nx_graph.nodes()]
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode="markers+text",
+        hoverinfo="text",
+        marker=dict(
+            showscale=False,
+            colorscale="YlGnBu",
+            reversescale=True,
+            color=[],
+            size=10,
+            line_width=2,
+        ),
+    )
+    node_trace.text = labels
+    fig = go.Figure(data=[edge_trace, node_trace])
+    fig.update_layout(showlegend=False)
+    fig.write_html("mode_graph.html")
 
 
 if __name__ == "__main__":
