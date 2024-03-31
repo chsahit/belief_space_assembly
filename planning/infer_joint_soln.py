@@ -15,6 +15,7 @@ import mr
 
 warnings.simplefilter("ignore", category=ConvergenceWarning)
 gen_infer = np.random.default_rng(0)
+random.seed(0)
 
 
 # Yoinked from https://peterroelants.github.io/posts/gaussian-process-tutorial/

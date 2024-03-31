@@ -126,52 +126,16 @@ def tf_HPolyhedron(H: HPolyhedron, X: RigidTransform) -> HPolyhedron:
     return VerticesToHPolyhedron(vertices_transformed)
 
 
-def lowest_pt(X_WMt: RigidTransform, H: HPolyhedron) -> np.ndarray:
-    from pydrake.all import MathematicalProgram, Solve
-
-    eqns = tf_HPolyhedron(H, X_WMt.inverse())
-    mp = MathematicalProgram()
-    opt = mp.NewContinuousVariables(3, "opt")
-    mp.AddCost(opt[2])
-    eqns.AddPointInSetConstraints(mp, opt)
-    return Solve(mp).GetSolution(opt)
-
-
-def generate_noised(p: state.Particle, X_WM, CF_d, verbose=False):
-    relaxed_CF_d = relax_CF(CF_d)
-    r_vel = gen.uniform(low=-0.05, high=0.05, size=3)
-    # r_vel = gen.uniform(low=-0.00, high=0.00, size=3)
+def generate_noised(p: state.Particle, X_WM, CF):
     t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
+    r_vel = np.zeros((3,))
     random_vel = np.concatenate((r_vel, t_vel))
     X_MMt = RigidTransform(mr.MatrixExp6(mr.VecTose3(random_vel)))
     X_WMt = X_WM.multiply(X_MMt)
-    contact_manifold = make_cspace(p, relaxed_CF_d, tf=RigidTransform(X_WMt.rotation()))
-    if contact_manifold.PointInSet(X_WMt.translation()):
-        if verbose:
-            print(f"(point as is) {X_WMt.translation()=}")
+    contact_manif = make_cspace(p, relax_CF(CF), tf=RigidTransform(X_WMt.rotation()))
+    if contact_manif.PointInSet(X_WMt.translation()):
         return X_WMt, X_MMt
-    elif contact_manifold.PointInSet(X_WM.translation()):
-        direction = X_WMt.translation() - X_WM.translation()
-        pt = np.copy(X_WM.translation())
-        while contact_manifold.PointInSet(pt):
-            pt += 1e-4 * direction
-        pt -= 1e-4 * direction
-        X_WMt_new = RigidTransform(X_WMt.rotation(), pt)
-        X_MMt_new = X_WM.inverse().multiply(X_WMt_new)
-        """
-        if pt[2] > 0.081 and verbose:
-            hpol = HPolyhedron(*p._manip_poly["block::Box"])
-            breakpoint()
-            print(f"{lowest_pt(X_WMt_new, hpol)=}")
-        """
-        if verbose:
-            print(f"computed: {X_WMt_new.translation()=}")
-            hpol = HPolyhedron(*p._manip_poly["block::Box"])
-            print(f"{lowest_pt(X_WMt_new, hpol)=}")
-        return X_WMt_new, X_MMt_new
     else:
-        if verbose:
-            print(f"off manifold, sample_translated={X_WM.translation()}")
         return X_WM, RigidTransform()
 
 
@@ -253,8 +217,8 @@ def project_manipuland_to_contacts(
     X_WMs = [RigidTransform(p_WM) for p_WM in p_WMs]
     verbose = (num_samples == 16) and ("top" in str(CF_d))
     verbose = False
-    samples_noised = [generate_noised(p, X_WM, CF_d, verbose=verbose) for X_WM in X_WMs]
-    samples_noised = [(X_WM, None) for X_WM in X_WMs]
+    samples_noised = [generate_noised(p, X_WM, CF_d) for X_WM in X_WMs]
+    # samples_noised = [(X_WM, None) for X_WM in X_WMs]
     for X_WMt, X_MMt in samples_noised:
         X_WG = X_WMt.multiply(p.X_GM.inverse())
         q_r = ik_solver.gripper_to_joint_states(X_WG)

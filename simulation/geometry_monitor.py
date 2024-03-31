@@ -12,6 +12,8 @@ from pydrake.all import (
     VPolytope,
 )
 
+import utils
+
 
 class GeometryMonitor(LeafSystem):
     """Perform geometric queries on a plant without having to step a simulator.
@@ -154,10 +156,12 @@ class GeometryMonitor(LeafSystem):
                     env_poly_name = r_ec + "_" + direction_a
                     if env_poly_name not in self.constraints.keys():
                         continue
-                    env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.2)
+                    env_poly = HPolyhedron(*self.constraints[env_poly_name]).Scale(1.1)
                     minkowski_sum = MinkowskiSum(env_poly, m_poly)
-                    if minkowski_sum.PointInSet(X_WM.translation() - 1e-3):
+                    if minkowski_sum.PointInSet(X_WM.translation()):
                         cspace_sdf[(env_poly_name, m_poly_name)] = -1
+                    # elif "inside" in env_poly_name and "bottom" in m_poly_name:
+                    #     breakpoint()
         self.sdf.update(cspace_sdf)
 
     def general_compute_fine_geometries(self, name: str, mapping_dict, A, b):

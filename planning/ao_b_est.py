@@ -14,6 +14,7 @@ import mr
 import state
 from simulation import ik_solver
 
+random.seed(0)
 gen = np.random.default_rng(1)
 Bound = Tuple[float, float]
 workspace = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.21])

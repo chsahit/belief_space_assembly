@@ -41,6 +41,8 @@ def evaluate_K(
         else:
             negative_motions.append(motions[i])
             scores.append(0)
+    if p.satisfies_contact(CF_d) and len(U) == 0:
+        breakpoint()
     return U, (negative_motions, scores)
 
 

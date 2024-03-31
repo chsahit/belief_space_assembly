@@ -224,7 +224,6 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
         # p_vis.env_geom = "assets/floor.sdf"
         p_vis.X_WO = RigidTransform([0.5, 0, -1.0])
         dynamics.simulate(p_vis, u_noop, vis=True)
-    breakpoint()
 
 
 def render_graph(nx_graph: nx.Graph, label_dict):

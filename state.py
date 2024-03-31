@@ -10,6 +10,8 @@ from pydrake.all import RigidTransform, System
 import components
 from simulation import plant_builder
 
+random.seed(0)
+
 
 class Particle:
     def __init__(
