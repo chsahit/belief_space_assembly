@@ -20,6 +20,8 @@ gen = np.random.default_rng(1)
 
 def TF_HPolyhedron(H: HPolyhedron, X_MMt: RigidTransform) -> HPolyhedron:
     vertices = utils.GetVertices(H)
+    if vertices is None:
+        breakpoint()
     tf = X_MMt.inverse().GetAsMatrix4()
     vertices_tf = []
     for v_idx in range(vertices.shape[0]):
@@ -200,9 +202,8 @@ def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
     face_adjacency = joined_mesh.face_adjacency
-    # utils.dump_mesh(joined_mesh)
+    utils.dump_mesh(joined_mesh)
     face_id_to_label = dict()
-    label_to_neighbors = defaultdict(set)
     for face in range(joined_mesh.faces.shape[0]):
         candidate_label = label_face(joined_mesh, face, V)
         if candidate_label is not None:

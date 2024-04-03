@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 import networkx as nx
+from pydrake.all import HPolyhedron, RigidTransform
 
 import components
 import contact_defs
@@ -48,9 +49,18 @@ def cobs(
     goal: components.ContactState,
     opt_compliance: bool = True,
 ) -> components.PlanningResult:
-    p_repr = b0.particles[1]
+    p_repr = b0.particles[0]
     p_repr._update_contact_data()
-    graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, p_repr._manip_poly)
+    transformed_manip_poly = dict()
+    breakpoint()
+    print(f"{p_repr.X_WM.rotation().matrix()=}")
+    for name, geom in p_repr._manip_poly.items():
+        transformed_geom = cspace.TF_HPolyhedron(
+            HPolyhedron(*geom), RigidTransform(p_repr.X_WM.rotation())
+        )
+        transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
+    graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, transformed_manip_poly)
+    breakpoint()
     max_tp_attempts = 15
     t = components.Time(0, 0, 0)
     for tp_attempt in range(max_tp_attempts):
