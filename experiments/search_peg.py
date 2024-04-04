@@ -7,9 +7,10 @@ from planning import ao_b_est, cobs, randomized_search, refine_motion
 
 
 def auto_tp_sd():
-    p0 = init_particle.init_peg(y=-0.015)
+    # p0 = init_particle.init_peg(y=-0.015)
+    p0 = init_particle.init_peg(pitch=-2)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(y=0.015)
+    p2 = init_particle.init_peg(pitch=2)
     b = state.Belief([p0, p1, p2])
     result = cobs.cobs(b, contact_defs.bottom_faces_2)
     # result = ao_b_est.b_est(b, contact_defs.bottom_faces_2)

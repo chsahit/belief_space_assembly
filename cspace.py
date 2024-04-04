@@ -11,6 +11,7 @@ from scipy.spatial import ConvexHull
 
 import components
 import contact_defs
+import graph
 import puzzle_contact_defs
 import utils
 
@@ -194,13 +195,26 @@ def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
         mesh = trimesh.Trimesh(vertices=hull[0], faces=hull[1])
         if not mesh.is_volume:
             mesh.fix_normals()
+            if not mesh.is_volume:
+                breakpoint()
         meshes.append(mesh)
     joined_mesh = meshes[0]
+    skipped_meshes = []
     for mesh in meshes[1:]:
-        joined_mesh = joined_mesh.union(mesh)
+        _joined_mesh = joined_mesh.union(mesh)
+        if _joined_mesh.is_volume:
+            joined_mesh = _joined_mesh
+        else:
+            skipped_meshes.append(mesh)
+    print(f"{len(skipped_meshes)=}")
+    for skipped_mesh in skipped_meshes:
+        joined_mesh = joined_mesh.union(skipped_mesh)
     joined_mesh.fix_normals()
+    print(f"{joined_mesh.is_volume=}")
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
+    graph.make_abs_graphs(V, joined_mesh)
+    breakpoint()
     face_adjacency = joined_mesh.face_adjacency
     utils.dump_mesh(joined_mesh)
     face_id_to_label = dict()
@@ -266,13 +280,8 @@ def make_task_plan(
 ) -> List[components.ContactState]:
     G = mode_graph.to_nx()
     h = Cost(uncertainty_dir)
-    start_vtx = None
-    goal_vtx = None
-    for v in G.nodes():
-        if v.label == start_mode:
-            start_vtx = v
-        if v.label == goal_mode:
-            goal_vtx = v
+    start_vtx = mode_graph.GetNode(start_mode)
+    goal_vtx = mode_graph.GetNode(goal_mode)
     assert (start_vtx is not None) and (goal_vtx is not None)
     tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
     # normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
