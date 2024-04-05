@@ -197,7 +197,8 @@ def sample_from_contact_triangle(
     sample_attempts = 0
     while True:
         sample_attempts += 1
-        verts = random.choice(triangles_cf)
+        # verts = random.choice(triangles_cf)
+        verts = [triangles_cf[0], triangles_cf[1], triangles_cf[2]]
         w = gen.uniform(low=0, high=1, size=3)
         w /= np.sum(w)
         pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]

@@ -43,7 +43,7 @@ class CSpaceVolume:
         return self.geometry.UniformSample(drake_rng, mixing_steps=1000)
 
     def normal(self) -> np.ndarray:
-        if self.geometry is None:
+        if self.geometry is None or True:
             return np.zeros((3,))
         if self._normal is None:
             breakpoint()
@@ -84,7 +84,11 @@ class CSpaceGraph:
         fc_a = self.GetNode(contact_defs.chamfer_init)
         fc_b = self.GetNode(puzzle_contact_defs.top_touch)
         fc = fc_a or fc_b
-        nx_graph.add_edge(CSpaceVolume(contact_defs.fs, None), fc)
+        if fc is None:
+            fc = self.GetNode(contact_defs.uc_top)
+        free_space = CSpaceVolume(contact_defs.fs, None)
+        self.V.append(free_space)
+        nx_graph.add_edge(free_space, fc)
         return nx_graph.to_directed()
 
     def GetNode(self, label: components.ContactState) -> CSpaceVolume:
@@ -213,8 +217,8 @@ def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     print(f"{joined_mesh.is_volume=}")
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
-    graph.make_abs_graphs(V, joined_mesh)
-    breakpoint()
+    _, mode_graph = graph.make_abs_graphs(V, joined_mesh)
+    return list(mode_graph.edges())
     face_adjacency = joined_mesh.face_adjacency
     utils.dump_mesh(joined_mesh)
     face_id_to_label = dict()

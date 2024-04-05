@@ -1,4 +1,5 @@
 import itertools
+import pickle
 from collections import defaultdict
 from typing import DefaultDict, List, Set
 
@@ -8,10 +9,10 @@ import trimesh
 
 import visualize
 
+VertexLabel = DefaultDict[int, Set["CSpaceVolume"]]
 
-def label_vertices(
-    pts: List[np.ndarray], V: List["CSpaceVolume"]
-) -> DefaultDict[int, Set["CSpaceVolume"]]:
+
+def label_vertices(pts: List[np.ndarray], V: List["CSpaceVolume"]) -> VertexLabel:
     """
     returns a label L s.t.
     L[p] = {C_1, ..., C_N} s.t mesh.vertices[p] in C_n
@@ -38,6 +39,16 @@ def get_facet_id(face_id: int, mesh: trimesh.Trimesh) -> int:
     return facets[0]
 
 
+def dump_sampler_data(mesh: trimesh.Trimesh, labels: VertexLabel):
+    sampler_map = defaultdict(list)
+    for vtx_id, volume_set in labels.items():
+        for volume in volume_set:
+            sampler_map[volume.label].append(mesh.vertices[vtx_id])
+    with open("cspace_surface.pkl", "wb") as f:
+        pickle.dump(sampler_map, f)
+    return None
+
+
 def make_abs_graphs(V: List["CSpaceVolume"], mesh: trimesh.Trimesh):
     # make facet graph
     # V = Facets; E = (F1, F2) iff \exists (fa \in F1 and fb\in F2) s.t. (fa, fb) adjacent
@@ -53,6 +64,7 @@ def make_abs_graphs(V: List["CSpaceVolume"], mesh: trimesh.Trimesh):
     # make contact graph
     # V = CSpaceVolumeGraph, E = (V1, V2) iff \exists v\in V1 and v\in V2
     labels = label_vertices(mesh.vertices, V)
+    dump_sampler_data(mesh, labels)
     mode_graph = nx.Graph()
     for vtx_id, vols in labels.items():
         for v1, v2 in itertools.combinations(vols, 2):
