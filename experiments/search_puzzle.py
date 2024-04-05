@@ -14,7 +14,9 @@ def run_cobs():
     result = cobs.cobs(b, puzzle_contact_defs.side)
     # result = cobs.cobs(b, puzzle_contact_defs.s_bottom)
     if result.traj is not None:
-        visualize.play_motions_on_belief(state.Belief([p0, p1, p2]), result.traj)
+        visualize.play_motions_on_belief(
+            state.Belief([p0, p1, p2]), result.traj, fname="puzzle_soln.html"
+        )
         input()
 
 

@@ -203,7 +203,9 @@ def sample_from_contact_triangle(
         w = gen.uniform(low=0, high=1, size=pts.shape[0])
         w /= np.sum(w)
         pt = np.dot(w, pts)
-        if pt[1] > 0.035 or pt[0] > 0.57 or pt[1] < -0.035:
+        if (pt[1] > 0.035 or pt[0] > 0.57 or pt[1] < -0.035) and (
+            sample_attempts < 1000
+        ):
             continue
         samples.append(pt)
         if len(samples) == num_samples:
