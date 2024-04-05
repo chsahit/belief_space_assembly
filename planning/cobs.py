@@ -52,7 +52,6 @@ def cobs(
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
     transformed_manip_poly = dict()
-    print(f"{p_repr.X_WM.rotation().matrix()=}")
     for name, geom in p_repr._manip_poly.items():
         transformed_geom = cspace.TF_HPolyhedron(
             HPolyhedron(*geom), RigidTransform(p_repr.X_WM.rotation())

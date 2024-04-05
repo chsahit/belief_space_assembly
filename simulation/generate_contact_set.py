@@ -198,10 +198,11 @@ def sample_from_contact_triangle(
     while True:
         sample_attempts += 1
         # verts = random.choice(triangles_cf)
-        verts = [triangles_cf[0], triangles_cf[1], triangles_cf[2]]
-        w = gen.uniform(low=0, high=1, size=3)
+        # verts = [triangles_cf[0], triangles_cf[1], triangles_cf[2]]
+        pts = np.array(triangles_cf)
+        w = gen.uniform(low=0, high=1, size=pts.shape[0])
         w /= np.sum(w)
-        pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]
+        pt = np.dot(w, pts)
         if pt[1] > 0.035 or pt[0] > 0.57 or pt[1] < -0.035:
             continue
         samples.append(pt)

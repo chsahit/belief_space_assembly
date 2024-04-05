@@ -70,7 +70,4 @@ def make_abs_graphs(V: List["CSpaceVolume"], mesh: trimesh.Trimesh):
         for v1, v2 in itertools.combinations(vols, 2):
             mode_graph.add_edge(v1, v2)
 
-    # also return serializable representation
-    # mapping[csv_label] = List[np.ndarray], maybe mapping[facet][CSV_label] = List[np.ndarray]
-    print("warning, nothing is being serialized")
     return facet_graph, mode_graph
