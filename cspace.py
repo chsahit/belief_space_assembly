@@ -218,37 +218,9 @@ def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
     _, mode_graph = graph.make_abs_graphs(V, joined_mesh)
-    return list(mode_graph.edges())
-    face_adjacency = joined_mesh.face_adjacency
     utils.dump_mesh(joined_mesh)
-    face_id_to_label = dict()
-    for face in range(joined_mesh.faces.shape[0]):
-        candidate_label = label_face(joined_mesh, face, V)
-        if candidate_label is not None:
-            face_id_to_label[face] = candidate_label
-    labels_to_face_id = serialize_faces(face_id_to_label, joined_mesh)
-    # compute edges
-    for pair_idx in range(face_adjacency.shape[0]):
-        f0 = face_adjacency[pair_idx][0]
-        f1 = face_adjacency[pair_idx][1]
-        if (f0 not in face_id_to_label.keys()) or (f1 not in face_id_to_label.keys()):
-            continue
-        l0 = face_id_to_label[f0]
-        l1 = face_id_to_label[f1]
-        for contact_0 in l0:
-            v0 = empty_graph.GetNode(frozenset((contact_0,)))
-            v0._normal = joined_mesh.face_normals[f0]
-            for contact_1 in l1:
-                if contact_0 == contact_1:
-                    continue
-                v1 = empty_graph.GetNode(frozenset((contact_1,)))
-                v1._normal = joined_mesh.face_normals[f1]
-                cand_edge = (v0, v1)
-                if cand_edge in edges or cand_edge[::-1] in edges:
-                    continue
-                edges.add(cand_edge)
-    return list(edges)
-
+    actual_edges = list(mode_graph.edges())
+    return actual_edges
 
 def make_graph(
     manipuland: components.WorkspaceObject, env: components.WorkspaceObject

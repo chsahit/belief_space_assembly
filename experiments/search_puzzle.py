@@ -3,16 +3,18 @@ import state
 import utils
 import visualize
 from experiments import init_particle
-from planning import cobs, randomized_search, refine_motion
+from planning import cobs, ao_b_est, refine_motion
 
 
-def run_cobs():
-    p0 = init_particle.init_puzzle(pitch=2.0)
+def run_search(ours: bool = True):
+    p0 = init_particle.init_puzzle(pitch=0.5)
     p1 = init_particle.init_puzzle(pitch=0.0)
-    p2 = init_particle.init_puzzle(pitch=-2.0)
+    p2 = init_particle.init_puzzle(pitch=-0.5)
     b = state.Belief([p0, p1, p2])
-    result = cobs.cobs(b, puzzle_contact_defs.side)
-    # result = cobs.cobs(b, puzzle_contact_defs.s_bottom)
+    if ours:
+        result = cobs.cobs(b, puzzle_contact_defs.side)
+    else:
+        result = ao_b_est.b_est(b, puzzle_contact_defs.side)
     if result.traj is not None:
         visualize.play_motions_on_belief(
             state.Belief([p0, p1, p2]), result.traj, fname="puzzle_soln.html"
@@ -42,4 +44,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    run_cobs()
+    run_search(ours=False)

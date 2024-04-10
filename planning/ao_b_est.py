@@ -17,7 +17,9 @@ from simulation import ik_solver
 random.seed(0)
 gen = np.random.default_rng(1)
 Bound = Tuple[float, float]
-workspace = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.21])
+workspace = None
+workspace_peg = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.21])
+workspace_puzzle = ([0.48, 0.52], [-0.02, 0.02], [0.21, 0.02])
 
 
 @dataclass(frozen=True)
@@ -110,6 +112,11 @@ def best_node(tree: SearchTree) -> BNode:
 def b_est(
     b0: state.Belief, goal: components.ContactState, timeout: float = 1000.0
 ) -> components.PlanningResult:
+    global workspace
+    if "puzzle" in b0.particles[0].env_geom:
+        workspace = workspace_puzzle
+    else:
+        workspace = workspace_peg
     start_time = time.time()
     _tree = make_kdtree(*workspace, 10)
     tree = SearchTree(_tree)
