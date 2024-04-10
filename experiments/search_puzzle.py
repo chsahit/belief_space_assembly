@@ -3,7 +3,7 @@ import state
 import utils
 import visualize
 from experiments import init_particle
-from planning import cobs, ao_b_est, refine_motion
+from planning import ao_b_est, cobs, refine_motion
 
 
 def run_search(ours: bool = True):
@@ -44,4 +44,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    run_search(ours=False)
+    run_search(ours=True)

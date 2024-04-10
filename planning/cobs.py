@@ -65,10 +65,12 @@ def cobs(
         refine_from = contact_defs.fs
         b_curr = b0
         trajectory = []
+        start_pose = b0.mean().X_WM.translation()
         while not goal_achieved:
             nominal_plan = cspace.make_task_plan(
-                graph, refine_from, goal, b_curr.direction()
+                graph, refine_from, goal, b_curr.direction(), start_pose=start_pose
             )
+            start_pose = None
             print(f"task plan = {nominal_plan}")
             # if refine_from == contact_defs.fs:
             #     show_task_plan(p_repr, nominal_plan)

@@ -38,9 +38,21 @@ class CSpaceVolume:
         self.label = label
         self.geometry = geometry
         self._normal = None
+        self._center = None
 
     def sample(self) -> np.ndarray:
         return self.geometry.UniformSample(drake_rng, mixing_steps=1000)
+
+    @property
+    def center(self):
+        if self._center is None:
+            verts = utils.GetVertices(self.geometry)
+            if verts is None:
+                return np.array([100, 100, 100])
+            verts = verts.tolist()
+            center_pt = sum(verts, np.zeros((3,)))
+            self._center = (1.0 / len(verts)) * center_pt
+        return self._center
 
     def normal(self) -> np.ndarray:
         if self.geometry is None or True:
@@ -77,18 +89,22 @@ class CSpaceGraph:
             label_dict[v] = utils.label_to_str(v.label)
         return label_dict
 
-    def to_nx(self) -> nx.Graph:
+    def to_nx(self, start_pose: np.ndarray = None, n_closest: int = 4) -> nx.Graph:
         nx_graph = nx.Graph()
         for e in self.E:
             nx_graph.add_edge(e[0], e[1])
-        fc_a = self.GetNode(contact_defs.chamfer_init)
-        fc_b = self.GetNode(puzzle_contact_defs.top_touch)
-        fc = fc_a or fc_b
-        if fc is None:
-            fc = self.GetNode(contact_defs.uc_top)
-        free_space = CSpaceVolume(contact_defs.fs, None)
-        self.V.append(free_space)
-        nx_graph.add_edge(free_space, fc)
+
+        if start_pose is not None:
+            differences = []
+            free_space = CSpaceVolume(contact_defs.fs, None)
+            self.V.append(free_space)
+            for v in self.V:
+                differences.append(np.linalg.norm(start_pose - v.center))
+            smallest_indices = np.argpartition(np.array(differences), n_closest)
+            for idx in range(n_closest):
+                fc_neighbor = self.V[smallest_indices[idx]]
+                nx_graph.add_edge(free_space, fc_neighbor)
+
         return nx_graph.to_directed()
 
     def GetNode(self, label: components.ContactState) -> CSpaceVolume:
@@ -222,6 +238,7 @@ def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     actual_edges = list(mode_graph.edges())
     return actual_edges
 
+
 def make_graph(
     manipuland: components.WorkspaceObject, env: components.WorkspaceObject
 ) -> CSpaceGraph:
@@ -253,8 +270,9 @@ def make_task_plan(
     start_mode: components.ContactState,
     goal_mode: components.ContactState,
     uncertainty_dir: np.ndarray,
+    start_pose: np.ndarray = None,
 ) -> List[components.ContactState]:
-    G = mode_graph.to_nx()
+    G = mode_graph.to_nx(start_pose)
     h = Cost(uncertainty_dir)
     start_vtx = mode_graph.GetNode(start_mode)
     goal_vtx = mode_graph.GetNode(goal_mode)
