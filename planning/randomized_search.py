@@ -5,13 +5,13 @@ import numpy as np
 import components
 import dynamics
 import state
-from planning import compliance_solver, infer_joint_soln
+from planning import compliance_solver, infer_joint_soln, stiffness
 from simulation import ik_solver
 
 random.seed(0)
 gen = np.random.default_rng(0)
 
-solve_for_compliance = compliance_solver.solve_for_compliance
+solve_for_compliance = stiffness.solve_for_compliance
 
 
 def score_tree_root(
@@ -76,7 +76,7 @@ def refine_b(
     do_gp: bool = True,
 ) -> components.CompliantMotion:
     if search_compliance:
-        K_star, samples = solve_for_compliance(random.choice(b.particles), CF_d)
+        K_star, samples = solve_for_compliance(random.choice(b.particles))
         # print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = (components.stiff, [])

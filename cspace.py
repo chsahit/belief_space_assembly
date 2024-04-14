@@ -207,9 +207,7 @@ def label_face(mesh, face_id, V) -> components.ContactState:
     return frozenset(label)
 
 
-def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
-    empty_graph = CSpaceGraph(V, [])
-    edges = set()
+def cspace_vols_to_trimesh(hulls: List[components.Hull]):
     meshes = []
     for hull in hulls:
         mesh = trimesh.Trimesh(vertices=hull[0], faces=hull[1])
@@ -233,6 +231,11 @@ def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     print(f"{joined_mesh.is_volume=}")
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
+    return joined_mesh
+
+
+def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
+    joined_mesh = cspace_vols_to_trimesh(hulls)
     _, mode_graph = graph.make_abs_graphs(V, joined_mesh)
     utils.dump_mesh(joined_mesh)
     actual_edges = list(mode_graph.edges())
@@ -263,6 +266,27 @@ def MakeModeGraphFromFaces(
     graph = make_graph(A, B)
     # render_graph(updated_graph)
     return graph
+
+
+def MakeTrimeshRepr(
+    R_WM: RigidTransform,
+    env_geom: Dict[str, components.HRepr],
+    manip_geom: Dict[str, components.HRepr],
+) -> trimesh.Trimesh:
+    transformed_manip_poly = dict()
+    for name, geom in manip_geom.items():
+        transformed_geom = TF_HPolyhedron(HPolyhedron(*geom), RigidTransform(R_WM))
+        transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
+    B = MakeWorkspaceObjectFromFaces(env_geom)
+    A = MakeWorkspaceObjectFromFaces(manip_geom)
+    volumes = []
+    for manip_face in A.faces.items():
+        for env_face in B.faces.items():
+            vol = minkowski_sum(*env_face, *manip_face)
+            volumes.append(vol)
+    hulls = [v.hull() for v in volumes]
+    hulls = [h for h in hulls if h is not None]
+    return cspace_vols_to_trimesh(hulls)
 
 
 def make_task_plan(

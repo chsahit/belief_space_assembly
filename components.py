@@ -7,6 +7,7 @@ from pydrake.all import HPolyhedron, RigidTransform, RollPitchYaw
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
 Hull = Tuple[np.ndarray, List[List[float]]]
+HRepr = Tuple[np.ndarray, np.ndarray]  # (A,b) s.t Ax <= b
 
 stiff = np.array([60.0, 60.0, 60.0, 400.0, 400.0, 400.0])
 soft = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 100.0])
