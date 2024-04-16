@@ -6,13 +6,18 @@ from typing import Dict, List, Tuple
 import networkx as nx
 import numpy as np
 import trimesh
-from pydrake.all import HPolyhedron, RandomGenerator, RigidTransform, VPolytope
+from pydrake.all import (
+    HPolyhedron,
+    RandomGenerator,
+    RigidTransform,
+    RotationMatrix,
+    VPolytope,
+)
 from scipy.spatial import ConvexHull
 
 import components
 import contact_defs
 import graph
-import puzzle_contact_defs
 import utils
 
 drake_rng = RandomGenerator(0)
@@ -224,11 +229,9 @@ def cspace_vols_to_trimesh(hulls: List[components.Hull]):
             joined_mesh = _joined_mesh
         else:
             skipped_meshes.append(mesh)
-    print(f"{len(skipped_meshes)=}")
     for skipped_mesh in skipped_meshes:
         joined_mesh = joined_mesh.union(skipped_mesh)
     joined_mesh.fix_normals()
-    print(f"{joined_mesh.is_volume=}")
     joined_mesh.update_faces(joined_mesh.unique_faces())
     joined_mesh = joined_mesh.process()
     return joined_mesh
@@ -269,7 +272,7 @@ def MakeModeGraphFromFaces(
 
 
 def MakeTrimeshRepr(
-    R_WM: RigidTransform,
+    R_WM: RotationMatrix,
     env_geom: Dict[str, components.HRepr],
     manip_geom: Dict[str, components.HRepr],
 ) -> trimesh.Trimesh:

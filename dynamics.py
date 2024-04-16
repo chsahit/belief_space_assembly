@@ -9,6 +9,7 @@ from pydrake.all import Simulator
 import components
 import state
 from counters import *
+from simulation import ik_solver
 
 
 def AdvanceToWithTimeout(
@@ -52,6 +53,7 @@ def simulate(
     controller = diagram.GetSubsystemByName("controller")
     controller.kp = motion.K
     setpoint = diagram.GetSubsystemByName("setpoint")
+    motion.q_d = ik_solver.update_motion_qd(motion)
     setpoint.setpoint = motion.q_d
     assert setpoint.setpoint is not None
     simulator.Initialize()

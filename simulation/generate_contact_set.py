@@ -219,8 +219,6 @@ def project_manipuland_to_contacts(
     projections = []
     p_WMs = compute_samples_from_contact_set(p, CF_d, num_samples=num_samples)
     X_WMs = [RigidTransform(p_WM) for p_WM in p_WMs]
-    verbose = (num_samples == 16) and ("top" in str(CF_d))
-    verbose = False
     samples_noised = [generate_noised(p, X_WM, CF_d) for X_WM in X_WMs]
     # samples_noised = [(X_WM, None) for X_WM in X_WMs]
     for X_WMt, X_MMt in samples_noised:

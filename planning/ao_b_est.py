@@ -12,7 +12,6 @@ import components
 import dynamics
 import mr
 import state
-from simulation import ik_solver
 
 random.seed(0)
 gen = np.random.default_rng(1)
@@ -85,7 +84,7 @@ def sample_control(b: state.Belief) -> components.CompliantMotion:
     X_WCt = b.mean().X_WG.multiply(X_GC).multiply(X_CCt)
     t = gen.uniform(low=0.0, high=4.0)
     u = components.CompliantMotion(X_GC, X_WCt, K, timeout=t)
-    return ik_solver.update_motion_qd(u)
+    return u
 
 
 def is_valid(b, workspace) -> bool:

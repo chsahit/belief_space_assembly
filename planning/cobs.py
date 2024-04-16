@@ -7,16 +7,17 @@ import components
 import contact_defs
 import cspace
 import dynamics
+import sampler
 import state
 import visualize
 from planning import refine_motion
-from simulation import generate_contact_set, ik_solver
+from simulation import ik_solver
 
 
 def show_task_plan(p_repr: state.Particle, task_plan: List[components.ContactState]):
     nominal_poses = []
     for step in task_plan[1:]:
-        X_WG = generate_contact_set.project_manipuland_to_contacts(p_repr, step)
+        X_WG = sampler.sample_from_contact(p_repr, step[0], step[1], 1)
         q_r = ik_solver.gripper_to_joint_states(X_WG[0])
         nominal_poses.append((X_WG, q_r))
     sample_particles = []

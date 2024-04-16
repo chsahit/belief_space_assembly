@@ -1,17 +1,48 @@
 import random
+from typing import List
 
 import numpy as np
+from pydrake.all import RigidTransform
 
 import components
 import dynamics
+import sampler
 import state
-from planning import compliance_solver, infer_joint_soln, stiffness
-from simulation import ik_solver
+from planning import infer_joint_soln, stiffness
 
 random.seed(0)
 gen = np.random.default_rng(0)
 
-solve_for_compliance = stiffness.solve_for_compliance
+
+def evaluate_K(
+    p: state.Particle,
+    CF_d: components.ContactState,
+    K: np.ndarray,
+    targets: List[RigidTransform] = None,
+) -> List[components.CompliantMotion]:
+    scores = []
+    negative_motions = []
+    if targets is None:
+        targets = sampler.sample_from_contact(p, CF_d, num_samples=32, num_noise=16)
+
+    X_GC = RigidTransform([0, 0, 0.0])
+    targets = [target.multiply(X_GC) for target in targets]
+    # visualize.visualize_targets(p, targets)
+    motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
+    # for m in motions:
+    #     dynamics.simulate(p, m, vis=True)
+    # breakpoint()
+    P_next = dynamics.f_cspace(p, motions)
+    U = []
+    for i, p_next in enumerate(P_next):
+        if p_next.satisfies_contact(CF_d):
+            U.append(motions[i])
+        else:
+            negative_motions.append(motions[i])
+            scores.append(0)
+    if p.satisfies_contact(CF_d) and len(U) == 0:
+        breakpoint()
+    return U, (negative_motions, scores)
 
 
 def score_tree_root(
@@ -21,11 +52,10 @@ def score_tree_root(
     p_idx: int = 0,
     validated_samples=[],
 ) -> components.CompliantMotion:
-    U0, data = compliance_solver.evaluate_K(b.particles[p_idx], CF_d, K_star)
+    U0, data = evaluate_K(b.particles[p_idx], CF_d, K_star)
     U0 = U0 + validated_samples
     if len(U0) == 0:
         return None, float("-inf"), False, ([], [])
-    U0 = [ik_solver.update_motion_qd(u0) for u0 in U0]
     posteriors = dynamics.parallel_f_bel(b, U0)
     best_u = None
     most_certainty = float("-inf")
@@ -47,7 +77,6 @@ def iterative_gp(data, b, CF_d, do_gp, iters=3):
     for idx in range(iters):
         # print(f"iteration={idx}")
         new_samples = infer_joint_soln.infer(*data, do_gp)
-        new_samples = [ik_solver.update_motion_qd(s) for s in new_samples]
         posteriors = dynamics.parallel_f_bel(b, new_samples)
         scores = []
         for np_i, new_posterior in enumerate(posteriors):
@@ -76,7 +105,7 @@ def refine_b(
     do_gp: bool = True,
 ) -> components.CompliantMotion:
     if search_compliance:
-        K_star, samples = solve_for_compliance(random.choice(b.particles))
+        K_star, samples = stiffness.solve_for_compliance(random.choice(b.particles))
         # print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = (components.stiff, [])
