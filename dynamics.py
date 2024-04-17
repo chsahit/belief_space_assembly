@@ -53,7 +53,7 @@ def simulate(
     controller = diagram.GetSubsystemByName("controller")
     controller.kp = motion.K
     setpoint = diagram.GetSubsystemByName("setpoint")
-    motion.q_d = ik_solver.update_motion_qd(motion)
+    motion = ik_solver.update_motion_qd(motion)
     setpoint.setpoint = motion.q_d
     assert setpoint.setpoint is not None
     simulator.Initialize()

@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 import trimesh
-from pydrake.all import RigidTransform
+from pydrake.all import HPolyhedron, RigidTransform
 from trimesh import sample
 
 import components
@@ -22,9 +22,13 @@ def sample_from_contact(
     if mesh is None:
         mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
     satisfiying_samples = []
-    env_face = p.constraints[contact_des[0][0]]
-    manip_face = p._manip_poly[contact_des[0][1]]
-    volume_desired = cspace.minkowski_sum(*env_face, *manip_face)
+    ef_name = list(contact_des)[0][0]
+    mf_name = list(contact_des)[0][1]
+    env_face = HPolyhedron(*p.constraints[ef_name])
+    manip_face = HPolyhedron(*p._manip_poly[mf_name])
+    volume_desired = cspace.minkowski_sum(
+        ef_name, env_face, mf_name, manip_face
+    ).geometry
     while len(satisfiying_samples) < num_samples:
         pt = np.array(sample.sample_surface(mesh, 1)[0][0])
         if volume_desired.PointInSet(pt):
@@ -32,7 +36,7 @@ def sample_from_contact(
     for i in range(num_noise):
         t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
         noised_pt = satisfiying_samples[i] + t_vel
-        if mesh.contains(noised_pt):
+        if mesh.contains(np.array([noised_pt]))[0]:
             satisfiying_samples[i] = noised_pt
     satisfiying_gripper_poses = []
     for pt in satisfiying_samples:

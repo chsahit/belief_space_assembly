@@ -133,6 +133,8 @@ def minkowski_sum(
     label = frozenset(((B_name, A_name),))
     B_vertices = utils.GetVertices(B)
     A_vertices = utils.GetVertices(A)
+    if B_vertices is None:
+        breakpoint()
     volume_verts = []
     for vB_idx in range(B_vertices.shape[0]):
         for vA_idx in range(A_vertices.shape[0]):
