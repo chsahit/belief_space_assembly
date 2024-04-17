@@ -50,6 +50,8 @@ class CSpaceVolume:
 
     @property
     def center(self):
+        if self.label == contact_defs.fs:
+            return None
         if self._center is None:
             verts = utils.GetVertices(self.geometry)
             if verts is None:
@@ -95,16 +97,23 @@ class CSpaceGraph:
         return label_dict
 
     def to_nx(self, start_pose: np.ndarray = None, n_closest: int = 4) -> nx.Graph:
+        print("to nx: standardize connection of freespace above nx level")
+
         nx_graph = nx.Graph()
         for e in self.E:
             nx_graph.add_edge(e[0], e[1])
 
         if start_pose is not None:
             differences = []
-            free_space = CSpaceVolume(contact_defs.fs, None)
-            self.V.append(free_space)
+            if self.GetNode(contact_defs.fs) is None:
+                free_space = CSpaceVolume(contact_defs.fs, None)
+                self.V.append(free_space)
             for v in self.V:
-                differences.append(np.linalg.norm(start_pose - v.center))
+                if v.center is not None:
+                    differences.append(np.linalg.norm(start_pose - v.center))
+                else:
+                    differences.append(float("inf"))
+            free_space = self.GetNode(contact_defs.fs)
             smallest_indices = np.argpartition(np.array(differences), n_closest)
             for idx in range(n_closest):
                 fc_neighbor = self.V[smallest_indices[idx]]
@@ -133,8 +142,6 @@ def minkowski_sum(
     label = frozenset(((B_name, A_name),))
     B_vertices = utils.GetVertices(B)
     A_vertices = utils.GetVertices(A)
-    if B_vertices is None:
-        breakpoint()
     volume_verts = []
     for vB_idx in range(B_vertices.shape[0]):
         for vA_idx in range(A_vertices.shape[0]):
@@ -241,7 +248,7 @@ def cspace_vols_to_trimesh(hulls: List[components.Hull]):
 
 def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     joined_mesh = cspace_vols_to_trimesh(hulls)
-    _, mode_graph = graph.make_abs_graphs(V, joined_mesh)
+    mode_graph = graph.make_mode_graph(V, joined_mesh)
     utils.dump_mesh(joined_mesh)
     actual_edges = list(mode_graph.edges())
     return actual_edges

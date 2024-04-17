@@ -28,7 +28,7 @@ def sample_from_contact(
     manip_face = HPolyhedron(*p._manip_poly[mf_name])
     volume_desired = cspace.minkowski_sum(
         ef_name, env_face, mf_name, manip_face
-    ).geometry
+    ).geometry.Scale(1.01)
     while len(satisfiying_samples) < num_samples:
         pt = np.array(sample.sample_surface(mesh, 1)[0][0])
         if volume_desired.PointInSet(pt):

@@ -61,13 +61,17 @@ def make_abs_graphs(V: List["CSpaceVolume"], mesh: trimesh.Trimesh):
             facet_graph.add_edge(facet_a, facet_b)
     graph_labels = dict([(v, str(v)) for v in facet_graph.nodes()])
     visualize.render_graph(facet_graph, graph_labels)
+
+    return facet_graph, make_mode_graph(V, mesh)
+
+
+def make_mode_graph(V, mesh: trimesh.Trimesh):
     # make contact graph
     # V = CSpaceVolumeGraph, E = (V1, V2) iff \exists v\in V1 and v\in V2
     labels = label_vertices(mesh.vertices, V)
-    dump_sampler_data(mesh, labels)
     mode_graph = nx.Graph()
     for vtx_id, vols in labels.items():
         for v1, v2 in itertools.combinations(vols, 2):
             mode_graph.add_edge(v1, v2)
 
-    return facet_graph, mode_graph
+    return mode_graph
