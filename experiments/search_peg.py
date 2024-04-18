@@ -6,14 +6,16 @@ from experiments import init_particle
 from planning import ao_b_est, cobs, refine_motion
 
 
-def auto_tp_sd():
+def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(pitch=-10)
+    p0 = init_particle.init_peg(pitch=-1)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(pitch=10)
+    p2 = init_particle.init_peg(pitch=1)
     b = state.Belief([p0, p1, p2])
-    result = cobs.cobs(b, contact_defs.bottom_faces_2)
-    # result = ao_b_est.b_est(b, contact_defs.bottom_faces_2)
+    if ours:
+        result = cobs.cobs(b, contact_defs.bottom_faces_2)
+    else:
+        result = ao_b_est.b_est(b, contact_defs.bottom_faces_2)
     if result.traj is not None:
         visualize.play_motions_on_belief(state.Belief([p0, p1, p2]), result.traj)
         input()
@@ -44,4 +46,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    auto_tp_sd()
+    auto_tp_sd(ours=False)

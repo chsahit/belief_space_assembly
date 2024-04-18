@@ -17,7 +17,7 @@ random.seed(0)
 gen = np.random.default_rng(1)
 Bound = Tuple[float, float]
 workspace = None
-workspace_peg = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.21])
+workspace_peg = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.205])
 workspace_puzzle = ([0.48, 0.52], [-0.02, 0.02], [0.21, 0.02])
 
 
@@ -77,12 +77,17 @@ def make_kdtree(xlims: Bound, ylims: Bound, zlims: Bound, bins: int) -> KDTree:
 def sample_control(b: state.Belief) -> components.CompliantMotion:
     X_GC = RigidTransform()
     K = components.stiff
-    r_vel = gen.uniform(low=-0.02, high=0.02, size=3)
-    t_vel = gen.uniform(low=-0.04, high=0.04, size=3)
+    # r_vel = gen.uniform(low=-0.02, high=0.02, size=3)
+    r_vel = np.zeros((3,))
+    # t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
+    t_vel = np.zeros((3,))
+    while np.linalg.norm(t_vel) < 1e-5:
+        t_vel = gen.standard_normal(size=3)
+    t_vel = 0.05 * (t_vel / np.linalg.norm(t_vel))
     vel = np.concatenate((r_vel, t_vel))
     X_CCt = RigidTransform(mr.MatrixExp6(mr.VecTose3(vel)))
     X_WCt = b.mean().X_WG.multiply(X_GC).multiply(X_CCt)
-    t = gen.uniform(low=0.0, high=4.0)
+    t = gen.uniform(low=0.0, high=3.0)
     u = components.CompliantMotion(X_GC, X_WCt, K, timeout=t)
     return u
 
@@ -109,7 +114,7 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 1000.0
+    b0: state.Belief, goal: components.ContactState, timeout: float = 200.0
 ) -> components.PlanningResult:
     global workspace
     if "puzzle" in b0.particles[0].env_geom:

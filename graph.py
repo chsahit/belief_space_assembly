@@ -7,8 +7,6 @@ import networkx as nx
 import numpy as np
 import trimesh
 
-import visualize
-
 VertexLabel = DefaultDict[int, Set["CSpaceVolume"]]
 
 
@@ -26,19 +24,6 @@ def label_vertices(pts: List[np.ndarray], V: List["CSpaceVolume"]) -> VertexLabe
     return label_mapping
 
 
-def get_facet_id(face_id: int, mesh: trimesh.Trimesh) -> int:
-    facets = list()
-    for facet_id, facet in enumerate(mesh.facets):
-        if face_id in facet:
-            facets.append(facet_id)
-    if len(facets) == 0:
-        return len(mesh.facets)
-    assert len(facets) > 0
-    if len(facets) > 1:
-        breakpoint()
-    return facets[0]
-
-
 def dump_sampler_data(mesh: trimesh.Trimesh, labels: VertexLabel):
     sampler_map = defaultdict(list)
     for vtx_id, volume_set in labels.items():
@@ -47,22 +32,6 @@ def dump_sampler_data(mesh: trimesh.Trimesh, labels: VertexLabel):
     with open("cspace_surface.pkl", "wb") as f:
         pickle.dump(sampler_map, f)
     return None
-
-
-def make_abs_graphs(V: List["CSpaceVolume"], mesh: trimesh.Trimesh):
-    # make facet graph
-    # V = Facets; E = (F1, F2) iff \exists (fa \in F1 and fb\in F2) s.t. (fa, fb) adjacent
-    facet_graph = nx.Graph()
-    for pair in mesh.face_adjacency:
-        facets = (get_facet_id(pair[0], mesh), get_facet_id(pair[1], mesh))
-        facet_a = min(facets)
-        facet_b = max(facets)
-        if facet_a != facet_b:
-            facet_graph.add_edge(facet_a, facet_b)
-    graph_labels = dict([(v, str(v)) for v in facet_graph.nodes()])
-    visualize.render_graph(facet_graph, graph_labels)
-
-    return facet_graph, make_mode_graph(V, mesh)
 
 
 def make_mode_graph(V, mesh: trimesh.Trimesh):

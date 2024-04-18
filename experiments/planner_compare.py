@@ -12,8 +12,7 @@ pitch_sweep_puzzle = ("pitch", [1.5, 2, 3, 3.5, 4], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
-# y_sweep_peg = ("y", [0.01, 0.02, 0.03], "peg")
-y_sweep_peg = ("y", [0.015], "peg")
+y_sweep_peg = ("y", [0.01, 0.02, 0.03], "peg")
 
 planners = {"b_est": ao_b_est.b_est, "cobs": cobs.cobs}
 planners = {"cobs": cobs.cobs}
@@ -29,7 +28,6 @@ def sweep(dof, deviations, geometry):
         raise NotImplementedError
     results = dict()
     experiment_params = itertools.product(deviations, list(planners.keys()))
-    stopped_params = []
     for deviation, planner in experiment_params:
         print(f"{deviation=}, {planner=}")
         kwarg_0 = {dof: -deviation}

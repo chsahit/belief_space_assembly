@@ -73,7 +73,7 @@ class CSpaceVolume:
         try:
             scipy_hull = ConvexHull(verts)
             return (verts, scipy_hull.simplices)
-        except:
+        except Exception:
             pass
 
     def __eq__(self, other) -> bool:
