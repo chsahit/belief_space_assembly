@@ -7,7 +7,7 @@ def init_peg(
     X_GM_x: float = 0.0,
     X_GM_z: float = 0.0,
     pitch: float = 0.0,
-    mu: float = 0.1,
+    mu: float = 0.3,
     yaw: float = 0.0,
     y: float = 0.0,
 ) -> state.Particle:

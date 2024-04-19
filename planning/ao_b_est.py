@@ -45,11 +45,13 @@ class SearchTree:
     def add_bel(self, bn: BNode):
         mu = bn.b.mean().X_WM
         mu_t, mu_r = mu.translation(), mu.rotation().ToQuaternion()
+        mu_t = bn.b.mean_translation()
         mu_r = np.array([mu_r.w(), mu_r.x(), mu_r.y(), mu_r.z()])
         if mu_r[0] < 0:
             mu_r *= -1
-        mu_r7 = np.concatenate((mu_r, mu_t)).reshape(1, -1)
-        _, ind = self.kd_tree.query(mu_r7)
+        # mu_r7 = np.concatenate((mu_r, mu_t)).reshape(1, -1)
+        # _, ind = self.kd_tree.query(mu_r7)
+        _, ind = self.kd_tree.query(mu_t.reshape(1, -1))
         self.occupancy[ind.item()].append(bn)
         self.num_nodes += 1
 
@@ -61,14 +63,15 @@ class SearchTree:
 
 def make_kdtree(xlims: Bound, ylims: Bound, zlims: Bound, bins: int) -> KDTree:
     # bin space of orientations s.t real component is positive
-    qw = np.linspace(0.0, 1.0, num=int(bins / 3))
-    qx = np.linspace(-1.0, 1.0, num=int(bins / 3))
-    qy = np.linspace(-1.0, 1.0, num=int(bins / 3))
-    qz = np.linspace(-1.0, 1.0, num=int(bins / 3))
+    # qw = np.linspace(0.0, 1.0, num=int(bins / 3))
+    # qx = np.linspace(-1.0, 1.0, num=int(bins / 3))
+    # qy = np.linspace(-1.0, 1.0, num=int(bins / 3))
+    # qz = np.linspace(-1.0, 1.0, num=int(bins / 3))
     x = np.linspace(xlims[0], xlims[1], num=bins)
     y = np.linspace(ylims[0], ylims[1], num=bins)
     z = np.linspace(zlims[0], zlims[1], num=bins)
-    _C = np.meshgrid(qw, qx, qy, qz, x, y, z)
+    # _C = np.meshgrid(qw, qx, qy, qz, x, y, z)
+    _C = np.meshgrid(x, y, z)
     C = np.array([i.flatten() for i in _C]).T
     kdtree = KDTree(C)
     return kdtree
@@ -114,7 +117,7 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 200.0
+    b0: state.Belief, goal: components.ContactState, timeout: float = 250.0
 ) -> components.PlanningResult:
     global workspace
     if "puzzle" in b0.particles[0].env_geom:

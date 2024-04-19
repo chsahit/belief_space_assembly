@@ -46,4 +46,5 @@ def simple_down():
 
 
 if __name__ == "__main__":
+    print("warning, coliision detecting turned off!")
     auto_tp_sd(ours=False)

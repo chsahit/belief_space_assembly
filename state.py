@@ -216,6 +216,12 @@ class Belief:
         assert best_particle is not None
         return best_particle
 
+    def mean_translation(self) -> np.ndarray:
+        avg_xyz = (1.0 / len(self.particles)) * sum(
+            [p.X_WG.translation() for p in self.particles]
+        )
+        return avg_xyz
+
     def direction(self) -> np.ndarray:
         qs = np.array([p.X_WM.translation() for p in self.particles])
         qs_normalized = qs - np.mean(qs)

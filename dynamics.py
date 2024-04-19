@@ -75,7 +75,7 @@ def simulate(
     q_r_T = plant.GetPositions(plant_context, plant.GetModelInstanceByName("panda"))
     p_next = p.deepcopy()
     p_next.q_r = q_r_T
-    p_next._update_contact_data()
+    # p_next._update_contact_data()
     return p_next
 
 
