@@ -18,7 +18,7 @@ gen = np.random.default_rng(1)
 Bound = Tuple[float, float]
 workspace = None
 workspace_peg = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.205])
-workspace_puzzle = ([0.48, 0.52], [-0.02, 0.02], [0.21, 0.02])
+workspace_puzzle = ([0.49, 0.51], [-0.01, 0.0175], [0.02, 0.205])
 
 
 @dataclass(frozen=True)
@@ -108,7 +108,7 @@ def best_node(tree: SearchTree) -> BNode:
     best_node = None
     for k, v in tree.occupancy.items():
         for bn in v:
-            z = bn.b.sample().X_WM.translation()[2]
+            z = bn.b.mean_translation()[2]
             if z < min_z:
                 best_node = bn
                 min_z = z
@@ -117,7 +117,7 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 250.0
+    b0: state.Belief, goal: components.ContactState, timeout: float = 1000.0
 ) -> components.PlanningResult:
     global workspace
     if "puzzle" in b0.particles[0].env_geom:
@@ -140,6 +140,7 @@ def b_est(
                 traj = bn_next.traj()
                 total_time = time.time() - start_time
                 print(f"{len(traj)=}")
+                print(f"{total_time=}")
                 return components.PlanningResult(
                     traj, total_time, 0, num_posteriors, None
                 )

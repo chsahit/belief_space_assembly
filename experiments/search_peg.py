@@ -8,9 +8,9 @@ from planning import ao_b_est, cobs, refine_motion
 
 def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(pitch=-1)
+    p0 = init_particle.init_peg(pitch=-2)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(pitch=1)
+    p2 = init_particle.init_peg(pitch=2)
     b = state.Belief([p0, p1, p2])
     if ours:
         result = cobs.cobs(b, contact_defs.bottom_faces_2)
@@ -46,5 +46,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    print("warning, coliision detecting turned off!")
     auto_tp_sd(ours=False)

@@ -49,6 +49,7 @@ def cobs(
     b0: state.Belief,
     goal: components.ContactState,
     opt_compliance: bool = True,
+    do_gp: bool = True,
 ) -> components.PlanningResult:
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
@@ -80,6 +81,7 @@ def cobs(
                 [nominal_plan[1]],
                 search_compliance=opt_compliance,
                 max_attempts=1,
+                do_gp=do_gp,
             )
             t.add_result(intermediate_result)
             if intermediate_result.traj is None:
@@ -101,3 +103,14 @@ def cobs(
     return components.PlanningResult(
         None, t.total_time, t.sim_time, t.num_posteriors, None
     )
+
+
+def no_k(
+    b0: state.Belief,
+    goal: components.ContactState,
+) -> components.PlanningResult:
+    return cobs(b0, goal, opt_compliance=False)
+
+
+def no_gp(b0: state.Belief, goal: components.ContactState) -> components.PlanningResult:
+    return cobs(b0, goal, do_gp=False)
