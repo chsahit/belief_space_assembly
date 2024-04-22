@@ -50,6 +50,8 @@ def cobs(
     goal: components.ContactState,
     opt_compliance: bool = True,
     do_gp: bool = True,
+    do_replan: bool = True,
+    timeout: float = 2000,
 ) -> components.PlanningResult:
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
@@ -68,10 +70,19 @@ def cobs(
         b_curr = b0
         trajectory = []
         start_pose = b0.mean().X_WM.translation()
-        while not goal_achieved:
-            nominal_plan = cspace.make_task_plan(
+        step = 0
+        if not do_replan:
+            task_plan = cspace.make_task_plan(
                 graph, refine_from, goal, b_curr.direction(), start_pose=start_pose
             )
+        while not goal_achieved:
+            if do_replan:
+                nominal_plan = cspace.make_task_plan(
+                    graph, refine_from, goal, b_curr.direction(), start_pose=start_pose
+                )
+            else:
+                nominal_plan = task_plan[step:]
+                step += 1
             start_pose = None
             print(f"task plan = {nominal_plan}")
             # if refine_from == contact_defs.fs:
@@ -114,3 +125,9 @@ def no_k(
 
 def no_gp(b0: state.Belief, goal: components.ContactState) -> components.PlanningResult:
     return cobs(b0, goal, do_gp=False)
+
+
+def no_replan(
+    b0: state.Belief, goal: components.ContactState
+) -> components.PlanningResult:
+    return cobs(b0, goal, do_replan=False)

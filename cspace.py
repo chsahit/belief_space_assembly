@@ -14,6 +14,7 @@ from pydrake.all import (
     VPolytope,
 )
 from scipy.spatial import ConvexHull
+from trimesh import proximity
 
 import components
 import contact_defs
@@ -22,6 +23,7 @@ import utils
 
 drake_rng = RandomGenerator(0)
 gen = np.random.default_rng(1)
+global_mesh = None
 
 
 def TF_HPolyhedron(H: HPolyhedron, X_MMt: RigidTransform) -> HPolyhedron:
@@ -49,7 +51,7 @@ class CSpaceVolume:
         return self.geometry.UniformSample(drake_rng, mixing_steps=1000)
 
     @property
-    def center(self):
+    def center(self) -> np.ndarray:
         if self.label == contact_defs.fs:
             return None
         if self._center is None:
@@ -62,10 +64,13 @@ class CSpaceVolume:
         return self._center
 
     def normal(self) -> np.ndarray:
-        if self.geometry is None or True:
+        if self.geometry is None:
             return np.zeros((3,))
         if self._normal is None:
-            breakpoint()
+            assert global_mesh is not None
+            center_pt = np.array([self.center])
+            _, _, triangle_id = proximity.closest_point(global_mesh, center_pt)
+            self._normal = global_mesh.face_normals[triangle_id][0]
         return self._normal
 
     def hull(self) -> components.Hull:
@@ -85,10 +90,14 @@ class CSpaceVolume:
         return hash(self.label)
 
 
-@dataclass
 class CSpaceGraph:
-    V: List[CSpaceVolume]
-    E: List[Tuple[CSpaceVolume, CSpaceVolume]]
+    def __init__(
+        self, V: List[CSpaceVolume], E: List[Tuple[CSpaceVolume, CSpaceVolume]]
+    ):
+        self.V = V
+        self.E = E
+        free_space = CSpaceVolume(contact_defs.fs, None)
+        self.V.append(free_space)
 
     def label_dict(self) -> Dict[CSpaceVolume, str]:
         label_dict = dict()
@@ -97,26 +106,22 @@ class CSpaceGraph:
         return label_dict
 
     def to_nx(self, start_pose: np.ndarray = None, n_closest: int = 4) -> nx.Graph:
-        print("to nx: standardize connection of freespace above nx level")
-
         nx_graph = nx.Graph()
+        free_space = self.GetNode(contact_defs.fs)
         for e in self.E:
             nx_graph.add_edge(e[0], e[1])
 
-        if start_pose is not None:
+        if start_pose is not None and len(self.N(free_space)) == 0:
             differences = []
-            if self.GetNode(contact_defs.fs) is None:
-                free_space = CSpaceVolume(contact_defs.fs, None)
-                self.V.append(free_space)
             for v in self.V:
                 if v.center is not None:
                     differences.append(np.linalg.norm(start_pose - v.center))
                 else:
                     differences.append(float("inf"))
-            free_space = self.GetNode(contact_defs.fs)
             smallest_indices = np.argpartition(np.array(differences), n_closest)
             for idx in range(n_closest):
                 fc_neighbor = self.V[smallest_indices[idx]]
+                self.E.append((free_space, fc_neighbor))
                 nx_graph.add_edge(free_space, fc_neighbor)
 
         return nx_graph.to_directed()
@@ -249,7 +254,7 @@ def cspace_vols_to_trimesh(hulls: List[components.Hull]):
 def cspace_vols_to_edges(hulls: List[components.Hull], V: List[CSpaceVolume]):
     joined_mesh = cspace_vols_to_trimesh(hulls)
     mode_graph = graph.make_mode_graph(V, joined_mesh)
-    utils.dump_mesh(joined_mesh)
+    # utils.dump_mesh(joined_mesh)
     actual_edges = list(mode_graph.edges())
     return actual_edges
 
@@ -265,6 +270,10 @@ def make_graph(
             volumes.append(vol)
     hulls = [v.hull() for v in volumes]
     hulls = [h for h in hulls if h is not None]
+    global global_mesh
+    if global_mesh is None:
+        # software engineering is my passion
+        global_mesh = cspace_vols_to_trimesh(hulls)
     edges = cspace_vols_to_edges(hulls, volumes)
     return CSpaceGraph(volumes, edges)
 
