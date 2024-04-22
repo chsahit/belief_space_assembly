@@ -117,7 +117,7 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 1000.0
+    b0: state.Belief, goal: components.ContactState, timeout: float = 1200.0
 ) -> components.PlanningResult:
     global workspace
     if "puzzle" in b0.particles[0].env_geom:
@@ -139,13 +139,13 @@ def b_est(
             if bn_next.b.satisfies_contact(goal):
                 traj = bn_next.traj()
                 total_time = time.time() - start_time
-                print(f"{len(traj)=}")
-                print(f"{total_time=}")
+                # print(f"{len(traj)=}")
+                # print(f"{total_time=}")
                 return components.PlanningResult(
                     traj, total_time, 0, num_posteriors, None
                 )
     total_time = time.time() - start_time
     best_traj = best_node(tree).traj()
-    print(f"{tree.num_nodes=}, {num_posteriors=}")
+    # print(f"{tree.num_nodes=}, {num_posteriors=}")
     print(f"returning best non-satifiying traj, len={len(best_traj)}")
     return components.PlanningResult(best_traj, total_time, 0, num_posteriors, None)

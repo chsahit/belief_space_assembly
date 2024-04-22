@@ -1,3 +1,4 @@
+import time
 from typing import List, Tuple
 
 import networkx as nx
@@ -51,7 +52,7 @@ def cobs(
     opt_compliance: bool = True,
     do_gp: bool = True,
     do_replan: bool = True,
-    timeout: float = 2000,
+    timeout: float = 1200,
 ) -> components.PlanningResult:
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
@@ -64,6 +65,7 @@ def cobs(
     graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, transformed_manip_poly)
     max_tp_attempts = 15
     t = components.Time(0, 0, 0)
+    start_time = time.time()
     for tp_attempt in range(max_tp_attempts):
         goal_achieved = False
         refine_from = contact_defs.fs
@@ -75,6 +77,8 @@ def cobs(
             task_plan = cspace.make_task_plan(
                 graph, refine_from, goal, b_curr.direction(), start_pose=start_pose
             )
+        if time.time() - start_time > timeout:
+            break
         while not goal_achieved:
             if do_replan:
                 nominal_plan = cspace.make_task_plan(
@@ -84,7 +88,7 @@ def cobs(
                 nominal_plan = task_plan[step:]
                 step += 1
             start_pose = None
-            print(f"task plan = {nominal_plan}")
+            # print(f"task plan = {nominal_plan}")
             # if refine_from == contact_defs.fs:
             #     show_task_plan(p_repr, nominal_plan)
             intermediate_result = refine_motion.randomized_refine(
