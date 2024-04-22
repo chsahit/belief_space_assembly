@@ -109,6 +109,7 @@ def refine_b(
         # print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = (components.stiff, [])
+    print(f"{np.diag(K_star)=}")
     best_u_root = None
     best_certainty_all = float("-inf")
     data = [[], []]

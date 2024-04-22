@@ -44,4 +44,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    run_search(ours=False)
+    run_search(ours=True)

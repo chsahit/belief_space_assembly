@@ -105,13 +105,14 @@ class CSpaceGraph:
             label_dict[v] = utils.label_to_str(v.label)
         return label_dict
 
-    def to_nx(self, start_pose: np.ndarray = None, n_closest: int = 4) -> nx.Graph:
+    def to_nx(self, start_pose: np.ndarray = None, n_closest: int = 8) -> nx.Graph:
         nx_graph = nx.Graph()
         free_space = self.GetNode(contact_defs.fs)
         for e in self.E:
             nx_graph.add_edge(e[0], e[1])
 
         if start_pose is not None and len(self.N(free_space)) == 0:
+            print("connecting free space")
             differences = []
             for v in self.V:
                 if v.center is not None:
