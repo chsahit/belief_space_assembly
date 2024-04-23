@@ -8,7 +8,7 @@ from experiments import init_particle
 from planning import ao_b_est, cobs
 
 pitch_sweep_peg = ("pitch", [1, 3, 5, 7, 9, 12], "peg")
-pitch_sweep_peg = ("pitch", [1, 2, 3], "peg")
+pitch_sweep_peg = ("pitch", [0.5, 1, 1.5, 2], "peg")
 pitch_sweep_puzzle = ("pitch", [1.5, 2, 3, 3.5, 4], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
@@ -39,8 +39,8 @@ def sweep(dof, deviations, geometry):
     for deviation, planner in experiment_params:
         print(f"{deviation=}, {planner=}")
         kwarg_0 = {dof: -deviation}
-        kwarg_1 = {dof: deviation}
-        kwarg_2 = {dof: 0}
+        kwarg_1 = {dof: 0}
+        kwarg_2 = {dof: deviation}
         p0 = initializer(**kwarg_0)
         p1 = initializer(**kwarg_1)
         p2 = initializer(**kwarg_2)
@@ -50,9 +50,12 @@ def sweep(dof, deviations, geometry):
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
-            plan_result = planners[planner](b, goal)
-            experiment_results.append(plan_result)
-            print(str(experiment_results[-1]))
+            try:
+                plan_result = planners[planner](b, goal)
+                experiment_results.append(plan_result)
+                print(str(experiment_results[-1]))
+            except Exception as e:
+                print(f"planner_compare.py {e=}")
         print("\n")
         results[experiment_label] = experiment_results
     fname = dof + "_" + geometry + "_" + "sweep_results.pkl"

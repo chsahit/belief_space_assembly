@@ -125,11 +125,16 @@ def b_est(
     else:
         workspace = workspace_peg
     start_time = time.time()
+    last_printed_time = start_time
     _tree = make_kdtree(*workspace, 10)
     tree = SearchTree(_tree)
     tree.add_bel(BNode(b0, None))
     num_posteriors = 0
     while time.time() - start_time < timeout:
+        if (time.time() - last_printed_time) > 5:
+            runtime = time.time() - start_time
+            print(f"{runtime=}, {num_posteriors=}", end="\r")
+            last_printed_time = time.time()
         bn = tree.sample()
         u = sample_control(bn.b)
         bn_next = BNode(dynamics.f_bel(bn.b, u), (bn, u))
@@ -144,6 +149,7 @@ def b_est(
                 return components.PlanningResult(
                     traj, total_time, 0, num_posteriors, None
                 )
+    print("")
     total_time = time.time() - start_time
     best_traj = best_node(tree).traj()
     # print(f"{tree.num_nodes=}, {num_posteriors=}")

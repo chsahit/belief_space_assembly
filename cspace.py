@@ -1,6 +1,5 @@
 import pickle
 from collections import defaultdict
-from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 import networkx as nx
@@ -37,7 +36,8 @@ def TF_HPolyhedron(H: HPolyhedron, X_MMt: RigidTransform) -> HPolyhedron:
         homogenous = np.array([vert[0], vert[1], vert[2], 1])
         homogenous_tf = tf @ homogenous
         vertices_tf.append(homogenous_tf[:3])
-    return HPolyhedron(VPolytope(np.array(vertices_tf).T))
+    hp = HPolyhedron(VPolytope(np.array(vertices_tf).T))
+    return hp
 
 
 class CSpaceVolume:
@@ -75,6 +75,9 @@ class CSpaceVolume:
 
     def hull(self) -> components.Hull:
         verts = utils.GetVertices(self.geometry, assert_count=False)
+        if verts is None:
+            print(f"no verts for {self.label}")
+            return None
         try:
             scipy_hull = ConvexHull(verts)
             return (verts, scipy_hull.simplices)
@@ -112,7 +115,6 @@ class CSpaceGraph:
             nx_graph.add_edge(e[0], e[1])
 
         if start_pose is not None and len(self.N(free_space)) == 0:
-            print("connecting free space")
             differences = []
             for v in self.V:
                 if v.center is not None:

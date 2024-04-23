@@ -94,9 +94,13 @@ def envelope_analysis(data):
 def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
     try:
         V = VPolytope(H.ReduceInequalities(tol=1e-6))
-    except Exception as e:
-        print(f"{e=}")
-        return None
+    except SystemExit:
+        try:
+            V = VPolytope(H.ReduceInequalities(tol=1e-4))
+        except SystemExit as se:
+            print(f"SystemExit {se} from getvertices")
+            breakpoint()
+            return None
     vertices = V.vertices().T
     return vertices
 
