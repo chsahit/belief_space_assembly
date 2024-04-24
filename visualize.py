@@ -148,58 +148,6 @@ def show_particle(p: state.Particle):
     dynamics.simulate(p, u, vis=True)
 
 
-def show_planning_results(fname: str):
-    print("rendering results")
-    import matplotlib.pyplot as plt
-
-    with open(fname, "rb") as f:
-        data = pickle.load(f)
-
-    utils.envelope_analysis(data)
-    line_compliant_x, line_compliant_y = [], []
-    line_stiff_x, line_stiff_y = [], []
-    compliant_std_low, compliant_std_high = [], []
-    stiff_std_low, stiff_std_high = [], []
-    line_ngp_x, line_ngp_y = [], []
-    ngp_std_low, ngp_std_high = [], []
-    for params, results in data.items():
-        deviation = 2 * float(params[0])
-        # results_succ = [result in results if (result.traj is not None)]
-        # if len(results_succ) == 0:
-        #     continue
-        mu, std, sr = utils.mu_std_result(results)
-        print(f"{params=}, {sr=}")
-        if params[1] == "True" and params[2] == "True":
-            line_compliant_x.append(deviation)
-            line_compliant_y.append(mu)
-            compliant_std_low.append(mu - std)
-            compliant_std_high.append(mu + std)
-        elif params[1] == "True" and params[2] == "False":
-            line_ngp_x.append(deviation)
-            line_ngp_y.append(mu)
-            ngp_std_low.append(mu - std)
-            ngp_std_high.append(mu + std)
-        else:
-            line_stiff_x.append(deviation)
-            line_stiff_y.append(mu)
-            stiff_std_low.append(mu - std)
-            stiff_std_high.append(mu + std)
-
-    plt.fill_between(
-        line_compliant_x, compliant_std_low, compliant_std_high, alpha=0.2, color="b"
-    )
-    plt.plot(line_compliant_x, line_compliant_y, color="b", label="ours")
-
-    plt.fill_between(line_stiff_x, stiff_std_low, stiff_std_high, alpha=0.2, color="g")
-    plt.plot(line_stiff_x, line_stiff_y, color="g", label="no stiffness")
-    plt.title("The effect of Uncertainty on Planning")
-    plt.xlabel("Uncertainty (degrees)")
-    plt.ylabel("Plan Length")
-    plt.legend()
-    plt.show()
-    print("done")
-
-
 def show_benchmarks(fname: str):
     import matplotlib.pyplot as plt
 
@@ -217,7 +165,7 @@ def show_benchmarks(fname: str):
         plt.fill_between(x_coords, lb, ub, alpha=0.2)
         plt.plot(x_coords, y_coords, label=planner)
     plt.legend()
-    plt.savefig(f"{fname[:3]}_plots.png")
+    plt.savefig(f"{fname[:3]}_plots.png", dpi=1200)
 
 
 def playback_result(b, fname):

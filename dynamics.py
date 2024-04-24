@@ -37,7 +37,7 @@ def simulate(
     Args:
         p: The initial world configuration of type state.Particle.
         motion: A CompliantMotion to be rendered by the controller.
-        vis: If True, render the sim in Meshcat and wait for keyboard input before returning
+        vis: If True, render the sim in Meshcat and wait for keyboard input
 
     Returns:
         A particle with the same grasp and object pose hypothesis as the input but
@@ -105,7 +105,7 @@ def _parallel_simulate(
 def f_cspace(
     p: state.Particle, U: List[components.CompliantMotion], multi: bool = True
 ) -> List[state.Particle]:
-    """Wraps dynamics.py:simulate to sim many different motions on a particle in parallel.
+    """Wraps dynamics.py:simulate to sim different motions on a particle in parallel.
 
     This function is meant for trying many candidate motions on the same initial state.
     It does NOT implement running a trajectory of motions on an initial state. That
@@ -163,9 +163,9 @@ def visualize_trajectory(
     name: str = "meshcat_html.html",
 ):
     diagram, meshcat = p.make_plant(vis=True)
-    plant = diagram.GetSubsystemByName("plant")
+    # plant = diagram.GetSubsystemByName("plant")
     simulator = Simulator(diagram)
-    plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
+    # plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
     controller = diagram.GetSubsystemByName("controller")
     simulator.Initialize()
     meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")

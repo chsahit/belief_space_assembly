@@ -1,3 +1,4 @@
+import gc
 import random
 import time
 from collections import defaultdict
@@ -13,8 +14,8 @@ import dynamics
 import mr
 import state
 
-random.seed(1)
-gen = np.random.default_rng(2)
+random.seed(0)
+gen = np.random.default_rng(1)
 Bound = Tuple[float, float]
 workspace = None
 workspace_peg = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.205])
@@ -133,7 +134,7 @@ def b_est(
     while time.time() - start_time < timeout:
         if (time.time() - last_printed_time) > 5:
             runtime = time.time() - start_time
-            print(f"{runtime=}, {num_posteriors=}", end="\r")
+            print(f"{int(runtime)=}, {num_posteriors=}", end="\r")
             last_printed_time = time.time()
         bn = tree.sample()
         u = sample_control(bn.b)
@@ -152,6 +153,9 @@ def b_est(
     print("")
     total_time = time.time() - start_time
     best_traj = best_node(tree).traj()
+    del _tree
+    del tree
+    gc.collect()
     # print(f"{tree.num_nodes=}, {num_posteriors=}")
     print(f"returning best non-satifiying traj, len={len(best_traj)}")
     return components.PlanningResult(best_traj, total_time, 0, num_posteriors, None)

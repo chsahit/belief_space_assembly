@@ -118,3 +118,19 @@ def dump_mesh(mesh: trimesh.Trimesh):
     joined_mesh_obj = mesh.export(file_type="obj")
     with open("cspace.obj", "w") as f:
         f.write(joined_mesh_obj)
+
+
+def log_experiment_result(
+    fname: str,
+    experiment_label: str,
+    experiment_results: List[components.PlanningResult],
+):
+    try:
+        with open(fname, "rb") as f:
+            results = pickle.load(f)
+    except Exception:
+        results = dict()
+    results[experiment_label] = experiment_results
+    with open(fname, "wb") as f:
+        pickle.dump(results, f)
+    del results
