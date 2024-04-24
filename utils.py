@@ -67,7 +67,7 @@ def mu_std_result(results):
         print("setting to timeout")
         traj_lens = [50]
     times = np.array(traj_lens)
-    # times = np.array([result.total_time for result in results])
+    times = np.array([result.total_time for result in results])
     mu, std = np.mean(times), np.std(times)
     sr = succs / len(results)
     return mu, std, sr

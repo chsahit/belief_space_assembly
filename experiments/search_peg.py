@@ -46,4 +46,4 @@ def simple_down():
 
 
 if __name__ == "__main__":
-    auto_tp_sd(ours=True)
+    auto_tp_sd(ours=False)

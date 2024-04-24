@@ -12,6 +12,7 @@ from planning import infer_joint_soln, stiffness
 
 random.seed(0)
 gen = np.random.default_rng(0)
+np.set_printoptions(precision=5, suppress=True)
 
 
 def evaluate_K(
@@ -41,7 +42,7 @@ def evaluate_K(
             negative_motions.append(motions[i])
             scores.append(0)
     if p.satisfies_contact(CF_d) and len(U) == 0:
-        breakpoint()
+        print("warning, entire motion set loses contact")
     return U, (negative_motions, scores)
 
 

@@ -4,6 +4,7 @@ import pickle
 import contact_defs
 import puzzle_contact_defs
 import state
+import visualize
 from experiments import init_particle
 from planning import ao_b_est, cobs
 
@@ -64,4 +65,5 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
-    sweep(*pitch_sweep_peg)
+    # sweep(*pitch_sweep_peg)
+    visualize.show_benchmarks("pitch_peg_sweep_results.pkl")

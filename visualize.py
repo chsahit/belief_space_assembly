@@ -1,11 +1,11 @@
 import pickle
+from collections import defaultdict
 from typing import List
 
 import networkx as nx
 import plotly.graph_objects as go
 from pydrake.all import (
     CollisionFilterDeclaration,
-    ContactVisualizer,
     DiagramBuilder,
     Meshcat,
     MeshcatVisualizer,
@@ -198,6 +198,26 @@ def show_planning_results(fname: str):
     plt.legend()
     plt.show()
     print("done")
+
+
+def show_benchmarks(fname: str):
+    import matplotlib.pyplot as plt
+
+    with open(fname, "rb") as f:
+        data = pickle.load(f)
+    trends = defaultdict(list)
+    for params, results in data.items():
+        mu, std, sr = utils.mu_std_result(results)
+        trends[params[1]].append((params[0], (mu, mu - std, mu + std)))
+    for planner, trend in trends.items():
+        x_coords = [stat[0] for stat in trend]
+        y_coords = [stat[1][0] for stat in trend]
+        lb = [stat[1][1] for stat in trend]
+        ub = [stat[1][2] for stat in trend]
+        plt.fill_between(x_coords, lb, ub, alpha=0.2)
+        plt.plot(x_coords, y_coords, label=planner)
+    plt.legend()
+    plt.savefig(f"{fname[:3]}_plots.png")
 
 
 def playback_result(b, fname):

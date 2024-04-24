@@ -13,8 +13,8 @@ import dynamics
 import mr
 import state
 
-random.seed(0)
-gen = np.random.default_rng(1)
+random.seed(1)
+gen = np.random.default_rng(2)
 Bound = Tuple[float, float]
 workspace = None
 workspace_peg = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.205])
