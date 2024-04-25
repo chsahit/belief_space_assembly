@@ -1,6 +1,7 @@
 import itertools
 
 import contact_defs
+import counters
 import puzzle_contact_defs
 import state
 import utils
@@ -47,12 +48,16 @@ def sweep(dof, deviations, geometry):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(planner))
-        trials = 1
+        trials = 5
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
+            counters.reset_time()
+            counters.reset_posteriors()
             try:
                 plan_result = planners[planner](b, goal)
+                plan_result.num_posteriors = counters.get_posterior_count()
+                plan_result.sim_time = counters.get_time()
                 experiment_results.append(plan_result)
                 print(str(experiment_results[-1]))
             except Exception as e:

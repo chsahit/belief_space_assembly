@@ -1,4 +1,3 @@
-import time
 from typing import List
 
 import components
@@ -14,7 +13,6 @@ def randomized_refine(
     do_gp: bool = True,
     max_attempts: int = 3,
 ) -> List[components.CompliantMotion]:
-    start_time = time.time()
     last_refined = None
     for attempt in range(max_attempts):
         if attempt > 0:
@@ -44,16 +42,7 @@ def randomized_refine(
             if u_star is None:
                 break
         if curr.satisfies_contact(modes[-1]):
-            total_elapsed_time = time.time() - start_time
-            sim_time = dynamics.get_time()
-            n_p = dynamics.get_posterior_count()
-            dynamics.reset_posteriors()
-            dynamics.reset_time()
             return components.PlanningResult(
-                traj, total_elapsed_time, sim_time, n_p, last_refined
+                traj, 0, 0, 0, last_refined
             )
-    tet = time.time() - start_time
-    sim_time, np = (dynamics.get_time(), dynamics.get_posterior_count())
-    dynamics.reset_time()
-    dynamics.reset_posteriors()
-    return components.PlanningResult(None, tet, sim_time, np, last_refined)
+    return components.PlanningResult(None, 0, 0, 0, last_refined)

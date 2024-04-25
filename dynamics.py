@@ -7,8 +7,8 @@ from typing import List, Tuple
 from pydrake.all import Simulator
 
 import components
+import counters
 import state
-from counters import *
 from simulation import ik_solver
 
 
@@ -97,8 +97,8 @@ def _parallel_simulate(
     except KeyboardInterrupt:
         print("f_cspace interrupted. Exiting")
         sys.exit()
-    add_time(time.time() - p_sim_start)
-    add_posteriors(len(simulation_args))
+    counters.add_time(time.time() - p_sim_start)
+    counters.add_posteriors(len(simulation_args))
     return resulting_particles
 
 

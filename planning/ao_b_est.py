@@ -138,7 +138,7 @@ def b_est(
         bn = tree.sample()
         u = sample_control(bn.b)
         bn_next = BNode(dynamics.f_bel(bn.b, u), (bn, u))
-        num_posteriors += 1
+        num_posteriors += len(bn.b.particles)
         if is_valid(bn_next.b, workspace):
             tree.add_bel(bn_next)
             if bn_next.b.satisfies_contact(goal):
@@ -148,9 +148,7 @@ def b_est(
                 del tree
                 # print(f"{len(traj)=}")
                 # print(f"{total_time=}")
-                return components.PlanningResult(
-                    traj, total_time, 0, num_posteriors, None
-                )
+                return components.PlanningResult(traj, total_time, 0, 0, None)
     print("")
     total_time = time.time() - start_time
     best_traj = best_node(tree).traj()
@@ -158,4 +156,4 @@ def b_est(
     del tree
     # print(f"{tree.num_nodes=}, {num_posteriors=}")
     print(f"returning best non-satifiying traj, len={len(best_traj)}")
-    return components.PlanningResult(best_traj, total_time, 0, num_posteriors, None)
+    return components.PlanningResult(best_traj, total_time, 0, 0, None)

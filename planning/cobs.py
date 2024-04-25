@@ -54,6 +54,7 @@ def cobs(
     do_replan: bool = True,
     timeout: float = 1200,
 ) -> components.PlanningResult:
+    start_time = time.time()
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
     transformed_manip_poly = dict()
@@ -64,8 +65,6 @@ def cobs(
         transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
     graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, transformed_manip_poly)
     max_tp_attempts = 15
-    t = components.Time(0, 0, 0)
-    start_time = time.time()
     for tp_attempt in range(max_tp_attempts):
         goal_achieved = False
         refine_from = contact_defs.fs
@@ -88,9 +87,6 @@ def cobs(
                 nominal_plan = task_plan[step:]
                 step += 1
             start_pose = None
-            # print(f"task plan = {nominal_plan}")
-            # if refine_from == contact_defs.fs:
-            #     show_task_plan(p_repr, nominal_plan)
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
                 [nominal_plan[1]],
@@ -98,7 +94,6 @@ def cobs(
                 max_attempts=1,
                 do_gp=do_gp,
             )
-            t.add_result(intermediate_result)
             if intermediate_result.traj is None:
                 lr = list(intermediate_result.last_refined)
                 lr[0] = nominal_plan[0]
@@ -112,12 +107,10 @@ def cobs(
                 b_curr = dynamics.f_bel(b_curr, u)
             refine_from = nominal_plan[1]
         if goal_achieved:
-            return components.PlanningResult(
-                trajectory, t.total_time, t.sim_time, t.num_posteriors, None
-            )
-    return components.PlanningResult(
-        None, t.total_time, t.sim_time, t.num_posteriors, None
-    )
+            T = time.time() - start_time
+            return components.PlanningResult(trajectory, T, 0, 0, None)
+    T = time.time() - start_time
+    return components.PlanningResult(None, T, 0, 0, None)
 
 
 def no_k(
