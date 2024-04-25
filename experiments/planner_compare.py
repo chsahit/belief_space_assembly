@@ -47,7 +47,7 @@ def sweep(dof, deviations, geometry):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(planner))
-        trials = 5
+        trials = 1
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
@@ -58,10 +58,11 @@ def sweep(dof, deviations, geometry):
             except Exception as e:
                 print(f"planner_compare.py {e=}")
         utils.log_experiment_result(fname, experiment_label, experiment_results)
+        del experiment_results
         print("\n")
 
 
 if __name__ == "__main__":
     sweep(*pitch_sweep_peg)
     visualize.show_benchmarks("pitch_peg_sweep_results.pkl")
-    # sweep(*y_sweep_peg)
+    sweep(*y_sweep_peg)

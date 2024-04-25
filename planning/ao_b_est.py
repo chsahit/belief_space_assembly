@@ -1,4 +1,3 @@
-import gc
 import random
 import time
 from collections import defaultdict
@@ -17,7 +16,6 @@ import state
 random.seed(0)
 gen = np.random.default_rng(1)
 Bound = Tuple[float, float]
-workspace = None
 workspace_peg = ([0.495, 0.505], [-0.0075, 0.0075], [0.02, 0.205])
 workspace_puzzle = ([0.49, 0.51], [-0.01, 0.0175], [0.02, 0.205])
 
@@ -97,10 +95,12 @@ def sample_control(b: state.Belief) -> components.CompliantMotion:
 
 
 def is_valid(b, workspace) -> bool:
-    mu_t = b.mean().X_WM.translation()
+    mu = b.mean()
+    mu_t = mu.X_WM.translation()
     x_valid = mu_t[0] > workspace[0][0] and mu_t[0] < workspace[0][1]
     y_valid = mu_t[1] > workspace[1][0] and mu_t[1] < workspace[1][1]
     z_valid = mu_t[2] > workspace[2][0] and mu_t[2] < workspace[2][1]
+    del mu
     return x_valid and y_valid and z_valid
 
 
@@ -120,7 +120,6 @@ def best_node(tree: SearchTree) -> BNode:
 def b_est(
     b0: state.Belief, goal: components.ContactState, timeout: float = 1200.0
 ) -> components.PlanningResult:
-    global workspace
     if "puzzle" in b0.particles[0].env_geom:
         workspace = workspace_puzzle
     else:
@@ -145,6 +144,8 @@ def b_est(
             if bn_next.b.satisfies_contact(goal):
                 traj = bn_next.traj()
                 total_time = time.time() - start_time
+                del _tree
+                del tree
                 # print(f"{len(traj)=}")
                 # print(f"{total_time=}")
                 return components.PlanningResult(
@@ -155,7 +156,6 @@ def b_est(
     best_traj = best_node(tree).traj()
     del _tree
     del tree
-    gc.collect()
     # print(f"{tree.num_nodes=}, {num_posteriors=}")
     print(f"returning best non-satifiying traj, len={len(best_traj)}")
     return components.PlanningResult(best_traj, total_time, 0, num_posteriors, None)

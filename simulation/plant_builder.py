@@ -201,7 +201,7 @@ def _construct_diagram(
     if vis:
         if meshcat is None:
             meshcat = Meshcat()
-        meshcat_vis = MeshcatVisualizer.AddToBuilder(
+        MeshcatVisualizer.AddToBuilder(
             builder, scene_graph, meshcat, MeshcatVisualizerParams()
         )
         ContactVisualizer.AddToBuilder(builder, plant, meshcat)

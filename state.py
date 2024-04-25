@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from multiprocessing import Process, Queue
 from typing import Dict, List
 
 import numpy as np
@@ -88,20 +89,28 @@ class Particle:
             self._update_contact_data()
         return self._constraints
 
+    def compute_X_WG(self, q):
+        diagram, _ = self.make_plant()
+        plant = diagram.GetSubsystemByName("plant")
+        plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
+        plant.SetPositions(
+            plant_context, plant.GetModelInstanceByName("panda"), self.q_r
+        )
+        _X_WG_cand = plant.CalcRelativeTransform(
+            plant_context,
+            plant.world_frame(),
+            plant.GetBodyByName("panda_hand").body_frame(),
+        )
+        q.put(_X_WG_cand)
+
     @property
     def X_WG(self):
         if self._X_WG is None:
-            diagram, _ = self.make_plant()
-            plant = diagram.GetSubsystemByName("plant")
-            plant_context = plant.GetMyContextFromRoot(diagram.CreateDefaultContext())
-            plant.SetPositions(
-                plant_context, plant.GetModelInstanceByName("panda"), self.q_r
-            )
-            self._X_WG = plant.CalcRelativeTransform(
-                plant_context,
-                plant.world_frame(),
-                plant.GetBodyByName("panda_hand").body_frame(),
-            )
+            q = Queue()
+            p = Process(target=self.compute_X_WG, args=(q,))
+            p.start()
+            p.join()
+            self._X_WG = q.get()
         return self._X_WG
 
     @property
@@ -214,6 +223,7 @@ class Belief:
                 smallest_diff = diff
                 best_particle = p
         assert best_particle is not None
+        del avg_xyz
         return best_particle
 
     def mean_translation(self) -> np.ndarray:
