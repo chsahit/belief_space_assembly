@@ -42,7 +42,5 @@ def randomized_refine(
             if u_star is None:
                 break
         if curr.satisfies_contact(modes[-1]):
-            return components.PlanningResult(
-                traj, 0, 0, 0, last_refined
-            )
+            return components.PlanningResult(traj, 0, 0, 0, last_refined)
     return components.PlanningResult(None, 0, 0, 0, last_refined)

@@ -89,6 +89,7 @@ def infer(
 
     # compute test_points
     K = 16
+    num_noised = int(0.15 * K)
     if do_gp:
         num_test_points = 1000
     else:
@@ -108,6 +109,8 @@ def infer(
     test_points_out, _ = gp_sklearn(
         all_samples_r6, all_scores, test_points, exponentiated_quadratic
     )
+    for i in range(num_noised):
+        test_points_out[i] = 10.0
     # test_points_out, _ = NN(all_samples_r6, all_scores, test_points)
     if do_gp:
         ind = np.argpartition(test_points_out, -K)[-K:]

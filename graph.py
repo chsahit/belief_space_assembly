@@ -15,12 +15,20 @@ def label_vertices(pts: List[np.ndarray], V: List["CSpaceVolume"]) -> VertexLabe
     returns a label L s.t.
     L[p] = {C_1, ..., C_N} s.t mesh.vertices[p] in C_n
     """
+    pt_counters = dict()  # pc[V.label] = # pts
     label_mapping = defaultdict(set)
     for v in V:
         scaled_v = v.geometry.Scale(1.1)
         for i, pt in enumerate(pts):
             if scaled_v.PointInSet(pt):
                 label_mapping[i].add(v)
+                pt_counters[v] = pt_counters.get(v, 0) + 1
+    filtered_vertices = []
+    for vol, count in pt_counters.items():
+        if count <= 2:
+            filtered_vertices.append(vol)
+    for filtered in filtered_vertices:
+        V.remove(filtered)
     return label_mapping
 
 
@@ -41,6 +49,7 @@ def make_mode_graph(V, mesh: trimesh.Trimesh):
     mode_graph = nx.Graph()
     for vtx_id, vols in labels.items():
         for v1, v2 in itertools.combinations(vols, 2):
-            mode_graph.add_edge(v1, v2)
+            if v1 in V and v2 in V:
+                mode_graph.add_edge(v1, v2)
 
     return mode_graph

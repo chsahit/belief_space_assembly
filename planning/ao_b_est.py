@@ -129,16 +129,14 @@ def b_est(
     _tree = make_kdtree(*workspace, 10)
     tree = SearchTree(_tree)
     tree.add_bel(BNode(b0, None))
-    num_posteriors = 0
     while time.time() - start_time < timeout:
         if (time.time() - last_printed_time) > 5:
             runtime = time.time() - start_time
-            print(f"{int(runtime)=}, {num_posteriors=}", end="\r")
+            print(f"{int(runtime)=}, {tree.num_nodes=}", end="\r")
             last_printed_time = time.time()
         bn = tree.sample()
         u = sample_control(bn.b)
         bn_next = BNode(dynamics.f_bel(bn.b, u), (bn, u))
-        num_posteriors += len(bn.b.particles)
         if is_valid(bn_next.b, workspace):
             tree.add_bel(bn_next)
             if bn_next.b.satisfies_contact(goal):
