@@ -166,6 +166,7 @@ def show_benchmarks(fname: str):
         plt.plot(x_coords, y_coords, label=planner)
     plt.legend()
     plt.savefig(f"{fname[:3]}_plots.png", dpi=1200)
+    plt.close()
 
 
 def playback_result(b, fname):

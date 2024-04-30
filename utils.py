@@ -67,7 +67,7 @@ def mu_std_result(results):
         print("setting to timeout")
         traj_lens = [50]
     times = np.array(traj_lens)
-    times = np.array([result.total_time for result in results])
+    times = np.array([result.num_posteriors for result in results])
     mu, std = np.mean(times), np.std(times)
     sr = succs / len(results)
     return mu, std, sr
@@ -134,3 +134,17 @@ def log_experiment_result(
     with open(fname, "wb") as f:
         pickle.dump(results, f)
     del results
+
+
+def pickle_trajectory(
+    traj: List[components.CompliantMotion], fname: str = "traj_out.pkl"
+):
+    data = []
+    for u in traj:
+        K = np.diag(u).tolist()
+        command_vec = RigidTfToVec(RigidTransform(u[0]))
+        quat = [command_vec[0], command_vec[1], command_vec[2], command_vec[3]]
+        data.append((quat, u[4:], K))
+
+    with open(fname, "wb") as f:
+        pickle.dump(data, f)
