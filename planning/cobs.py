@@ -18,7 +18,7 @@ from simulation import ik_solver
 def show_task_plan(p_repr: state.Particle, task_plan: List[components.ContactState]):
     nominal_poses = []
     for step in task_plan[1:]:
-        X_WG = sampler.sample_from_contact(p_repr, step[0], step[1], 1)
+        X_WG = sampler.sample_from_contact(p_repr, step, 1)
         q_r = ik_solver.gripper_to_joint_states(X_WG[0])
         nominal_poses.append((X_WG, q_r))
     sample_particles = []
@@ -26,7 +26,8 @@ def show_task_plan(p_repr: state.Particle, task_plan: List[components.ContactSta
         p_pose = p_repr.deepcopy()
         p_pose.q_r = pose[1]
         sample_particles.append(p_pose)
-    for particle in sample_particles:
+    for i, particle in enumerate(sample_particles):
+        print(f"{task_plan[i+1]=}")
         visualize.show_particle(particle)
     breakpoint()
 
@@ -87,6 +88,7 @@ def cobs(
                 nominal_plan = task_plan[step:]
                 step += 1
             start_pose = None
+            show_task_plan(p_repr, nominal_plan)
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
                 [nominal_plan[1]],

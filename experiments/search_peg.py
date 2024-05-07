@@ -8,12 +8,13 @@ from planning import ao_b_est, cobs, refine_motion
 
 def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(pitch=-8)
+    p0 = init_particle.init_peg(pitch=-3)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(pitch=8)
+    p2 = init_particle.init_peg(pitch=3)
     b = state.Belief([p0, p1, p2])
     if ours:
         result = cobs.cobs(b, contact_defs.bottom_faces_2)
+        utils.pickle_trajectory(result.traj)
     else:
         result = ao_b_est.b_est(b, contact_defs.bottom_faces_2)
     if result.traj is not None:

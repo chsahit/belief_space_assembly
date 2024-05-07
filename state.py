@@ -179,7 +179,7 @@ class Belief:
             for contact in CF_d:
                 if p.satisfies_contact(set((contact,))):
                     score += 1.0 / len(CF_d)
-        return score + 0.001 * len(self.contact_state())
+        return score + 0.001 * self.iou()
 
     def contact_state(self, epsilon=0.001) -> components.ContactState:
         assert len(self.particles) > 0
@@ -187,6 +187,18 @@ class Belief:
         for i in range(1, len(self.particles)):
             cs = cs.intersection(self.particles[i].epsilon_contacts(epsilon))
         return frozenset(cs)
+
+    def iou(self, epsilon=0.001) -> float:
+        intersection = self.particles[0].epsilon_contacts(epsilon)
+        union = self.particles[0].epsilon_contacts(epsilon)
+        for i in range(1, len(self.particles)):
+            intersection = intersection.intersection(
+                self.particles[i].epsilon_contacts(epsilon)
+            )
+            union = union.union(self.particles[i].epsilon_contacts(epsilon))
+        if len(union) == 0:
+            return 0.0
+        return len(intersection) / len(union)
 
     @staticmethod
     def make_particles(

@@ -1,4 +1,5 @@
 top_touch = set((("big_fixed_puzzle::b3_top", "block::b4_bottom"),))
+debug = set((("big_fixed_puzzle::b3_back", "block::b3_front"),))
 top_touch2 = set(
     (
         ("big_fixed_puzzle::b3_back", "block::b4_bottom"),

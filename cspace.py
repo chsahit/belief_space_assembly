@@ -18,6 +18,7 @@ from trimesh import proximity
 import components
 import contact_defs
 import graph
+import puzzle_contact_defs
 import utils
 
 drake_rng = RandomGenerator(0)

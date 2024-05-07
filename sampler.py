@@ -11,6 +11,14 @@ import state
 import utils
 
 gen = np.random.default_rng(0)
+pwx = [0.47, 0.525]
+pwy = [-0.025, 0.025]
+
+
+def in_workspace(pt):
+    x_sat = pt[0] > pwx[0] and pt[0] > pwx[1]
+    y_sat = pt[1] > pwy[0] and pt[1] < pwy[1]
+    return x_sat and y_sat
 
 
 def sample_from_contact(
@@ -34,10 +42,11 @@ def sample_from_contact(
     attempts = 0
     while len(satisfiying_samples) < num_samples:
         pt = np.array(sample.sample_surface(mesh, 1)[0][0])
-        if volume_desired.PointInSet(pt):
+        if volume_desired.PointInSet(pt) and in_workspace(pt):
             satisfiying_samples.append(pt)
         attempts += 1
         if attempts > 3000:
+            print(f"{len(satisfiying_samples)=}")
             volume_desired = volume_desired.Scale(2.0)
     for i in range(num_noise):
         t_vel = gen.uniform(low=-0.01, high=0.01, size=3)

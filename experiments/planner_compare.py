@@ -11,14 +11,14 @@ from planning import ao_b_est, cobs
 
 pitch_sweep_peg = ("pitch", [1, 3, 5, 7, 9, 12], "peg")
 pitch_sweep_peg = ("pitch", [0.5, 2, 4, 6, 8], "peg")
-pitch_sweep_puzzle = ("pitch", [1.5, 2, 3, 3.5, 4], "puzzle")
+pitch_sweep_puzzle = ("pitch", [1, 1.5, 2, 3, 3.5, 4], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
 y_sweep_peg = ("y", [0.01, 0.02, 0.03, 0.04], "peg")
 
 planners = {
-    "b_est": ao_b_est.b_est,
+    # "b_est": ao_b_est.b_est,
     "cobs": cobs.cobs,
     "no_k": cobs.no_k,
     "no_gp": cobs.no_gp,
@@ -68,7 +68,7 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
-    # sweep(*pitch_sweep_peg)
-    visualize.show_benchmarks("pitch_peg_sweep_results.pkl")
+    sweep(*pitch_sweep_puzzle)
+    visualize.show_benchmarks("pitch_puzzle_sweep_results.pkl")
     # sweep(*y_sweep_peg)
-    visualize.show_benchmarks("y_peg_sweep_results.pkl")
+    # visualize.show_benchmarks("y_peg_sweep_results.pkl")

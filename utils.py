@@ -141,10 +141,10 @@ def pickle_trajectory(
 ):
     data = []
     for u in traj:
-        K = np.diag(u).tolist()
-        command_vec = RigidTfToVec(RigidTransform(u[0]))
+        K = np.diag(u.K).tolist()
+        command_vec = RigidTfToVec(u.X_WCd)
         quat = [command_vec[0], command_vec[1], command_vec[2], command_vec[3]]
-        data.append((quat, u[4:], K))
+        data.append((quat, command_vec[4:], K))
 
     with open(fname, "wb") as f:
         pickle.dump(data, f)
