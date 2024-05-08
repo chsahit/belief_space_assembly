@@ -88,7 +88,7 @@ def cobs(
                 nominal_plan = task_plan[step:]
                 step += 1
             start_pose = None
-            show_task_plan(p_repr, nominal_plan)
+            # show_task_plan(p_repr, nominal_plan)
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
                 [nominal_plan[1]],

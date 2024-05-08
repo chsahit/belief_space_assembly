@@ -7,9 +7,9 @@ from planning import ao_b_est, cobs, refine_motion
 
 
 def run_search(ours: bool = True):
-    p0 = init_particle.init_puzzle(pitch=1)
+    p0 = init_particle.init_puzzle(pitch=2)
     p1 = init_particle.init_puzzle(pitch=0.0)
-    p2 = init_particle.init_puzzle(pitch=-1)
+    p2 = init_particle.init_puzzle(pitch=-2)
     b = state.Belief([p0, p1, p2])
     if ours:
         result = cobs.cobs(b, puzzle_contact_defs.side)

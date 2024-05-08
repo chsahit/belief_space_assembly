@@ -137,14 +137,20 @@ def log_experiment_result(
 
 
 def pickle_trajectory(
-    traj: List[components.CompliantMotion], fname: str = "traj_out.pkl"
+    traj: List[components.CompliantMotion],
+    fname: str = "traj_out.pkl",
+    joints: bool = True,
 ):
     data = []
     for u in traj:
         K = np.diag(u.K).tolist()
-        command_vec = RigidTfToVec(u.X_WCd)
-        quat = [command_vec[0], command_vec[1], command_vec[2], command_vec[3]]
-        data.append((quat, command_vec[4:], K))
+        if joints:
+            command = u.q_d[:7].tolist()
+            data.append((command, K))
+        else:
+            command_vec = RigidTfToVec(u.X_WCd)
+            quat = [command_vec[0], command_vec[1], command_vec[2], command_vec[3]]
+            data.append((quat, command_vec[4:], K))
 
     with open(fname, "wb") as f:
         pickle.dump(data, f)

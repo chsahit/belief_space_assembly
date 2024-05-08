@@ -42,11 +42,11 @@ def sample_from_contact(
     attempts = 0
     while len(satisfiying_samples) < num_samples:
         pt = np.array(sample.sample_surface(mesh, 1)[0][0])
-        if volume_desired.PointInSet(pt) and in_workspace(pt):
+        if volume_desired.PointInSet(pt):
             satisfiying_samples.append(pt)
         attempts += 1
         if attempts > 3000:
-            print(f"{len(satisfiying_samples)=}")
+            # print(f"{len(satisfiying_samples)=}")
             volume_desired = volume_desired.Scale(2.0)
     for i in range(num_noise):
         t_vel = gen.uniform(low=-0.01, high=0.01, size=3)

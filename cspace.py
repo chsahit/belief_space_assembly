@@ -109,7 +109,7 @@ class CSpaceGraph:
             label_dict[v] = utils.label_to_str(v.label)
         return label_dict
 
-    def to_nx(self, start_pose: np.ndarray = None, n_closest: int = 8) -> nx.Graph:
+    def to_nx(self, start_pose: np.ndarray = None, n_closest: int = 1) -> nx.Graph:
         nx_graph = nx.Graph()
         free_space = self.GetNode(contact_defs.fs)
         for e in self.E:

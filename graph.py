@@ -15,7 +15,7 @@ VertexLabel = DefaultDict[int, Set["CSpaceVolume"]]
 def label_vertices_by_face(c_verts: List[np.ndarray], c_faces, V: List["CSpaceVolume"]):
     label_mapping = defaultdict(set)
     for v in V:
-        scaled_v = v.geometry.Scale(1.01)
+        scaled_v = v.geometry.Scale(1.1)
         for face_id in range(len(c_faces)):
             p1_idx = c_faces[face_id][0]
             p1 = c_verts[p1_idx]
@@ -69,7 +69,8 @@ def dump_sampler_data(mesh: trimesh.Trimesh, labels: VertexLabel):
 def make_mode_graph(V, mesh: trimesh.Trimesh):
     # make contact graph
     # V = CSpaceVolumeGraph, E = (V1, V2) iff \exists v\in V1 and v\in V2
-    labels = label_vertices_by_face(mesh.vertices, mesh.faces, V)
+    # labels = label_vertices(mesh.vertices, mesh.faces, V)
+    labels = label_vertices(mesh.vertices, V)
     mode_graph = nx.Graph()
     for vtx_id, vols in labels.items():
         for v1, v2 in itertools.combinations(vols, 2):

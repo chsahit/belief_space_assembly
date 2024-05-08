@@ -5,14 +5,27 @@ import components
 import contact_defs
 import dynamics
 import puzzle_contact_defs
+import sampler
+import state
 import visualize
 from experiments import init_particle
-from simulation import generate_contact_set, ik_solver
+from simulation import ik_solver
 
 
-def sample_from_cs(CF_d: components.ContactState, n: int = 1):
+def sample_from_cs_peg():
     p = init_particle.init_peg()
-    X_WGs = generate_contact_set.project_manipuland_to_contacts(p, CF_d, num_samples=n)
+    visualize_samples(p, contact_defs.chamfer_init, n=32)
+
+
+def sample_from_cs_puzzle():
+    p = init_particle.init_puzzle()
+    visualize_samples(p, puzzle_contact_defs.side)
+
+
+def visualize_samples(p: state.Particle, CF_d: components.ContactState, n: int = 1):
+    # p = init_particle.init_peg()
+    p = init_particle.init_peg()
+    X_WGs = sampler.sample_from_contact(p, CF_d, num_samples=n)
     U = []
     for X_WG in X_WGs:
         t2 = np.copy(X_WG.translation())
@@ -39,5 +52,5 @@ def sample_from_cs(CF_d: components.ContactState, n: int = 1):
 
 
 if __name__ == "__main__":
-    sample_from_cs(contact_defs.chamfer_init, n=32)
+    sample_from_cs_puzzle()
     input()
