@@ -29,8 +29,12 @@ def sample_from_contact(
     num_noise: int = 0,
 ) -> List[RigidTransform]:
     if mesh is None:
-        mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
-    utils.dump_mesh(mesh)
+        if p.cspace_repr is None:
+            p.cspace_repr = cspace.MakeTrimeshRepr(
+                p.X_WM.rotation(), p.constraints, p._manip_poly
+            )
+        mesh = p.cspace_repr
+    # utils.dump_mesh(mesh)
     satisfiying_samples = []
     ef_name = list(contact_des)[0][0]
     mf_name = list(contact_des)[0][1]
@@ -41,7 +45,9 @@ def sample_from_contact(
     ).geometry.Scale(1.01)
     attempts = 0
     while len(satisfiying_samples) < num_samples:
-        pt = np.array(sample.sample_surface(mesh, 1)[0][0])
+        pt = np.array(
+            sample.sample_surface(mesh, 1, face_weight=[1] * len(mesh.faces))[0][0]
+        )
         if volume_desired.PointInSet(pt):
             satisfiying_samples.append(pt)
         attempts += 1

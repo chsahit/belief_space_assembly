@@ -9,15 +9,15 @@ from simulation import ik_solver
 
 def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(pitch=-3)
+    p0 = init_particle.init_peg(X_GM_x=0.0075)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(pitch=3)
+    p2 = init_particle.init_peg(X_GM_x=-0.0075)
     b = state.Belief([p0, p1, p2])
     if ours:
         result = cobs.cobs(b, contact_defs.bottom_faces_2)
         for u in result.traj:
             ik_solver.update_motion_qd(u)
-        utils.pickle_trajectory(result.traj)
+        utils.pickle_trajectory(p1, result.traj)
     else:
         result = ao_b_est.b_est(b, contact_defs.bottom_faces_2)
     if result.traj is not None:

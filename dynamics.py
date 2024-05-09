@@ -90,6 +90,11 @@ def _parallel_simulate(
         initializer=signal.signal,
         initargs=(signal.SIGINT, signal.SIG_IGN),
     )
+    cspace_reprs = []
+    for particle, motion in simulation_args:
+        cspace_reprs.append(particle.cspace_repr)
+    for particle, motion in simulation_args:
+        particle.cspace_repr = None
     try:
         resulting_particles = p.starmap(simulate, simulation_args, chunksize=1)
         p.close()
@@ -99,6 +104,9 @@ def _parallel_simulate(
         sys.exit()
     counters.add_time(time.time() - p_sim_start)
     counters.add_posteriors(len(simulation_args))
+    for i, particle in enumerate(resulting_particles):
+        simulation_args[i][0].cspace_repr = cspace_reprs[i]
+        particle.cspace_repr = cspace_reprs[i]
     return resulting_particles
 
 

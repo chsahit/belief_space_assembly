@@ -13,6 +13,7 @@ from pydrake.all import (
 )
 
 import components
+from simulation import ik_solver
 
 
 def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
@@ -137,20 +138,30 @@ def log_experiment_result(
 
 
 def pickle_trajectory(
+    p0,
     traj: List[components.CompliantMotion],
     fname: str = "traj_out.pkl",
     joints: bool = True,
 ):
     data = []
-    for u in traj:
-        K = np.diag(u.K).tolist()
+    u0 = components.CompliantMotion(
+        RigidTransform(), p0.X_WG, np.diag(components.stiff)
+    )
+    ik_solver.update_motion_qd(u0)
+    traj_ = [u0] + traj
+    for u in traj_:
+        K = np.copy(u.K)
+        K_r = np.copy(K[:3, :3])
+        K[:3, :3] = K[3:, 3:]
+        K[3:, 3:] = K_r
+        K_flat = K.flatten().tolist()
         if joints:
             command = u.q_d[:7].tolist()
-            data.append((command, K))
+            data.append((command, K_flat))
         else:
             command_vec = RigidTfToVec(u.X_WCd)
             quat = [command_vec[0], command_vec[1], command_vec[2], command_vec[3]]
-            data.append((quat, command_vec[4:], K))
+            data.append((quat, command_vec[4:], K_flat))
 
     with open(fname, "wb") as f:
         pickle.dump(data, f)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import List
+
 import numpy as np
 from pydrake.all import (
     AddMultibodyPlantSceneGraph,
@@ -8,11 +10,16 @@ from pydrake.all import (
     MultibodyPlant,
     Parser,
     RigidTransform,
+    RollPitchYaw,
     RotationMatrix,
     Solve,
 )
 
-import utils
+
+def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
+    """Shorthand for defining a pose."""
+    rpy_deg = np.asarray(rpy_deg)
+    return RigidTransform(RollPitchYaw(rpy_deg * np.pi / 180), xyz)
 
 
 def gripper_to_joint_states(
@@ -27,7 +34,7 @@ def gripper_to_joint_states(
         plant.WeldFrames(
             frame_on_parent_F=plant.world_frame(),
             frame_on_child_M=plant.GetFrameByName("panda_link0"),
-            X_FM=utils.xyz_rpy_deg([0, 0, 0], [0, 0, 0]),
+            X_FM=xyz_rpy_deg([0, 0, 0], [0, 0, 0]),
         )
         plant.Finalize()
 

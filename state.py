@@ -37,6 +37,7 @@ class Particle:
         self._manip_poly = None
         self.trajectory = []
         self._sim_id = None
+        self.cspace_repr = None
 
     def make_plant(
         self,

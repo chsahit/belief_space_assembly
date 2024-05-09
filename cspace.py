@@ -298,6 +298,8 @@ def MakeTrimeshRepr(
     env_geom: Dict[str, components.HRepr],
     manip_geom: Dict[str, components.HRepr],
 ) -> trimesh.Trimesh:
+    print("CALL")
+    # breakpoint()
     transformed_manip_poly = dict()
     for name, geom in manip_geom.items():
         transformed_geom = TF_HPolyhedron(HPolyhedron(*geom), RigidTransform(R_WM))

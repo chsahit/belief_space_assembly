@@ -100,14 +100,14 @@
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
         </drake:proximity_properties>
     </collision>
-    <!--<visual name="front_chamfer">
-        <pose>-0.02875 -0.0 0.1062 0 0 3.1415926</pose>
+    <visual name="front_chamfer">
+        <pose>-0.0245 -0.0 0.1062 0 0 3.1415926</pose>
         <geometry>
             <mesh><drake:declare_convex/><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
       </visual>
       <collision name="front_chamfer">
-        <pose>-0.02875 -0.0 0.1062 0 0 3.1415926</pose>
+        <pose>-0.0245 -0.0 0.1062 0 0 3.1415926</pose>
         <geometry>
             <mesh><drake:declare_convex/><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
@@ -120,13 +120,13 @@
         </drake:proximity_properties>
     </collision>
     <visual name="back_chamfer">
-        <pose>0.02875 -0.0 0.1062 0 0 0</pose>
+        <pose>0.0245 -0.0 0.1062 0 0 0</pose>
         <geometry>
             <mesh><drake:declare_convex/><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
       </visual>
       <collision name="back_chamfer">
-        <pose>0.02875 -0.0 0.1062 0 0 0</pose>
+        <pose>0.0245 -0.0 0.1062 0 0 0</pose>
         <geometry>
             <mesh><drake:declare_convex/><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
@@ -137,7 +137,7 @@
             <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
         </drake:proximity_properties>
-    </collision>-->
+    </collision>
 
 
     <!--left right walls-->
@@ -195,14 +195,14 @@
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
         </drake:proximity_properties>
     </collision>
-    <!--<visual name="left_chamfer">
-        <pose>0.0 0.02875 0.1062 0 0 1.570796</pose>
+    <visual name="left_chamfer">
+        <pose>0.0 0.0245 0.1062 0 0 1.570796</pose>
         <geometry>
             <mesh><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
       </visual>
       <collision name="left_chamfer">
-        <pose>0.0 0.02875 0.1062 0 0 1.570796</pose>
+        <pose>0.0 0.0245 0.1062 0 0 1.570796</pose>
         <geometry>
             <mesh><drake:declare_convex/><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
@@ -215,13 +215,13 @@
         </drake:proximity_properties>
     </collision>
     <visual name="right_chamfer">
-        <pose>0.0 -0.02875 0.1062 0 0 -1.570796</pose>
+        <pose>0.0 -0.0245 0.1062 0 0 -1.570796</pose>
         <geometry>
             <mesh><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
       </visual>
       <collision name="right_chamfer">
-        <pose>0.0 -0.02875 0.1062 0 0 -1.570796</pose>
+        <pose>0.0 -0.0245 0.1062 0 0 -1.570796</pose>
         <geometry>
             <mesh><drake:declare_convex/><uri>real_chamfer_pc.obj</uri></mesh>
         </geometry>
@@ -232,7 +232,7 @@
             <drake:mesh_resolution_hint>0.00001</drake:mesh_resolution_hint>
             <drake:hunt_crossley_dissipation>0.5</drake:hunt_crossley_dissipation>
         </drake:proximity_properties>
-    </collision>-->
+    </collision>
 
     </link>
 </model>

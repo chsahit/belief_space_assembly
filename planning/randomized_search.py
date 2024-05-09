@@ -10,8 +10,8 @@ import sampler
 import state
 from planning import infer_joint_soln, stiffness
 
-random.seed(0)
-gen = np.random.default_rng(0)
+random.seed(1)
+gen = np.random.default_rng(1)
 np.set_printoptions(precision=5, suppress=True)
 
 

@@ -192,7 +192,7 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
         )
         u_noop.q_d = p_vis.q_r
         # p_vis.env_geom = "assets/floor.sdf"
-        p_vis.X_WO = RigidTransform([0.5, 0, -1.0])
+        # p_vis.X_WO = RigidTransform([0.5, 0, -1.0])
         dynamics.simulate(p_vis, u_noop, vis=True)
 
 

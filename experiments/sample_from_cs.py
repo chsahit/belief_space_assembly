@@ -1,15 +1,10 @@
-import numpy as np
-from pydrake.all import RigidTransform
-
 import components
 import contact_defs
-import dynamics
 import puzzle_contact_defs
 import sampler
 import state
 import visualize
 from experiments import init_particle
-from simulation import ik_solver
 
 
 def sample_from_cs_peg():
@@ -23,32 +18,8 @@ def sample_from_cs_puzzle():
 
 
 def visualize_samples(p: state.Particle, CF_d: components.ContactState, n: int = 1):
-    # p = init_particle.init_peg()
-    p = init_particle.init_peg()
     X_WGs = sampler.sample_from_contact(p, CF_d, num_samples=n)
-    U = []
-    for X_WG in X_WGs:
-        t2 = np.copy(X_WG.translation())
-        # t2[2] -= 0.0001
-        X_WGd = RigidTransform(X_WG.rotation(), t2)
-        u = components.CompliantMotion(RigidTransform(), X_WGd, components.stiff)
-        print(f"{X_WG.translation()=}")
-        u = ik_solver.update_motion_qd(u)
-        U.append(u)
-    if n == 1:
-        print("visualizing setpoint")
-        visualize.visualize_targets(p, X_WGs)
-        print("visualizing control")
-        p_next = dynamics.simulate(p, u, vis=True)
-        print(f"{p_next.satisfies_contact(CF_d)=}")
-        print(f"{p_next.epsilon_contacts()=}")
-    else:
-        posteriors = dynamics.f_cspace(p, U)
-        score = 0
-        for post in posteriors:
-            if post.satisfies_contact(CF_d):
-                score += 1
-        print(f"{score=}")
+    visualize.visualize_targets(p, X_WGs)
 
 
 if __name__ == "__main__":
