@@ -11,7 +11,7 @@ from planning import ao_b_est, cobs
 
 pitch_sweep_peg = ("pitch", [1, 3, 5, 7, 9, 12], "peg")
 pitch_sweep_peg = ("pitch", [0.5, 2, 4, 6, 8], "peg")
-pitch_sweep_puzzle = ("pitch", [1, 1.5, 2, 3, 3.5, 4], "puzzle")
+pitch_sweep_puzzle = ("pitch", [0.5, 1, 1.5, 2, 2.5], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
@@ -21,7 +21,7 @@ planners = {
     # "b_est": ao_b_est.b_est,
     "cobs": cobs.cobs,
     "no_k": cobs.no_k,
-    "no_gp": cobs.no_gp,
+    # "no_gp": cobs.no_gp,
     "no_replan": cobs.no_replan,
 }
 
@@ -48,7 +48,7 @@ def sweep(dof, deviations, geometry):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(planner))
-        trials = 10
+        trials = 5
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
@@ -68,7 +68,7 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
-    sweep(*pitch_sweep_puzzle)
+    # sweep(*pitch_sweep_puzzle)
     visualize.show_benchmarks("pitch_puzzle_sweep_results.pkl")
     # sweep(*y_sweep_peg)
     # visualize.show_benchmarks("y_peg_sweep_results.pkl")

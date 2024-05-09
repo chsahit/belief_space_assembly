@@ -158,11 +158,12 @@ def show_benchmarks(fname: str):
         mu, std, sr = utils.mu_std_result(results)
         trends[params[1]].append((params[0], (mu, mu - std, mu + std)))
     for planner, trend in trends.items():
-        x_coords = [stat[0] for stat in trend]
+        x_coords = [float(stat[0]) for stat in trend]
         y_coords = [stat[1][0] for stat in trend]
         lb = [stat[1][1] for stat in trend]
         ub = [stat[1][2] for stat in trend]
         plt.fill_between(x_coords, lb, ub, alpha=0.2)
+        print(f"{x_coords=}")
         plt.plot(x_coords, y_coords, label=planner)
     plt.legend()
     plt.savefig(f"{fname[:3]}_plots.png", dpi=1200)
@@ -232,4 +233,4 @@ def render_graph(nx_graph: nx.Graph, label_dict):
 
 
 if __name__ == "__main__":
-    show_planning_results("pitch_peg_sweep_results.pkl")
+    show_planning_results("pitch_puzzle_sweep_results.pkl")

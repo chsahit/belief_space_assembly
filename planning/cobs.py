@@ -65,7 +65,7 @@ def cobs(
         )
         transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
     graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, transformed_manip_poly)
-    max_tp_attempts = 15
+    max_tp_attempts = 50
     for tp_attempt in range(max_tp_attempts):
         goal_achieved = False
         refine_from = contact_defs.fs
