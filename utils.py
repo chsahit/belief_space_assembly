@@ -53,25 +53,17 @@ def dump_traj(
         pickle.dump(tau, f)
 
 
-def mu_std_result(results):
-    traj_lens = []
-    succs = 0.0
-    for r in results:
-        if r.traj is not None:
-            succs += 1.0
-            traj_lens.append(len(r.traj))
-        """
-        else:
-            traj_lens.append(20)
-        """
-    if len(traj_lens) == 0:
-        print("setting to timeout")
-        traj_lens = [50]
-    times = np.array(traj_lens)
-    times = np.array([result.num_posteriors for result in results])
-    mu, std = np.mean(times), np.std(times)
-    sr = succs / len(results)
-    return mu, std, sr
+def result_statistics(results):
+    np_list = np.array([result.num_posteriors for result in results])
+    mu_np, mu_std = np.mean(np_list), np.std(np_list)
+    wall_time_list = np.array([result.total_time for result in results])
+    mu_walltime, std_walltime = np.mean(wall_time_list), np.std(wall_time_list)
+    sim_time_list = np.array([result.sim_time for result in results])
+    mu_sim_time, std_sim_time = np.mean(sim_time_list), np.std(sim_time_list)
+
+    succs = [r.traj for r in results if r.traj is not None]
+    sr = float(len(succs)) / len(results)
+    return (mu_np, mu_std), (mu_walltime, std_walltime), (mu_sim_time, std_sim_time), sr
 
 
 def envelope_analysis(data):

@@ -76,6 +76,8 @@ def infer(
 
     mu_as = np.mean(all_scores)
     sigma_as_inv = 1.0 / np.std(all_scores)
+    if sigma_as_inv == np.inf:
+        sigma_as_inv = 1e6
     all_scores = sigma_as_inv * (all_scores - mu_as)
 
     # project all samples to 6d tangent space vectors

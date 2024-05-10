@@ -153,21 +153,27 @@ def show_benchmarks(fname: str):
 
     with open(fname, "rb") as f:
         data = pickle.load(f)
-    trends = defaultdict(list)
-    for params, results in data.items():
-        mu, std, sr = utils.mu_std_result(results)
-        trends[params[1]].append((params[0], (mu, mu - std, mu + std)))
-    for planner, trend in trends.items():
-        x_coords = [float(stat[0]) for stat in trend]
-        y_coords = [stat[1][0] for stat in trend]
-        lb = [stat[1][1] for stat in trend]
-        ub = [stat[1][2] for stat in trend]
-        plt.fill_between(x_coords, lb, ub, alpha=0.2)
-        print(f"{x_coords=}")
-        plt.plot(x_coords, y_coords, label=planner)
-    plt.legend()
-    plt.savefig(f"{fname[:3]}_plots.png", dpi=1200)
-    plt.close()
+    for dvar_idx, dvar in enumerate(["simulator_calls", "wall_time", "sim_time"]):
+        trends = defaultdict(list)
+        for params, results in data.items():
+            stats = utils.result_statistics(results)
+            mu, std = stats[dvar_idx]
+            trends[params[1]].append((params[0], (mu, mu - std, mu + std)))
+        for planner, trend in trends.items():
+            x_coords = [float(stat[0]) for stat in trend]
+            y_coords = [stat[1][0] for stat in trend]
+            lb = [stat[1][1] for stat in trend]
+            ub = [stat[1][2] for stat in trend]
+            plt.fill_between(x_coords, lb, ub, alpha=0.2)
+            plt.plot(x_coords, y_coords, label=planner)
+        if "pitch" in fname:
+            plt.xlabel("Amount of Uncertainty (degrees)")
+        else:
+            plt.xlabel("Amount of Uncertainty (meters)")
+        plt.ylabel(dvar)
+        plt.legend()
+        plt.savefig(f"{fname[:3]}_{dvar}.png", dpi=1200)
+        plt.close()
 
 
 def playback_result(b, fname):
