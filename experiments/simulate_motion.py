@@ -25,6 +25,7 @@ def init(X_GM_x: float = 0.0):
 
 def test_simulate():
     p_0 = init_particle.init_peg()  # init()
+    visualize.project_to_planar(p_0)
     t0 = time.time()
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.30], [180, 0, 0])
     mostly_stiff = np.array([100.0, 100.0, 10.0, 600.0, 600.0, 600.0])

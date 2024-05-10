@@ -17,6 +17,7 @@ from pydrake.all import (
 )
 
 import components
+import cspace
 import dynamics
 import state
 import utils
@@ -238,5 +239,42 @@ def render_graph(nx_graph: nx.Graph, label_dict):
     fig.write_html("mode_graph.html")
 
 
-if __name__ == "__main__":
-    show_planning_results("pitch_puzzle_sweep_results.pkl")
+def save_trimesh(slice_2D):
+    import matplotlib.pyplot as plt
+
+    # keep plot axis scaled the same
+    plt.axes().set_aspect("equal", "datalim")
+    # hardcode a format for each entity type
+    eformat = {
+        "Line0": {"color": "g", "linewidth": 1},
+        "Line1": {"color": "y", "linewidth": 1},
+        "Arc0": {"color": "r", "linewidth": 1},
+        "Arc1": {"color": "b", "linewidth": 1},
+        "Bezier0": {"color": "k", "linewidth": 1},
+        "Bezier1": {"color": "k", "linewidth": 1},
+        "BSpline0": {"color": "m", "linewidth": 1},
+        "BSpline1": {"color": "m", "linewidth": 1},
+    }
+    for entity in slice_2D.entities:
+        # if the entity has it's own plot method use it
+        if hasattr(entity, "plot"):
+            entity.plot(slice_2D.vertices)
+            continue
+        # otherwise plot the discrete curve
+        discrete = entity.discrete(slice_2D.vertices)
+        # a unique key for entities
+        e_key = entity.__class__.__name__ + str(int(entity.closed))
+
+        fmt = eformat[e_key].copy()
+        if hasattr(entity, "color"):
+            # if entity has specified color use it
+            fmt["color"] = entity.color
+        plt.plot(*discrete.T, **fmt)
+        plt.savefig("meshx_slice.png")
+
+
+def project_to_planar(p: state.Particle):
+    mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
+    cross_section = mesh.section(plane_origin=mesh.centroid, plane_normal=([0, 1, 0]))
+    planar, _ = cross_section.to_planar()
+    save_trimesh(planar)
