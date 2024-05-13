@@ -13,6 +13,7 @@ from planning import infer_joint_soln, stiffness
 random.seed(1)
 gen = np.random.default_rng(1)
 np.set_printoptions(precision=5, suppress=True)
+sample_logs = []
 
 
 def evaluate_K(
@@ -21,11 +22,13 @@ def evaluate_K(
     K: np.ndarray,
     targets: List[RigidTransform] = None,
 ) -> List[components.CompliantMotion]:
+    global sample_logs
     scores = []
     negative_motions = []
     if targets is None:
         targets = sampler.sample_from_contact(p, CF_d, num_samples=32, num_noise=16)
-
+    sample_logs.append([target.multiply(p.X_GM) for target in targets])
+    print(f"pushing a list of length {len(sample_logs[-1])} to sample_logs")
     X_GC = RigidTransform([0, 0, 0.0])
     targets = [target.multiply(X_GC) for target in targets]
     # visualize.visualize_targets(p, targets)

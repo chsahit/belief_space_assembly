@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import List
 
 import networkx as nx
+import numpy as np
 import plotly.graph_objects as go
 from pydrake.all import (
     CollisionFilterDeclaration,
@@ -243,7 +244,8 @@ def save_trimesh(slice_2D):
     import matplotlib.pyplot as plt
 
     # keep plot axis scaled the same
-    plt.axes().set_aspect("equal", "datalim")
+    fig, ax = plt.subplots()
+    ax.set_aspect("equal", "datalim")
     # hardcode a format for each entity type
     eformat = {
         "Line0": {"color": "g", "linewidth": 1},
@@ -268,13 +270,34 @@ def save_trimesh(slice_2D):
         fmt = eformat[e_key].copy()
         if hasattr(entity, "color"):
             # if entity has specified color use it
-            fmt["color"] = entity.color
-        plt.plot(*discrete.T, **fmt)
-        plt.savefig("meshx_slice.png")
+            fmt["color"] = "b"
+        ax.plot(discrete.T[1], discrete.T[0], **fmt)
+    return fig, ax
 
 
 def project_to_planar(p: state.Particle):
     mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
     cross_section = mesh.section(plane_origin=mesh.centroid, plane_normal=([0, 1, 0]))
-    planar, _ = cross_section.to_planar()
-    save_trimesh(planar)
+    planar, to_3d = cross_section.to_planar()
+    X_Wo = RigidTransform(np.array(to_3d))
+    fig, ax = save_trimesh(planar)
+    X_oM = X_Wo.InvertAndCompose(p.X_WM)
+    pose_t2 = [X_oM.translation()[1], X_oM.translation()[0]]
+    ax.plot(*pose_t2, "ro")
+    fig.savefig("se2_slice.png", dpi=1200)
+    return fig, ax, X_Wo
+
+
+def show_planner_step(
+    p: state.Particle, samples_fname: str, contact: components.ContactState
+):
+    fig, ax, X_Wo = project_to_planar(p)
+    with open(samples_fname, "rb") as f:
+        sample_logs = pickle.load(f)
+    samples = sample_logs[contact]
+    samples_0 = samples[0]
+    for X_WM in samples_0:
+        X_oM = X_Wo.InvertAndCompose(X_WM)
+        pose_sample = [X_oM.translation()[1], X_oM.translation()[0]]
+        # ax.plot(*pose_sample, "go")
+    fig.savefig("plotted_samples.png", dpi=1200)

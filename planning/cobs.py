@@ -1,3 +1,4 @@
+import pickle
 import time
 from typing import List, Tuple
 
@@ -66,6 +67,7 @@ def cobs(
         transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
     graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, transformed_manip_poly)
     max_tp_attempts = 50
+    attempt_samples = dict()
     for tp_attempt in range(max_tp_attempts):
         goal_achieved = False
         refine_from = contact_defs.fs
@@ -96,6 +98,8 @@ def cobs(
                 max_attempts=1,
                 do_gp=do_gp,
             )
+            attempt_samples[nominal_plan[1]] = refine_motion.sample_logs_rr
+            refine_motion.sample_logs_rr = []
             if intermediate_result.traj is None:
                 lr = list(intermediate_result.last_refined)
                 lr[0] = nominal_plan[0]
@@ -109,10 +113,16 @@ def cobs(
                 b_curr = dynamics.f_bel(b_curr, u)
             refine_from = nominal_plan[1]
         if goal_achieved:
+            dump_attempt_samples(attempt_samples)
             T = time.time() - start_time
             return components.PlanningResult(trajectory, T, 0, 0, None)
     T = time.time() - start_time
     return components.PlanningResult(None, T, 0, 0, None)
+
+
+def dump_attempt_samples(attempt_samples):
+    with open("samples.pkl", "wb") as f:
+        pickle.dump(attempt_samples, f)
 
 
 def no_k(

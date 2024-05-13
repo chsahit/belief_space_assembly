@@ -9,12 +9,13 @@ from simulation import ik_solver
 
 def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(X_GM_x=0.0075)
+    p0 = init_particle.init_peg(pitch=-2)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(X_GM_x=-0.0075)
+    p2 = init_particle.init_peg(pitch=2)
     b = state.Belief([p0, p1, p2])
     if ours:
-        result = cobs.cobs(b, contact_defs.bottom_faces_2)
+        # result = cobs.cobs(b, contact_defs.bottom_faces_2)
+        result = cobs.cobs(b, contact_defs.chamfer_init)
         for u in result.traj:
             ik_solver.update_motion_qd(u)
         utils.pickle_trajectory(p1, result.traj)
@@ -49,5 +50,12 @@ def simple_down():
     input()
 
 
+def show_planner_trace():
+    p0 = init_particle.init_peg(pitch=0)
+    step1 = frozenset((("bin_model::left_left", "block::Box_bottom"),))
+    visualize.show_planner_step(p0, "samples.pkl", step1)
+
+
 if __name__ == "__main__":
-    auto_tp_sd(ours=True)
+    # auto_tp_sd(ours=True)
+    show_planner_trace()
