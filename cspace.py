@@ -176,12 +176,14 @@ class Cost:
 
 
 def MakeWorkspaceObjectFromFaces(
-    faces: Dict[str, Tuple[np.ndarray, np.ndarray]]
+        faces: Dict[str, Tuple[np.ndarray, np.ndarray]], only_planes: bool = True
 ) -> components.WorkspaceObject:
     faces_H = dict()
     for name, Hparams in faces.items():
         suffixes = ["_bottom", "_top", "_left", "_right", "_front", "_back", "_inside"]
         is_face = any([suffix in name for suffix in suffixes])
+        if not only_planes:
+            is_face = not is_face
         if is_face:
             faces_H[name] = HPolyhedron(*Hparams)
     return components.WorkspaceObject("", faces_H)
@@ -303,8 +305,8 @@ def MakeTrimeshRepr(
     for name, geom in manip_geom.items():
         transformed_geom = TF_HPolyhedron(HPolyhedron(*geom), RigidTransform(R_WM))
         transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
-    B = MakeWorkspaceObjectFromFaces(env_geom)
-    A = MakeWorkspaceObjectFromFaces(manip_geom)
+    B = MakeWorkspaceObjectFromFaces(env_geom, only_planes=False)
+    A = MakeWorkspaceObjectFromFaces(transformed_manip_poly, only_planes=False)
     volumes = []
     for manip_face in A.faces.items():
         for env_face in B.faces.items():

@@ -240,7 +240,7 @@ def render_graph(nx_graph: nx.Graph, label_dict):
     fig.write_html("mode_graph.html")
 
 
-def save_trimesh(slice_2D):
+def save_trimesh(slice_2D, rotation):
     import matplotlib.pyplot as plt
 
     # keep plot axis scaled the same
@@ -271,7 +271,12 @@ def save_trimesh(slice_2D):
         if hasattr(entity, "color"):
             # if entity has specified color use it
             fmt["color"] = "b"
-        ax.plot(discrete.T[1], discrete.T[0], **fmt)
+        if abs(rotation.matrix()[0][1] - 1) < 1e-6:
+            ax.plot(-1 * discrete.T[1], -1 * discrete.T[0], **fmt)
+        elif abs(rotation.matrix()[0][1] + 1) < 1e-6:
+            ax.plot(discrete.T[1], discrete.T[0], **fmt)
+        else:
+            raise NotImplementedError
     return fig, ax
 
 
@@ -279,8 +284,9 @@ def project_to_planar(p: state.Particle):
     mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
     cross_section = mesh.section(plane_origin=mesh.centroid, plane_normal=([0, 1, 0]))
     planar, to_3d = cross_section.to_planar()
+    print(f"{to_3d=}")
     X_Wo = RigidTransform(np.array(to_3d))
-    fig, ax = save_trimesh(planar)
+    fig, ax = save_trimesh(planar, X_Wo.rotation())
     X_oM = X_Wo.InvertAndCompose(p.X_WM)
     pose_t2 = [X_oM.translation()[1], X_oM.translation()[0]]
     ax.plot(*pose_t2, "ro")

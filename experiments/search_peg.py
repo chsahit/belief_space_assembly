@@ -51,7 +51,7 @@ def simple_down():
 
 
 def show_planner_trace():
-    p0 = init_particle.init_peg(pitch=0)
+    p0 = init_particle.init_peg(pitch=2)
     step1 = frozenset((("bin_model::left_left", "block::Box_bottom"),))
     visualize.show_planner_step(p0, "samples.pkl", step1)
 
