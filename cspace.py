@@ -176,7 +176,7 @@ class Cost:
 
 
 def MakeWorkspaceObjectFromFaces(
-        faces: Dict[str, Tuple[np.ndarray, np.ndarray]], only_planes: bool = True
+    faces: Dict[str, Tuple[np.ndarray, np.ndarray]], only_planes: bool = True
 ) -> components.WorkspaceObject:
     faces_H = dict()
     for name, Hparams in faces.items():

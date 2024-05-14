@@ -257,6 +257,7 @@ def save_trimesh(slice_2D, rotation):
         "BSpline0": {"color": "m", "linewidth": 1},
         "BSpline1": {"color": "m", "linewidth": 1},
     }
+    assert rotation.IsValid()
     for entity in slice_2D.entities:
         # if the entity has it's own plot method use it
         if hasattr(entity, "plot"):
@@ -271,12 +272,14 @@ def save_trimesh(slice_2D, rotation):
         if hasattr(entity, "color"):
             # if entity has specified color use it
             fmt["color"] = "b"
-        if abs(rotation.matrix()[0][1] - 1) < 1e-6:
-            ax.plot(-1 * discrete.T[1], -1 * discrete.T[0], **fmt)
-        elif abs(rotation.matrix()[0][1] + 1) < 1e-6:
-            ax.plot(discrete.T[1], discrete.T[0], **fmt)
-        else:
-            raise NotImplementedError
+        xs = []
+        ys = []
+        for i in range(len(discrete.T[0])):
+            coord = np.array([discrete.T[0][i], discrete.T[1][i], 0])
+            coord_W = rotation.matrix() @ coord
+            xs.append(coord_W[0])
+            ys.append(coord_W[2])
+        plt.plot(xs, ys, **fmt)
     return fig, ax
 
 
