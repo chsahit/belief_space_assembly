@@ -38,11 +38,19 @@ def sample_from_contact(
     satisfiying_samples = []
     ef_name = list(contact_des)[0][0]
     mf_name = list(contact_des)[0][1]
-    env_face = HPolyhedron(*p.constraints[ef_name])
     manip_face = HPolyhedron(*p._manip_poly[mf_name])
-    volume_desired = cspace.minkowski_sum(
-        ef_name, env_face, mf_name, manip_face
-    ).geometry.Scale(1.01)
+    try:
+        env_face = HPolyhedron(*p.constraints[ef_name])
+        env_face = cspace.TF_HPolyhedron(env_face, RigidTransform(p.X_WM.rotation()))
+        volume_desired = cspace.minkowski_sum(
+            ef_name, env_face, mf_name, manip_face
+        ).geometry.Scale(1.01)
+    except Exception:
+        print("falling into exception")
+        env_face = HPolyhedron(*p.constraints[ef_name])
+        volume_desired = cspace.minkowski_sum(
+            ef_name, env_face, mf_name, manip_face
+        ).geometry.Scale(1.01)
     attempts = 0
     while len(satisfiying_samples) < num_samples:
         pt = np.array(

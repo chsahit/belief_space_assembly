@@ -54,7 +54,7 @@ def cobs(
     opt_compliance: bool = True,
     do_gp: bool = True,
     do_replan: bool = True,
-    timeout: float = 1200,
+    timeout: float = 1000,
     log_samples: bool = False,
 ) -> components.PlanningResult:
     start_time = time.time()

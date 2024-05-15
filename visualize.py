@@ -5,12 +5,14 @@ from typing import List
 import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
+import trimesh
 from pydrake.all import (
     CollisionFilterDeclaration,
     DiagramBuilder,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
+    Parser,
     RigidTransform,
     Role,
     RoleAssign,
@@ -18,8 +20,10 @@ from pydrake.all import (
 )
 
 import components
+import contact_defs
 import cspace
 import dynamics
+import sampler
 import state
 import utils
 from simulation import ik_solver, plant_builder
@@ -47,21 +51,22 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
                         properties,
                         RoleAssign.kReplace,
                     )
-                except Exception as e:
+                except Exception:
                     pass
 
 
 def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
     plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=0.005)
+    parser.SetAutoRenaming(True)
     instance_list = list()
-    print("populating plant")
     for i, p in enumerate(b.particles):
-        panda = parser.AddModels("assets/panda_arm_hand.urdf")[0]
+        parser_i = Parser(plant, "i")
+        panda = parser_i.AddModels("assets/panda_arm_hand.urdf")[0]
         plant.RenameModelInstance(panda, "panda_" + str(i))
-        env_geometry = parser.AddModels(p.env_geom)[0]
+        env_geometry = parser_i.AddModels(p.env_geom)[0]
         plant.RenameModelInstance(env_geometry, "obj_" + str(i))
-        manipuland = parser.AddModels(p.manip_geom)[0]
+        manipuland = parser_i.AddModels(p.manip_geom)[0]
         plant.RenameModelInstance(manipuland, "block_" + str(i))
         plant_builder._weld_geometries(
             plant, p.X_GM, p.X_WO, panda, manipuland, env_geometry
@@ -90,9 +95,7 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
         builder, scene_graph, meshcat, MeshcatVisualizerParams()
     )
     diagram = builder.Build()
-    print("making manager")
     manager = scene_graph.collision_filter_manager()
-    print("starting collision stuff")
     for p_idx_i in range(len(b.particles)):
         P_i, O_i, M_i = instance_list[p_idx_i]
         P_i_bodies = plant.GetBodyIndices(P_i)
@@ -242,7 +245,7 @@ def render_graph(nx_graph: nx.Graph, label_dict):
     fig.write_html("mode_graph.html")
 
 
-def save_trimesh(slice_2D, rotation):
+def save_trimesh(slice_2D, tf):
     import matplotlib.pyplot as plt
 
     # keep plot axis scaled the same
@@ -259,7 +262,7 @@ def save_trimesh(slice_2D, rotation):
         "BSpline0": {"color": "m", "linewidth": 1},
         "BSpline1": {"color": "m", "linewidth": 1},
     }
-    assert rotation.IsValid()
+    # assert rotation.IsValid()
     things_plotted = []
     for entity in slice_2D.entities:
         # if the entity has it's own plot method use it
@@ -278,8 +281,8 @@ def save_trimesh(slice_2D, rotation):
         xs = []
         ys = []
         for i in range(len(discrete.T[0])):
-            coord = np.array([discrete.T[0][i], discrete.T[1][i], 0])
-            coord_W = rotation.matrix() @ coord
+            coord = np.array([discrete.T[0][i], discrete.T[1][i], 0, 1])
+            coord_W = tf.GetAsMatrix4() @ coord
             xs.append(coord_W[0])
             ys.append(coord_W[2])
         (out,) = ax.plot(xs, ys, **fmt)
@@ -287,15 +290,39 @@ def save_trimesh(slice_2D, rotation):
     return fig, ax, things_plotted
 
 
-def project_to_planar(p: state.Particle):
+"""
+def compute_centroid(mesh: trimesh.Trimesh):
+    nominal_centroid = mesh.centroid
+    distances = []
+    for vtx in mesh.vertices:
+        distances.append(np.linalg.norm(vtx - nominal_centroid))
+    smallest_indices = np.argpartition(distances, 4)[:4].tolist()
+    closest_points = [mesh.vertices[idx] for idx in smallest_indices]
+    return sum(closest_points, np.array([0, 0, 0])) / len(closest_points)
+"""
+
+
+def compute_centroid(mesh: trimesh.Trimesh, p):
+    samples = sampler.sample_from_contact(p, contact_defs.bottom_faces_2, 200, mesh)
+    samples = [sample.multiply(p.X_GM) for sample in samples]
+    avg = (
+        sum([sample.translation() for sample in samples], np.array([0, 0, 0.0])) / 200.0
+    )
+    return avg
+
+
+def project_to_planar(p: state.Particle, dump_mesh: bool = False):
     mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
-    cross_section = mesh.section(plane_origin=mesh.centroid, plane_normal=([0, 1, 0]))
+    if dump_mesh:
+        utils.dump_mesh(mesh)
+    centroid = compute_centroid(mesh, p)
+    print(f"{centroid=}")
+    cross_section = mesh.section(plane_origin=centroid, plane_normal=([0, 1, 0]))
     planar, to_3d = cross_section.to_planar()
     # print(f"{to_3d=}")
     X_Wo = RigidTransform(np.array(to_3d))
-    fig, ax, things_plotted = save_trimesh(planar, X_Wo.rotation())
-    X_oM = X_Wo.InvertAndCompose(p.X_WM)
-    pose_t2 = [X_oM.translation()[1], X_oM.translation()[0]]
+    fig, ax, things_plotted = save_trimesh(planar, X_Wo)
+    pose_t2 = [p.X_WM.translation()[0], p.X_WM.translation()[2]]
     (pt_curr,) = ax.plot(*pose_t2, "ro")
     things_plotted.append(pt_curr)
     fig.savefig("se2_slice.png", dpi=1200)
@@ -325,15 +352,17 @@ def show_belief_space_traj(samples_fname: str):
     with open(samples_fname, "rb") as f:
         plan_dat = pickle.load(f)
     traj = plan_dat["trajectory"]
-    contacts = plan_dat["contact_seq"]
+    # contacts = plan_dat["contact_seq"]
     num_particles = len(traj[0].particles)
     fig, axes = plt.subplots(len(traj), num_particles)
     fig.set_size_inches(18.5, 25.0)
     for i, belief in enumerate(traj):
         for j, particle in enumerate(belief.particles):
             print(f"belief {i}, particle {j}")
+            print(utils.rt_to_str(particle.X_WM))
             # contact = contacts[i]
-            _, _, _, things_plotted = project_to_planar(particle)
+            dump_mesh = (i == 3) and (j == 1)
+            _, _, _, things_plotted = project_to_planar(particle, dump_mesh=dump_mesh)
             for thing_plotted in things_plotted:
                 if thing_plotted.get_marker() != "None":  # so dumb, why!?
                     m = thing_plotted.get_marker()

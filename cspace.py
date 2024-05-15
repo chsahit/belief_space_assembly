@@ -205,33 +205,6 @@ def serialize_faces(face_id_to_label, mesh):
     return label_to_face_id
 
 
-def label_face(mesh, face_id, V) -> components.ContactState:
-    verts = mesh.vertices[mesh.faces[face_id]]
-    sampled_pts = []
-    label = None
-    pt_labels = []
-    for sample_idx in range(5):
-        w = gen.uniform(low=0, high=1, size=3)
-        w /= np.sum(w)
-        pt = w[0] * verts[0] + w[1] * verts[1] + w[2] * verts[2]
-        sampled_pts.append(pt)
-    for pt in sampled_pts:
-        pt_label = set()
-        for v in V:
-            if v.geometry.Scale(1.01).PointInSet(pt):
-                pt_label = pt_label.union(v.label)
-        pt_labels.append(pt_label)
-    for pt_label in pt_labels:
-        if label is None:
-            label = pt_label
-        else:
-            label = label.intersection(pt_label)
-    if len(label) == 0:
-        print("invalid label")
-        return None
-    return frozenset(label)
-
-
 def cspace_vols_to_trimesh(hulls: List[components.Hull]):
     meshes = []
     for hull in hulls:
@@ -251,9 +224,9 @@ def cspace_vols_to_trimesh(hulls: List[components.Hull]):
             skipped_meshes.append(mesh)
     for skipped_mesh in skipped_meshes:
         joined_mesh = joined_mesh.union(skipped_mesh)
-    joined_mesh.fix_normals()
-    joined_mesh.update_faces(joined_mesh.unique_faces())
-    joined_mesh = joined_mesh.process()
+    # joined_mesh.fix_normals()
+    # joined_mesh.update_faces(joined_mesh.unique_faces())
+    # joined_mesh = joined_mesh.process()
     return joined_mesh
 
 
