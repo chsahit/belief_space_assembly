@@ -55,6 +55,7 @@ def cobs(
     do_gp: bool = True,
     do_replan: bool = True,
     timeout: float = 1200,
+    log_samples: bool = False,
 ) -> components.PlanningResult:
     start_time = time.time()
     p_repr = b0.particles[1]
@@ -74,6 +75,7 @@ def cobs(
         b_curr = b0
         trajectory = []
         start_pose = b0.mean().X_WM.translation()
+        contact_seq = []
         step = 0
         if not do_replan:
             task_plan = cspace.make_task_plan(
@@ -91,6 +93,7 @@ def cobs(
                 step += 1
             start_pose = None
             # show_task_plan(p_repr, nominal_plan)
+            contact_seq.append(nominal_plan[1])
             intermediate_result = refine_motion.randomized_refine(
                 b_curr,
                 [nominal_plan[1]],
@@ -113,7 +116,12 @@ def cobs(
                 b_curr = dynamics.f_bel(b_curr, u)
             refine_from = nominal_plan[1]
         if goal_achieved:
-            dump_attempt_samples(attempt_samples)
+            if log_samples:
+                attempt_samples["trajectory"] = dynamics.sequential_f_bel(
+                    b0, trajectory
+                )
+                attempt_samples["contact_seq"] = contact_seq
+                dump_attempt_samples(attempt_samples)
             T = time.time() - start_time
             return components.PlanningResult(trajectory, T, 0, 0, None)
     T = time.time() - start_time
@@ -121,6 +129,9 @@ def cobs(
 
 
 def dump_attempt_samples(attempt_samples):
+    for b in attempt_samples["trajectory"]:
+        for p in b.particles:
+            p.cspace_repr = None
     with open("samples.pkl", "wb") as f:
         pickle.dump(attempt_samples, f)
 

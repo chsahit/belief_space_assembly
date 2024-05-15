@@ -165,6 +165,14 @@ def parallel_f_bel(
     return beliefs
 
 
+def sequential_f_bel(b0: state.Belief, U: List[components.CompliantMotion]):
+    traj = [b0]
+    for u in U:
+        bnext = f_bel(traj[-1], u)
+        traj.append(bnext)
+    return traj
+
+
 def visualize_trajectory(
     p: state.Particle,
     U: List[components.CompliantMotion],

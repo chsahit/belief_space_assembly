@@ -28,7 +28,6 @@ def evaluate_K(
     if targets is None:
         targets = sampler.sample_from_contact(p, CF_d, num_samples=32, num_noise=16)
     sample_logs.append([target.multiply(p.X_GM) for target in targets])
-    print(f"pushing a list of length {len(sample_logs[-1])} to sample_logs")
     X_GC = RigidTransform([0, 0, 0.0])
     targets = [target.multiply(X_GC) for target in targets]
     # visualize.visualize_targets(p, targets)

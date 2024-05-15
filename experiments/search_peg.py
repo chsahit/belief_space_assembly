@@ -15,7 +15,7 @@ def auto_tp_sd(ours: bool = True):
     b = state.Belief([p0, p1, p2])
     if ours:
         # result = cobs.cobs(b, contact_defs.bottom_faces_2)
-        result = cobs.cobs(b, contact_defs.chamfer_init)
+        result = cobs.cobs(b, contact_defs.bottom_faces_2, log_samples=True)
         for u in result.traj:
             ik_solver.update_motion_qd(u)
         utils.pickle_trajectory(p1, result.traj)
@@ -51,9 +51,7 @@ def simple_down():
 
 
 def show_planner_trace():
-    p0 = init_particle.init_peg(pitch=2)
-    step1 = frozenset((("bin_model::left_left", "block::Box_bottom"),))
-    visualize.show_planner_step(p0, "samples.pkl", step1)
+    visualize.show_belief_space_traj("samples.pkl")
 
 
 if __name__ == "__main__":

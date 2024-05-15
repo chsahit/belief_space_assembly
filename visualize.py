@@ -55,7 +55,7 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     builder = DiagramBuilder()
     plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=0.005)
     instance_list = list()
-
+    print("populating plant")
     for i, p in enumerate(b.particles):
         panda = parser.AddModels("assets/panda_arm_hand.urdf")[0]
         plant.RenameModelInstance(panda, "panda_" + str(i))
@@ -90,7 +90,9 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
         builder, scene_graph, meshcat, MeshcatVisualizerParams()
     )
     diagram = builder.Build()
+    print("making manager")
     manager = scene_graph.collision_filter_manager()
+    print("starting collision stuff")
     for p_idx_i in range(len(b.particles)):
         P_i, O_i, M_i = instance_list[p_idx_i]
         P_i_bodies = plant.GetBodyIndices(P_i)
@@ -258,6 +260,7 @@ def save_trimesh(slice_2D, rotation):
         "BSpline1": {"color": "m", "linewidth": 1},
     }
     assert rotation.IsValid()
+    things_plotted = []
     for entity in slice_2D.entities:
         # if the entity has it's own plot method use it
         if hasattr(entity, "plot"):
@@ -279,28 +282,30 @@ def save_trimesh(slice_2D, rotation):
             coord_W = rotation.matrix() @ coord
             xs.append(coord_W[0])
             ys.append(coord_W[2])
-        plt.plot(xs, ys, **fmt)
-    return fig, ax
+        (out,) = ax.plot(xs, ys, **fmt)
+        things_plotted.append(out)
+    return fig, ax, things_plotted
 
 
 def project_to_planar(p: state.Particle):
     mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
     cross_section = mesh.section(plane_origin=mesh.centroid, plane_normal=([0, 1, 0]))
     planar, to_3d = cross_section.to_planar()
-    print(f"{to_3d=}")
+    # print(f"{to_3d=}")
     X_Wo = RigidTransform(np.array(to_3d))
-    fig, ax = save_trimesh(planar, X_Wo.rotation())
+    fig, ax, things_plotted = save_trimesh(planar, X_Wo.rotation())
     X_oM = X_Wo.InvertAndCompose(p.X_WM)
     pose_t2 = [X_oM.translation()[1], X_oM.translation()[0]]
-    ax.plot(*pose_t2, "ro")
+    (pt_curr,) = ax.plot(*pose_t2, "ro")
+    things_plotted.append(pt_curr)
     fig.savefig("se2_slice.png", dpi=1200)
-    return fig, ax, X_Wo
+    return fig, ax, X_Wo, things_plotted
 
 
 def show_planner_step(
-    p: state.Particle, samples_fname: str, contact: components.ContactState
+    p: state.Particle, samples_fname: str, contact: components.ContactState, i: int
 ):
-    fig, ax, X_Wo = project_to_planar(p)
+    fig, ax, X_Wo, things_plotted = project_to_planar(p)
     with open(samples_fname, "rb") as f:
         sample_logs = pickle.load(f)
     samples = sample_logs[contact]
@@ -308,5 +313,38 @@ def show_planner_step(
     for X_WM in samples_0:
         X_oM = X_Wo.InvertAndCompose(X_WM)
         pose_sample = [X_oM.translation()[1], X_oM.translation()[0]]
-        # ax.plot(*pose_sample, "go")
+        (samples_plot,) = ax.plot(*pose_sample, "go")
+        things_plotted.append(samples_plot)
     fig.savefig("plotted_samples.png", dpi=1200)
+    return fig, ax, things_plotted
+
+
+def show_belief_space_traj(samples_fname: str):
+    import matplotlib.pyplot as plt
+
+    with open(samples_fname, "rb") as f:
+        plan_dat = pickle.load(f)
+    traj = plan_dat["trajectory"]
+    contacts = plan_dat["contact_seq"]
+    num_particles = len(traj[0].particles)
+    fig, axes = plt.subplots(len(traj), num_particles)
+    fig.set_size_inches(18.5, 25.0)
+    for i, belief in enumerate(traj):
+        for j, particle in enumerate(belief.particles):
+            print(f"belief {i}, particle {j}")
+            # contact = contacts[i]
+            _, _, _, things_plotted = project_to_planar(particle)
+            for thing_plotted in things_plotted:
+                if thing_plotted.get_marker() != "None":  # so dumb, why!?
+                    m = thing_plotted.get_marker()
+                    c = thing_plotted.get_mfc()
+                    axes[i, j].plot(
+                        thing_plotted.get_data()[0],
+                        thing_plotted.get_data()[1],
+                        m + c,
+                    )
+                else:
+                    axes[i, j].plot(
+                        thing_plotted.get_data()[0], thing_plotted.get_data()[1]
+                    )
+    fig.savefig("full_trajectory.png", dpi=1200)
