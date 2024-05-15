@@ -89,10 +89,10 @@ def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
         V = VPolytope(H.ReduceInequalities(tol=1e-6))
     except SystemExit:
         try:
-            V = VPolytope(H.ReduceInequalities(tol=1e-4))
+            V = VPolytope(H.ReduceInequalities(tol=1e-2))
         except SystemExit as se:
             print(f"SystemExit {se} from getvertices")
-            breakpoint()
+            # breakpoint()
             return None
     vertices = V.vertices().T
     return vertices
