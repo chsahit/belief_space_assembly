@@ -22,12 +22,12 @@ def approximate_cspace_gradient(axis: int, p: state.Particle) -> np.ndarray:
     global rotation_to_trimesh_repr
     current_translation = np.array([p.X_WM.translation()])
     drotation = np.array([0.0, 0.0, 0.0])
-    drotation[axis] = 0.1
+    drotation[axis] = 0.05
     drotation_SE3 = RotationMatrix(mr.MatrixExp3(mr.VecToso3(drotation)))
-    R_WM = p.X_WM.rotation().multiply(drotation_SE3)
+    R_WM = p.X_GM.rotation().multiply(drotation_SE3)
     if axis not in rotation_to_trimesh_repr.keys():
         rotation_to_trimesh_repr[axis] = cspace.MakeTrimeshRepr(
-            R_WM, p.constraints, p._manip_poly
+            R_WM, p.constraints, p._manip_poly, do_tf=True
         )
     cspace_surface = rotation_to_trimesh_repr[axis]
     closest_pt, _, _ = proximity.closest_point(cspace_surface, current_translation)
@@ -55,6 +55,8 @@ def solve_for_compliance(p: state.Particle) -> np.ndarray:
     K_r_diag = np.copy(components.stiff[:3])
     K_r_diag[2] = components.soft[2]
     K_r = R_CW_rot @ np.diag(K_r_diag) @ np.linalg.inv(R_CW_rot)
+    if np.linalg.norm(rotational_normal) < 1e-8:
+        K_r = np.diag(np.array([60.0, 60.0, 60.0]))
     K = np.zeros((6, 6))
     K[:3, :3] = K_r
     K[3:, 3:] = K_t

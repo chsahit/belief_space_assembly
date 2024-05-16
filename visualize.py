@@ -16,6 +16,8 @@ from pydrake.all import (
     RigidTransform,
     Role,
     RoleAssign,
+    RollPitchYaw,
+    RotationMatrix,
     Simulator,
 )
 
@@ -312,17 +314,26 @@ def compute_centroid(mesh: trimesh.Trimesh, p):
 
 
 def project_to_planar(p: state.Particle, dump_mesh: bool = False):
-    mesh = cspace.MakeTrimeshRepr(p.X_WM.rotation(), p.constraints, p._manip_poly)
+    R_WM_flat = np.copy(p.X_WM.rotation().ToRollPitchYaw().vector())
+    R_WM_flat[0] = 0
+    R_WM_flat[2] = 0
+    R_WM_flat = RotationMatrix(RollPitchYaw(R_WM_flat))
+
+    mesh = cspace.MakeTrimeshRepr(R_WM_flat, p.constraints, p._manip_poly, do_tf=True)
+
     if dump_mesh:
         utils.dump_mesh(mesh)
-    centroid = compute_centroid(mesh, p)
-    print(f"{centroid=}")
-    cross_section = mesh.section(plane_origin=centroid, plane_normal=([0, 1, 0]))
+    cross_section = mesh.section(plane_origin=mesh.centroid, plane_normal=([0, 1, 0]))
     planar, to_3d = cross_section.to_planar()
     # print(f"{to_3d=}")
     X_Wo = RigidTransform(np.array(to_3d))
     fig, ax, things_plotted = save_trimesh(planar, X_Wo)
-    pose_t2 = [p.X_WM.translation()[0], p.X_WM.translation()[2]]
+    pose_t2 = [p.X_WM.translation()[0], 0, p.X_WM.translation()[2]]
+    if mesh.contains(pose_t2):
+        closest = None
+        pose_t2 = [pose_t2[0], pose_t2[0]]
+    else:
+        pose_t2 = [pose_t2[0], pose_t2[2]]
     (pt_curr,) = ax.plot(*pose_t2, "ro")
     things_plotted.append(pt_curr)
     fig.savefig("se2_slice.png", dpi=1200)

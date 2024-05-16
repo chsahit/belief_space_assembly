@@ -1,4 +1,5 @@
 import pickle
+import random
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
@@ -21,6 +22,7 @@ import graph
 import puzzle_contact_defs
 import utils
 
+random.seed(0)
 drake_rng = RandomGenerator(0)
 gen = np.random.default_rng(1)
 global_mesh = None
@@ -272,6 +274,7 @@ def MakeTrimeshRepr(
     R_WM: RotationMatrix,
     env_geom: Dict[str, components.HRepr],
     manip_geom: Dict[str, components.HRepr],
+    do_tf: bool = False,
 ) -> trimesh.Trimesh:
     # breakpoint()
     transformed_manip_poly = dict()
@@ -279,7 +282,10 @@ def MakeTrimeshRepr(
         transformed_geom = TF_HPolyhedron(HPolyhedron(*geom), RigidTransform(R_WM))
         transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
     B = MakeWorkspaceObjectFromFaces(env_geom, only_planes=False)
-    A = MakeWorkspaceObjectFromFaces(transformed_manip_poly, only_planes=False)
+    if do_tf:
+        A = MakeWorkspaceObjectFromFaces(transformed_manip_poly, only_planes=False)
+    else:
+        A = MakeWorkspaceObjectFromFaces(manip_geom, only_planes=False)
     volumes = []
     for manip_face in A.faces.items():
         for env_face in B.faces.items():
@@ -302,7 +308,13 @@ def make_task_plan(
     start_vtx = mode_graph.GetNode(start_mode)
     goal_vtx = mode_graph.GetNode(goal_mode)
     assert (start_vtx is not None) and (goal_vtx is not None)
-    tp_vertices = nx.shortest_path(G, source=start_vtx, target=goal_vtx, weight=h)
+    candidate_paths = list(
+        nx.all_shortest_paths(G, source=start_vtx, target=goal_vtx, weight=h)
+    )
+    lex = lambda tp_vertices: str.lower(str([tp_vtx.label for tp_vtx in tp_vertices]))
+    sorted_paths = sorted(list(candidate_paths), key=lex)
+    random.shuffle(sorted_paths)
+    tp_vertices = sorted_paths[0]
     # normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
     tp = [tp_vtx.label for tp_vtx in tp_vertices]
     return tp
