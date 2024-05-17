@@ -20,6 +20,7 @@ from pydrake.all import (
     RotationMatrix,
     Simulator,
 )
+from trimesh import proximity
 
 import components
 import contact_defs
@@ -323,17 +324,19 @@ def project_to_planar(p: state.Particle, dump_mesh: bool = False):
 
     if dump_mesh:
         utils.dump_mesh(mesh)
-    cross_section = mesh.section(plane_origin=mesh.centroid, plane_normal=([0, 1, 0]))
+    cross_section = mesh.section(
+        plane_origin=np.array([0.5, 0.0, 0.0]), plane_normal=([0, 1, 0])
+    )
     planar, to_3d = cross_section.to_planar()
     # print(f"{to_3d=}")
     X_Wo = RigidTransform(np.array(to_3d))
     fig, ax, things_plotted = save_trimesh(planar, X_Wo)
-    pose_t2 = [p.X_WM.translation()[0], 0, p.X_WM.translation()[2]]
-    if mesh.contains(pose_t2):
-        closest = None
-        pose_t2 = [pose_t2[0], pose_t2[0]]
+    pose_t2 = [[p.X_WM.translation()[0], 0, p.X_WM.translation()[2]]]
+    if mesh.contains(pose_t2)[0]:
+        closest, _, _ = proximity.closest_point(mesh, pose_t2)
+        pose_t2 = [closest[0][0], closest[0][2]]
     else:
-        pose_t2 = [pose_t2[0], pose_t2[2]]
+        pose_t2 = [pose_t2[0][0], pose_t2[0][2]]
     (pt_curr,) = ax.plot(*pose_t2, "ro")
     things_plotted.append(pt_curr)
     fig.savefig("se2_slice.png", dpi=1200)
@@ -372,7 +375,7 @@ def show_belief_space_traj(samples_fname: str):
             print(f"belief {i}, particle {j}")
             print(utils.rt_to_str(particle.X_WM))
             # contact = contacts[i]
-            dump_mesh = (i == 3) and (j == 1)
+            dump_mesh = (i == 0) and (j == 2)
             _, _, _, things_plotted = project_to_planar(particle, dump_mesh=dump_mesh)
             for thing_plotted in things_plotted:
                 if thing_plotted.get_marker() != "None":  # so dumb, why!?

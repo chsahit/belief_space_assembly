@@ -69,7 +69,8 @@ def sample_from_contact(
             satisfiying_samples[i] = noised_pt
     satisfiying_gripper_poses = []
     for pt in satisfiying_samples:
-        X_WM_des = RigidTransform(p.X_WM.rotation(), pt)
+        # X_WM_des = RigidTransform(p.X_WM.rotation(), pt)
+        X_WM_des = RigidTransform(pt)
         X_WG_des = X_WM_des.multiply(p.X_GM.inverse())
         satisfiying_gripper_poses.append(X_WG_des)
     return satisfiying_gripper_poses

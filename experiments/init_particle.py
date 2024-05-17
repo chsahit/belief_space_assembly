@@ -21,7 +21,7 @@ def init_peg(
         q_r_0,
         X_GM,
         X_WO,
-        "assets/big_chamfered_hole.sdf",
+        "assets/real_hole.sdf",
         "assets/peg.urdf",
         mu=mu,
     )

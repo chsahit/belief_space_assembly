@@ -111,7 +111,7 @@ def refine_b(
         K_star, samples = stiffness.solve_for_compliance(random.choice(b.particles))
         # print(f"{K_star=}, {len(samples)=}")
     else:
-        K_star, samples = (np.diag(components.stiff), [])
+        K_star, samples = stiffness.ablate_compliance()
     print(f"{np.diag(K_star)=}")
     best_u_root = None
     best_certainty_all = float("-inf")

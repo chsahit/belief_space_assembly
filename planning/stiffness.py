@@ -61,3 +61,18 @@ def solve_for_compliance(p: state.Particle) -> np.ndarray:
     K[:3, :3] = K_r
     K[3:, 3:] = K_t
     return K, []
+
+
+def ablate_compliance() -> np.ndarray:
+    normal = np.array([1, 1, 1])
+    R_CW = normal_vec_to_matrix(normal)
+    K_t_diag = np.copy(components.stiff[3:])
+    K_t_diag[2] = components.soft[5]
+    K_t = R_CW @ np.diag(K_t_diag) @ np.linalg.inv(R_CW)
+    K_r_diag = np.copy(components.stiff[:3])
+    K_r_diag[2] = components.soft[2]
+    K_r = R_CW @ np.diag(K_r_diag) @ np.linalg.inv(R_CW)
+    K = np.zeros((6, 6))
+    K[:3, :3] = K_r
+    K[3:, 3:] = K_t
+    return K, []

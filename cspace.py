@@ -1,5 +1,4 @@
 import pickle
-import random
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
@@ -19,10 +18,8 @@ from trimesh import proximity
 import components
 import contact_defs
 import graph
-import puzzle_contact_defs
 import utils
 
-random.seed(0)
 drake_rng = RandomGenerator(0)
 gen = np.random.default_rng(1)
 global_mesh = None
@@ -313,7 +310,6 @@ def make_task_plan(
     )
     lex = lambda tp_vertices: str.lower(str([tp_vtx.label for tp_vtx in tp_vertices]))
     sorted_paths = sorted(list(candidate_paths), key=lex)
-    random.shuffle(sorted_paths)
     tp_vertices = sorted_paths[0]
     # normals = [tp_vtx.normal() for tp_vtx in tp_vertices]
     tp = [tp_vtx.label for tp_vtx in tp_vertices]

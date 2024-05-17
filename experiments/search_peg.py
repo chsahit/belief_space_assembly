@@ -9,9 +9,9 @@ from simulation import ik_solver
 
 def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(pitch=-2)
+    p0 = init_particle.init_peg(pitch=-1)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(pitch=2)
+    p2 = init_particle.init_peg(pitch=1)
     b = state.Belief([p0, p1, p2])
     if ours:
         # result = cobs.cobs(b, contact_defs.bottom_faces_2)
@@ -55,5 +55,5 @@ def show_planner_trace():
 
 
 if __name__ == "__main__":
-    # auto_tp_sd(ours=True)
+    auto_tp_sd(ours=True)
     show_planner_trace()
