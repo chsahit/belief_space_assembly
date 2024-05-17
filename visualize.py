@@ -339,24 +339,24 @@ def project_to_planar(p: state.Particle, dump_mesh: bool = False):
         pose_t2 = [pose_t2[0][0], pose_t2[0][2]]
     (pt_curr,) = ax.plot(*pose_t2, "ro")
     things_plotted.append(pt_curr)
-    fig.savefig("se2_slice.png", dpi=1200)
+    # fig.savefig("se2_slice.png", dpi=1200)
     return fig, ax, X_Wo, things_plotted
 
 
 def show_planner_step(
     p: state.Particle, samples_fname: str, contact: components.ContactState, i: int
 ):
-    fig, ax, X_Wo, things_plotted = project_to_planar(p)
+    fig, ax, _, things_plotted = project_to_planar(p)
     with open(samples_fname, "rb") as f:
         sample_logs = pickle.load(f)
     samples = sample_logs[contact]
-    samples_0 = samples[0]
+    breakpoint()
+    samples_0 = samples[i]
     for X_WM in samples_0:
-        X_oM = X_Wo.InvertAndCompose(X_WM)
-        pose_sample = [X_oM.translation()[1], X_oM.translation()[0]]
+        pose_sample = [X_WM.translation()[0], X_WM.translation()[2]]
         (samples_plot,) = ax.plot(*pose_sample, "go")
         things_plotted.append(samples_plot)
-    fig.savefig("plotted_samples.png", dpi=1200)
+    # fig.savefig("plotted_samples.png", dpi=1200)
     return fig, ax, things_plotted
 
 
@@ -366,7 +366,7 @@ def show_belief_space_traj(samples_fname: str):
     with open(samples_fname, "rb") as f:
         plan_dat = pickle.load(f)
     traj = plan_dat["trajectory"]
-    # contacts = plan_dat["contact_seq"]
+    contacts = plan_dat["contact_seq"]
     num_particles = len(traj[0].particles)
     fig, axes = plt.subplots(len(traj), num_particles)
     fig.set_size_inches(18.5, 25.0)
@@ -374,9 +374,16 @@ def show_belief_space_traj(samples_fname: str):
         for j, particle in enumerate(belief.particles):
             print(f"belief {i}, particle {j}")
             print(utils.rt_to_str(particle.X_WM))
-            # contact = contacts[i]
             dump_mesh = (i == 0) and (j == 2)
-            _, _, _, things_plotted = project_to_planar(particle, dump_mesh=dump_mesh)
+            if j == 0 and i < len(traj) - 1:
+                contact = contacts[i]
+                _, _, things_plotted = show_planner_step(
+                    particle, samples_fname, contact, i
+                )
+            else:
+                _, _, _, things_plotted = project_to_planar(
+                    particle, dump_mesh=dump_mesh
+                )
             for thing_plotted in things_plotted:
                 if thing_plotted.get_marker() != "None":  # so dumb, why!?
                     m = thing_plotted.get_marker()
@@ -390,4 +397,4 @@ def show_belief_space_traj(samples_fname: str):
                     axes[i, j].plot(
                         thing_plotted.get_data()[0], thing_plotted.get_data()[1]
                     )
-    fig.savefig("full_trajectory.png", dpi=1200)
+    fig.savefig("full_trajectory.png", dpi=800)

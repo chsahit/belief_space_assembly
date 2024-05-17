@@ -10,7 +10,7 @@ from experiments import init_particle
 from planning import ao_b_est, cobs
 
 pitch_sweep_peg = ("pitch", [1, 3, 5, 7, 9, 12], "peg")
-pitch_sweep_peg = ("pitch", [8, 10], "peg")
+pitch_sweep_peg = ("pitch", [4, 8, 10], "peg")
 pitch_sweep_puzzle = ("pitch", [1, 1.5, 2], "puzzle")
 x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
@@ -68,6 +68,8 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
+    sweep(*pitch_sweep_peg)
+    planners = {"b_est": ao_b_est.b_est}
     sweep(*pitch_sweep_peg)
     visualize.show_benchmarks("pitch_peg_sweep_results.pkl")
     # sweep(*y_sweep_peg)

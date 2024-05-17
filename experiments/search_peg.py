@@ -55,5 +55,5 @@ def show_planner_trace():
 
 
 if __name__ == "__main__":
-    auto_tp_sd(ours=True)
+    # auto_tp_sd(ours=True)
     show_planner_trace()

@@ -117,6 +117,7 @@ def cobs(
             refine_from = nominal_plan[1]
         if goal_achieved:
             if log_samples:
+                print(f"{contact_seq=}")
                 attempt_samples["trajectory"] = dynamics.sequential_f_bel(
                     b0, trajectory
                 )
