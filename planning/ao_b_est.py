@@ -118,7 +118,7 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 1200.0
+    b0: state.Belief, goal: components.ContactState, timeout: float = 600.0
 ) -> components.PlanningResult:
     if "puzzle" in b0.particles[0].env_geom:
         workspace = workspace_puzzle

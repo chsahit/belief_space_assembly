@@ -194,7 +194,7 @@ def make_task_plan(
             )
         )
     except Exception as e:
-        print(f"search exception={e}")
+        print(f"exception={e}")
         return None
     sorted_paths = sorted(list(candidate_paths), key=lambda sched: str(sched))
     contact_schedule = sorted_paths[0]

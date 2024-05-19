@@ -57,7 +57,7 @@ def sample_from_contact(
         if volume_desired.PointInSet(pt):
             satisfiying_samples.append(pt)
         attempts += 1
-        if attempts > 3000 and len(satisfiying_samples) == 0:
+        if attempts > 5000 and len(satisfiying_samples) < (num_samples / 2.0):
             if not aligned:
                 print("using aligned sampler")
                 return sample_from_contact(

@@ -10,6 +10,7 @@ ContactState = FrozenSet[Contact]
 Hull = Tuple[np.ndarray, List[List[float]]]
 HRepr = Tuple[np.ndarray, np.ndarray]  # (A,b) s.t Ax <= b
 
+very_stiff = np.array([100.0, 100.0, 100.0, 600.0, 600.0, 600.0])
 stiff = np.array([60.0, 60.0, 60.0, 400.0, 400.0, 400.0])
 soft = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 100.0])
 

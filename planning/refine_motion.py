@@ -37,7 +37,7 @@ def randomized_refine(
                     break
                 curr_tenative = dynamics.f_bel(curr, u_star)
                 curr_best_score = curr_tenative.partial_sat_score(mode)
-                if curr_best_score <= m_best_score + 1e-4:
+                if curr_best_score <= m_best_score + 1e-6:
                     break
                 m_best_score = curr_best_score
                 curr = curr_tenative

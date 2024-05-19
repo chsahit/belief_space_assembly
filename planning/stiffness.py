@@ -40,20 +40,24 @@ def solve_for_compliance(p: state.Particle) -> np.ndarray:
     _, _, triangle_id = proximity.closest_point(cspace_surface, current_translation)
     translational_normal = cspace_surface.face_normals[triangle_id][0]
     R_CW = normal_vec_to_matrix(translational_normal)
-    K_t_diag = np.copy(components.stiff[3:])
-    K_t_diag[2] = components.soft[5]
+    # K_t_diag = np.copy(components.stiff[3:])
+    # K_t_diag[2] = components.soft[5]
+    K_t_diag = np.copy(components.very_stiff[3:])
+    K_t_diag[2] = components.stiff[5]
     K_t = R_CW @ np.diag(K_t_diag) @ np.linalg.inv(R_CW)
     rotational_normal = np.array([approximate_cspace_gradient(i, p) for i in range(3)])
     if np.linalg.norm(rotational_normal) > 1e-8:
         rotational_normal = rotational_normal / np.linalg.norm(rotational_normal)
     R_CW_rot = normal_vec_to_matrix(rotational_normal)
-    K_r_diag = np.copy(components.stiff[:3])
-    K_r_diag[2] = components.soft[2]
+    # K_r_diag = np.copy(components.stiff[:3])
+    # K_r_diag[2] = components.soft[2]
+    K_r_diag = np.copy(components.very_stiff[:3])
+    K_r_diag[2] = components.stiff[2]
     K_r = R_CW_rot @ np.diag(K_r_diag) @ np.linalg.inv(R_CW_rot)
     if np.linalg.norm(rotational_normal) < 1e-8:
         K_r = np.diag(np.array([60.0, 60.0, 60.0]))
     K = np.zeros((6, 6))
-    K[:3, :3] = K_r
+    K[:3, :3] = K_r  # np.diag(components.stiff[:3])
     K[3:, 3:] = K_t
     return K, []
 
@@ -68,6 +72,6 @@ def ablate_compliance() -> np.ndarray:
     K_r_diag[2] = components.soft[2]
     K_r = R_CW @ np.diag(K_r_diag) @ np.linalg.inv(R_CW)
     K = np.zeros((6, 6))
-    K[:3, :3] = np.diag(components.stiff[:3])  # K_r
-    K[3:, 3:] = np.diag(components.stiff[3:])  # K_t
+    K[:3, :3] = np.diag(components.very_stiff[:3])  # K_r
+    K[3:, 3:] = np.diag(components.very_stiff[3:])  # K_t
     return K, []
