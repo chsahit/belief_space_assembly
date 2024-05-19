@@ -174,8 +174,15 @@ def show_benchmarks(fname: str):
             y_coords = [stat[1][0] for stat in trend]
             lb = [stat[1][1] for stat in trend]
             ub = [stat[1][2] for stat in trend]
-            plt.fill_between(x_coords, lb, ub, alpha=0.2)
-            plt.plot(x_coords, y_coords, label=planner)
+            sorted_order = np.argsort(x_coords)
+            xcs, ycs, lbs, ubs = list(), list(), list(), list()
+            for i in range(len(x_coords)):
+                xcs.append(x_coords[sorted_order[i]])
+                ycs.append(y_coords[sorted_order[i]])
+                lbs.append(lb[sorted_order[i]])
+                ubs.append(ub[sorted_order[i]])
+            plt.fill_between(xcs, lbs, ubs, alpha=0.2)
+            plt.plot(xcs, ycs, label=planner)
         if "pitch" in fname:
             plt.xlabel("Amount of Uncertainty (degrees)")
         else:
@@ -350,7 +357,7 @@ def show_planner_step(
     with open(samples_fname, "rb") as f:
         sample_logs = pickle.load(f)
     samples = sample_logs[contact]
-    breakpoint()
+    # breakpoint()
     samples_0 = samples[i]
     for X_WM in samples_0:
         pose_sample = [X_WM.translation()[0], X_WM.translation()[2]]
@@ -367,6 +374,7 @@ def show_belief_space_traj(samples_fname: str):
         plan_dat = pickle.load(f)
     traj = plan_dat["trajectory"]
     contacts = plan_dat["contact_seq"]
+    print(f"{contacts=}")
     num_particles = len(traj[0].particles)
     fig, axes = plt.subplots(len(traj), num_particles)
     fig.set_size_inches(18.5, 25.0)

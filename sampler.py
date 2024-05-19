@@ -8,7 +8,6 @@ from trimesh import sample
 import components
 import cspace
 import state
-import utils
 
 gen = np.random.default_rng(0)
 pwx = [0.47, 0.525]
@@ -30,29 +29,17 @@ def sample_from_contact(
 ) -> List[RigidTransform]:
     if mesh is None:
         if p.cspace_repr is None:
-            p.cspace_repr = cspace.MakeTrimeshRepr(
-                p.X_WM.rotation(), p.constraints, p._manip_poly
-            )
+            p.cspace_repr = cspace.ConstructCspaceSlice(
+                cspace.ConstructEnv(p), p.X_WM
+            ).mesh
         mesh = p.cspace_repr
     # utils.dump_mesh(mesh)
     satisfiying_samples = []
     ef_name = list(contact_des)[0][0]
     mf_name = list(contact_des)[0][1]
     manip_face = HPolyhedron(*p._manip_poly[mf_name])
-    """
-    try:
-        env_face = HPolyhedron(*p.constraints[ef_name])
-        env_face = cspace.TF_HPolyhedron(env_face, RigidTransform(p.X_WM.rotation()))
-        volume_desired = cspace.minkowski_sum(
-            ef_name, env_face, mf_name, manip_face
-        ).geometry.Scale(1.01)
-    except Exception:
-        print("falling into exception")
-    """
     env_face = HPolyhedron(*p.constraints[ef_name])
-    volume_desired = cspace.minkowski_sum(
-        ef_name, env_face, mf_name, manip_face
-    ).geometry.Scale(1.01)
+    volume_desired = cspace.minkowski_difference(env_face, manip_face)
     attempts = 0
     while len(satisfiying_samples) < num_samples:
         pt = np.array(
@@ -61,9 +48,8 @@ def sample_from_contact(
         if volume_desired.PointInSet(pt):
             satisfiying_samples.append(pt)
         attempts += 1
-        if attempts > 3000:
-            # print(f"{len(satisfiying_samples)=}")
-            volume_desired = volume_desired.Scale(2.0)
+        if attempts > 3000 and len(satisfiying_samples) == 0:
+            raise Exception(f"sampler failed to find targets for {contact_des}")
     for i in range(num_noise):
         t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
         noised_pt = satisfiying_samples[i] + t_vel

@@ -2,9 +2,6 @@ import pickle
 import time
 from typing import List, Tuple
 
-import networkx as nx
-from pydrake.all import HPolyhedron, RigidTransform
-
 import components
 import contact_defs
 import cspace
@@ -34,18 +31,13 @@ def show_task_plan(p_repr: state.Particle, task_plan: List[components.ContactSta
 
 
 def prune_edge(
-    graph_init: cspace.CSpaceGraph,
+    graph_init: components.TaskGraph,
     lr: Tuple[components.ContactState, components.ContactState],
-) -> nx.Graph:
-    edges = []
-    for e in graph_init.E:
-        labels_a = (e[0].label, e[1].label)
-        labels_b = (e[1].label, e[0].label)
-        delete_edge = labels_a == lr or labels_b == lr
-        if not delete_edge:
-            edges.append(e)
-    graph = cspace.CSpaceGraph(graph_init.V, edges)
-    return graph
+) -> components.TaskGraph:
+    if str(lr[0]) < str(lr[1]):
+        lr = (lr[1], lr[0])
+    graph_init.E.remove(lr)
+    return graph_init
 
 
 def cobs(
@@ -60,13 +52,10 @@ def cobs(
     start_time = time.time()
     p_repr = b0.particles[1]
     p_repr._update_contact_data()
-    transformed_manip_poly = dict()
-    for name, geom in p_repr._manip_poly.items():
-        transformed_geom = cspace.TF_HPolyhedron(
-            HPolyhedron(*geom), RigidTransform(p_repr.X_WM.rotation())
-        )
-        transformed_manip_poly[name] = (transformed_geom.A(), transformed_geom.b())
-    graph = cspace.MakeModeGraphFromFaces(p_repr.constraints, transformed_manip_poly)
+    cspace_slice = cspace.ConstructCspaceSlice(
+        cspace.ConstructEnv(p_repr), p_repr.X_WM.rotation()
+    )
+    graph = cspace.label_mesh(cspace_slice, p_repr)
     max_tp_attempts = 50
     attempt_samples = dict()
     for tp_attempt in range(max_tp_attempts):
