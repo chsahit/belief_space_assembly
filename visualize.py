@@ -327,7 +327,7 @@ def project_to_planar(p: state.Particle, dump_mesh: bool = False):
     R_WM_flat[2] = 0
     R_WM_flat = RotationMatrix(RollPitchYaw(R_WM_flat))
 
-    mesh = cspace.ConstructCspaceSlice(cspace.ConstructEnv(p), R_WM_flat)
+    mesh = cspace.ConstructCspaceSlice(cspace.ConstructEnv(p), R_WM_flat).mesh
 
     if dump_mesh:
         utils.dump_mesh(mesh)

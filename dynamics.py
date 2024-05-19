@@ -168,8 +168,8 @@ def parallel_f_bel(
 def sequential_f_bel(b0: state.Belief, U: List[components.CompliantMotion]):
     traj = [b0]
     for u in U:
-        pnext = simulate(traj[-1].particles[1], u, vis=True)
-        print(f"{pnext.X_WM=}")
+        # pnext = simulate(traj[-1].particles[1], u, vis=True)
+        # print(f"{pnext.X_WM=}")
         bnext = f_bel(traj[-1], u)
         traj.append(bnext)
     return traj

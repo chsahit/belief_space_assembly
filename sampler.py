@@ -6,7 +6,6 @@ from pydrake.all import HPolyhedron, RigidTransform
 from trimesh import sample
 
 import components
-import contact_defs
 import cspace
 import state
 
@@ -27,17 +26,19 @@ def sample_from_contact(
     num_samples: int,
     mesh: trimesh.Trimesh = None,
     num_noise: int = 0,
-    seed: int = 0,
+    seed: int = -1,
+    aligned: bool = False,
 ) -> List[RigidTransform]:
     if seed < 0:
         seed = gen.integers(100)
-    rotation = p.X_WM.rotation()
-    rotation = RigidTransform().rotation()
+    if not aligned:
+        rotation = p.X_WM.rotation()
+    else:
+        rotation = RigidTransform().rotation()
     if mesh is None:
-        if p.cspace_repr is None or True:
-            p.cspace_repr = cspace.ConstructCspaceSlice(
-                cspace.ConstructEnv(p), rotation
-            ).mesh
+        p.cspace_repr = cspace.ConstructCspaceSlice(
+            cspace.ConstructEnv(p), rotation
+        ).mesh
         mesh = p.cspace_repr
     # utils.dump_mesh(mesh)
     satisfiying_samples = []
@@ -57,7 +58,18 @@ def sample_from_contact(
             satisfiying_samples.append(pt)
         attempts += 1
         if attempts > 3000 and len(satisfiying_samples) == 0:
-            raise Exception(f"sampler failed to find targets for {contact_des}")
+            if not aligned:
+                print("using aligned sampler")
+                return sample_from_contact(
+                    p,
+                    contact_des,
+                    num_samples,
+                    num_noise=num_noise,
+                    seed=seed,
+                    aligned=True,
+                )
+            else:
+                raise Exception(f"sampler failed to find targets for {contact_des}")
     for i in range(num_noise):
         t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
         noised_pt = satisfiying_samples[i] + t_vel

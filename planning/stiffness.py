@@ -7,7 +7,6 @@ import cspace
 import mr
 import state
 
-rotation_to_trimesh_repr = dict()
 env = None
 
 
@@ -20,15 +19,12 @@ def normal_vec_to_matrix(n: np.ndarray) -> np.ndarray:
 
 
 def approximate_cspace_gradient(axis: int, p: state.Particle) -> np.ndarray:
-    global rotation_to_trimesh_repr
     current_translation = np.array([p.X_WM.translation()])
     drotation = np.array([0.0, 0.0, 0.0])
-    drotation[axis] = 0.05
+    drotation[axis] = 0.02
     drotation_SE3 = RotationMatrix(mr.MatrixExp3(mr.VecToso3(drotation)))
     R_WM = p.X_GM.rotation().multiply(drotation_SE3)
-    if axis not in rotation_to_trimesh_repr.keys():
-        rotation_to_trimesh_repr[axis] = cspace.ConstructCspaceSlice(env, R_WM).mesh
-    cspace_surface = rotation_to_trimesh_repr[axis]
+    cspace_surface = cspace.ConstructCspaceSlice(env, R_WM).mesh
     closest_pt, _, _ = proximity.closest_point(cspace_surface, current_translation)
     d_drotation = np.linalg.norm(closest_pt - current_translation) / drotation[axis]
     return d_drotation
@@ -39,8 +35,7 @@ def solve_for_compliance(p: state.Particle) -> np.ndarray:
     if env is None:
         env = cspace.ConstructEnv(p)
     current_translation = np.array([p.X_WM.translation()])
-    if p.cspace_repr is None:
-        p.cspace_repr = cspace.ConstructCspaceSlice(env, p.X_WM.rotation()).mesh
+    p.cspace_repr = cspace.ConstructCspaceSlice(env, p.X_WM.rotation()).mesh
     cspace_surface = p.cspace_repr
     _, _, triangle_id = proximity.closest_point(cspace_surface, current_translation)
     translational_normal = cspace_surface.face_normals[triangle_id][0]
@@ -73,6 +68,6 @@ def ablate_compliance() -> np.ndarray:
     K_r_diag[2] = components.soft[2]
     K_r = R_CW @ np.diag(K_r_diag) @ np.linalg.inv(R_CW)
     K = np.zeros((6, 6))
-    K[:3, :3] = K_r
-    K[3:, 3:] = K_t
+    K[:3, :3] = np.diag(components.stiff[:3])  # K_r
+    K[3:, 3:] = np.diag(components.stiff[3:])  # K_t
     return K, []

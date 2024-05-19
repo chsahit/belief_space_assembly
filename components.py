@@ -3,7 +3,7 @@ from typing import Dict, FrozenSet, List, NamedTuple, Set, Tuple
 
 import numpy as np
 import trimesh
-from pydrake.all import HPolyhedron, RigidTransform, RollPitchYaw, RotationMatrix
+from pydrake.all import RigidTransform, RollPitchYaw, RotationMatrix
 
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
@@ -96,12 +96,6 @@ class Time:
 
 
 @dataclass(frozen=True)
-class WorkspaceObject:
-    name: str
-    faces: Dict[str, HPolyhedron]
-
-
-@dataclass(frozen=True)
 class Env:
     M: Dict[str, HRepr]
     O: Dict[str, HRepr]
@@ -113,7 +107,7 @@ class CSpaceSlice:
     rot: RotationMatrix
 
 
-@dataclass(frozen=True)
+@dataclass
 class TaskGraph:
     V: List[ContactState]
     E: Set[Tuple[ContactState, ContactState]]

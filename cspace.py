@@ -35,7 +35,6 @@ def ConstructEnv(p: state.Particle) -> components.Env:
 
 
 def tf_hrepr(H: components.HRepr, R: RotationMatrix) -> HPolyhedron:
-    print("warning, maybe shouldnt invert; also check simulation/geometry_monitor.py")
     A_tf = H[0] @ R.inverse().matrix()
     return HPolyhedron(A_tf, H[1])
 
@@ -97,7 +96,7 @@ def ConstructCspaceSlice(
         joined_mesh = joined_mesh.union(mesh)
 
     cspace_slice = components.CSpaceSlice(joined_mesh, rotation)
-    if use_cache:
+    if use_cache and len(cross_section_cache) < 10:
         cross_section_cache.append(cspace_slice)
     return cspace_slice
 
@@ -133,7 +132,7 @@ def label_mesh(
     # prune contact modes that are degenerate
     V = []
     for labeled_volume in labeled_volumes:
-        if len(label_to_verts[labeled_volume[0]]) > 2:
+        if len(label_to_verts[labeled_volume[0]]) >= 2:
             V.append(labeled_volume[0])
     # for each vertex, connect each contact associated with that vertex
     edges = set()
@@ -141,7 +140,7 @@ def label_mesh(
         for edge in itertools.combinations(labels, 2):
             if str(edge[0]) < str(edge[1]):
                 edge = (edge[1], edge[0])
-            if edge[0] and edge[1] in V:
+            if edge[0] in V and edge[1] in V:
                 edges.add(edge)
     G = components.TaskGraph(V, edges, normal_map, label_to_verts)
     return G
@@ -188,11 +187,15 @@ def make_task_plan(
     nx_graph = nx_graph.to_directed()
     # search on graph, order paths lexicographically so experiments are deterministic
     cost_fn = make_cost_fn(uncertainty_dir, G)
-    candidate_paths = list(
-        nx.all_shortest_paths(
-            nx_graph, source=start_mode, target=goal_mode, weight=cost_fn
+    try:
+        candidate_paths = list(
+            nx.all_shortest_paths(
+                nx_graph, source=start_mode, target=goal_mode, weight=cost_fn
+            )
         )
-    )
+    except Exception as e:
+        print(f"search exception={e}")
+        return None
     sorted_paths = sorted(list(candidate_paths), key=lambda sched: str(sched))
     contact_schedule = sorted_paths[0]
     return contact_schedule

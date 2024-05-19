@@ -12,7 +12,7 @@ from planning import infer_joint_soln, stiffness
 
 random.seed(1)
 gen = np.random.default_rng(1)
-np.set_printoptions(precision=5, suppress=True)
+np.set_printoptions(precision=3, suppress=True)
 sample_logs = []
 
 
@@ -112,7 +112,7 @@ def refine_b(
         # print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = stiffness.ablate_compliance()
-    print(f"{np.diag(K_star)=}")
+    print(f"{np.diag(K_star)=}, ", end="")
     best_u_root = None
     best_certainty_all = float("-inf")
     data = [[], []]
@@ -128,17 +128,17 @@ def refine_b(
         data[1] += data_i[1]
         # print(f"certainty_{p_idx}={certainty_i}")
         if success:
-            print(f"{certainty_i=}")
+            print(f"certainty_{p_idx}={certainty_i}")
             return best_u_i
         if certainty_i > best_certainty_all:
             best_certainty_all = certainty_i
             best_u_root = best_u_i
     if best_u_root is None:
-        print("all candidate motion sets are empty")
+        print("candidate motion sets are empty")
         return None
     u_gp, certainty_gp, success_gp = iterative_gp(data, b, CF_d, do_gp)
     if certainty_gp > best_certainty_all:
-        print(f"max certainty {certainty_gp} generated from gp")
+        print(f"{certainty_gp=}")
         return u_gp
     print(f"{best_certainty_all=}")
     return best_u_root

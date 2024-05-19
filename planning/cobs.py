@@ -46,7 +46,7 @@ def cobs(
     opt_compliance: bool = True,
     do_gp: bool = True,
     do_replan: bool = True,
-    timeout: float = 1000,
+    timeout: float = 600,
     log_samples: bool = False,
 ) -> components.PlanningResult:
     start_time = time.time()
@@ -56,6 +56,7 @@ def cobs(
         cspace.ConstructEnv(p_repr), p_repr.X_WM.rotation()
     )
     graph = cspace.label_mesh(cspace_slice, p_repr)
+    original_edge_set = set(graph.E)
     max_tp_attempts = 50
     attempt_samples = dict()
     for tp_attempt in range(max_tp_attempts):
@@ -77,6 +78,9 @@ def cobs(
                 nominal_plan = cspace.make_task_plan(
                     graph, refine_from, goal, b_curr.direction(), start_pose=start_pose
                 )
+                if nominal_plan is None:
+                    graph.E = original_edge_set
+                    continue
             else:
                 nominal_plan = task_plan[step:]
                 step += 1
