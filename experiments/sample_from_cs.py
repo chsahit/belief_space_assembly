@@ -9,7 +9,7 @@ from experiments import init_particle
 
 def sample_from_cs_peg():
     p = init_particle.init_peg()
-    visualize_samples(p, contact_defs.chamfer_init, n=32)
+    visualize_samples(p, contact_defs.bottom_faces_2, n=32)
 
 
 def sample_from_cs_puzzle():
@@ -18,10 +18,10 @@ def sample_from_cs_puzzle():
 
 
 def visualize_samples(p: state.Particle, CF_d: components.ContactState, n: int = 1):
-    X_WGs = sampler.sample_from_contact(p, CF_d, num_samples=n)
+    X_WGs = sampler.sample_from_contact(p, CF_d, num_samples=n, seed=0)
     visualize.visualize_targets(p, X_WGs)
 
 
 if __name__ == "__main__":
-    sample_from_cs_puzzle()
+    sample_from_cs_peg()
     input()

@@ -6,6 +6,7 @@ from pydrake.all import HPolyhedron, RigidTransform
 from trimesh import sample
 
 import components
+import contact_defs
 import cspace
 import state
 
@@ -26,24 +27,31 @@ def sample_from_contact(
     num_samples: int,
     mesh: trimesh.Trimesh = None,
     num_noise: int = 0,
+    seed: int = 0,
 ) -> List[RigidTransform]:
+    if seed < 0:
+        seed = gen.integers(100)
+    rotation = p.X_WM.rotation()
+    rotation = RigidTransform().rotation()
     if mesh is None:
-        if p.cspace_repr is None:
+        if p.cspace_repr is None or True:
             p.cspace_repr = cspace.ConstructCspaceSlice(
-                cspace.ConstructEnv(p), p.X_WM
+                cspace.ConstructEnv(p), rotation
             ).mesh
         mesh = p.cspace_repr
     # utils.dump_mesh(mesh)
     satisfiying_samples = []
     ef_name = list(contact_des)[0][0]
     mf_name = list(contact_des)[0][1]
-    manip_face = HPolyhedron(*p._manip_poly[mf_name])
+    manip_face = cspace.tf_hrepr(p._manip_poly[mf_name], rotation)
     env_face = HPolyhedron(*p.constraints[ef_name])
     volume_desired = cspace.minkowski_difference(env_face, manip_face)
     attempts = 0
     while len(satisfiying_samples) < num_samples:
         pt = np.array(
-            sample.sample_surface(mesh, 1, face_weight=[1] * len(mesh.faces))[0][0]
+            sample.sample_surface(
+                mesh, 1, face_weight=[1] * len(mesh.faces), seed=attempts + seed
+            )[0][0],
         )
         if volume_desired.PointInSet(pt):
             satisfiying_samples.append(pt)
@@ -57,8 +65,7 @@ def sample_from_contact(
             satisfiying_samples[i] = noised_pt
     satisfiying_gripper_poses = []
     for pt in satisfiying_samples:
-        # X_WM_des = RigidTransform(p.X_WM.rotation(), pt)
-        X_WM_des = RigidTransform(pt)
+        X_WM_des = RigidTransform(rotation, pt)
         X_WG_des = X_WM_des.multiply(p.X_GM.inverse())
         satisfiying_gripper_poses.append(X_WG_des)
     return satisfiying_gripper_poses
