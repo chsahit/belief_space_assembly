@@ -166,7 +166,7 @@ def label_mesh(
         for M_name, M_poly in M_faces.items():
             label = frozenset(((O_name, M_name),))
             volume = minkowski_difference(O_poly, M_poly)
-            labeled_volumes.append((label, volume, HPolyhedron(volume).Scale(1.1)))
+            labeled_volumes.append((label, volume, HPolyhedron(volume).Scale(1.01)))
     # for each vertex on mesh, check which contacts they satisfy. also build normal map
     vertex_labels = defaultdict(list)
     normal_map = defaultdict(list)

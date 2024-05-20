@@ -29,6 +29,7 @@ import dynamics
 import sampler
 import state
 import utils
+from planning import stiffness
 from simulation import ik_solver, plant_builder
 
 
@@ -255,11 +256,7 @@ def render_graph(nx_graph: nx.Graph, label_dict):
     fig.write_html("mode_graph.html")
 
 
-def save_trimesh(slice_2D, tf):
-    import matplotlib.pyplot as plt
-
-    # keep plot axis scaled the same
-    fig, ax = plt.subplots()
+def save_trimesh(slice_2D, tf, ax):
     ax.set_aspect("equal", "datalim")
     # hardcode a format for each entity type
     eformat = {
@@ -273,7 +270,6 @@ def save_trimesh(slice_2D, tf):
         "BSpline1": {"color": "m", "linewidth": 1},
     }
     # assert rotation.IsValid()
-    things_plotted = []
     for entity in slice_2D.entities:
         # if the entity has it's own plot method use it
         if hasattr(entity, "plot"):
@@ -295,21 +291,7 @@ def save_trimesh(slice_2D, tf):
             coord_W = tf.GetAsMatrix4() @ coord
             xs.append(coord_W[0])
             ys.append(coord_W[2])
-        (out,) = ax.plot(xs, ys, **fmt)
-        things_plotted.append(out)
-    return fig, ax, things_plotted
-
-
-"""
-def compute_centroid(mesh: trimesh.Trimesh):
-    nominal_centroid = mesh.centroid
-    distances = []
-    for vtx in mesh.vertices:
-        distances.append(np.linalg.norm(vtx - nominal_centroid))
-    smallest_indices = np.argpartition(distances, 4)[:4].tolist()
-    closest_points = [mesh.vertices[idx] for idx in smallest_indices]
-    return sum(closest_points, np.array([0, 0, 0])) / len(closest_points)
-"""
+        ax.plot(xs, ys, **fmt)
 
 
 def compute_centroid(mesh: trimesh.Trimesh, p):
@@ -321,88 +303,96 @@ def compute_centroid(mesh: trimesh.Trimesh, p):
     return avg
 
 
-def project_to_planar(p: state.Particle, dump_mesh: bool = False):
+def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = None):
     R_WM_flat = np.copy(p.X_WM.rotation().ToRollPitchYaw().vector())
     R_WM_flat[0] = 0
     R_WM_flat[2] = 0
+    R_WM_flat_vec = np.array(R_WM_flat)
     R_WM_flat = RotationMatrix(RollPitchYaw(R_WM_flat))
+    p_WM_flat = np.array([p.X_WM.translation()[0], 0, p.X_WM.translation()[2]])
 
     mesh = cspace.ConstructCspaceSlice(cspace.ConstructEnv(p), R_WM_flat).mesh
+    compliance_dir = stiffness.translational_normal(
+        RigidTransform(R_WM_flat, p_WM_flat), mesh
+    )
 
-    if dump_mesh:
-        utils.dump_mesh(mesh)
+    # if dump_mesh:
+    #     utils.dump_mesh(mesh)
     cross_section = mesh.section(
         plane_origin=np.array([0.5, 0.0, 0.0]), plane_normal=([0, 1, 0])
     )
     planar, to_3d = cross_section.to_planar()
     # print(f"{to_3d=}")
     X_Wo = RigidTransform(np.array(to_3d))
-    fig, ax, things_plotted = save_trimesh(planar, X_Wo)
+    save_trimesh(planar, X_Wo, ax)
     pose_t2 = [[p.X_WM.translation()[0], 0, p.X_WM.translation()[2]]]
     if mesh.contains(pose_t2)[0]:
         closest, _, _ = proximity.closest_point(mesh, pose_t2)
         pose_t2 = [closest[0][0], closest[0][2]]
     else:
         pose_t2 = [pose_t2[0][0], pose_t2[0][2]]
-    (pt_curr,) = ax.plot(*pose_t2, "ro")
-    things_plotted.append(pt_curr)
-    # fig.savefig("se2_slice.png", dpi=1200)
-    return fig, ax, X_Wo, things_plotted
+    ax.plot(*pose_t2, "ro")
+    if compliance_dir is not None and u is not None:
+        normed_dir = 0.025 * (compliance_dir / np.linalg.norm(compliance_dir))
+        arrow_mags = [normed_dir[0], normed_dir[2]]
+        ax.arrow(*pose_t2, *arrow_mags)
+    if u is not None:
+        u_WM = u.X_WCd.multiply(p.X_GM)
+        sp = [u_WM.translation()[0], u_WM.translation()[2]]
+        ax.plot(*sp, "go")
+    q_M = [p_WM_flat[0], p_WM_flat[2], (180.0 * R_WM_flat_vec[1]/np.pi)]
+    q_M_round = [round(x, 3) for x in q_M]
+    q_M_str = r"{}".format(str(q_M_round))
+    # ax.xaxis.set_visible(False)
+    import matplotlib.pyplot as plt
+    plt.setp(ax.spines.values(), visible=False)
+    ax.set_xlabel(r"$q_M={}$".format(q_M_str))
 
 
-def show_planner_step(
-    p: state.Particle, samples_fname: str, contact: components.ContactState, i: int
-):
-    fig, ax, _, things_plotted = project_to_planar(p)
-    with open(samples_fname, "rb") as f:
-        sample_logs = pickle.load(f)
-    samples = sample_logs[contact]
-    # breakpoint()
-    samples_0 = samples[i]
-    for X_WM in samples_0:
-        pose_sample = [X_WM.translation()[0], X_WM.translation()[2]]
-        (samples_plot,) = ax.plot(*pose_sample, "go")
-        things_plotted.append(samples_plot)
-    # fig.savefig("plotted_samples.png", dpi=1200)
-    return fig, ax, things_plotted
-
-
-def show_belief_space_traj(samples_fname: str):
+def show_belief_space_traj(traj_fname: str):
+    import matplotlib.image as mpimg
     import matplotlib.pyplot as plt
 
-    with open(samples_fname, "rb") as f:
-        plan_dat = pickle.load(f)
-    traj = plan_dat["trajectory"]
-    contacts = plan_dat["contact_seq"]
-    print(f"{contacts=}")
-    num_particles = len(traj[0].particles)
-    fig, axes = plt.subplots(len(traj), num_particles)
-    fig.set_size_inches(18.5, 25.0)
+    with open(traj_fname, "rb") as f:
+        dat = pickle.load(f)
+    traj = dat["trajectory"]
+    U = dat["motions"]
+    fnames = []
     for i, belief in enumerate(traj):
-        for j, particle in enumerate(belief.particles):
-            print(f"belief {i}, particle {j}")
-            print(utils.rt_to_str(particle.X_WM))
-            dump_mesh = (i == 0) and (j == 2)
-            if j == 0 and i < len(traj) - 1:
-                contact = contacts[i]
-                _, _, things_plotted = show_planner_step(
-                    particle, samples_fname, contact, i
-                )
-            else:
-                _, _, _, things_plotted = project_to_planar(
-                    particle, dump_mesh=dump_mesh
-                )
-            for thing_plotted in things_plotted:
-                if thing_plotted.get_marker() != "None":  # so dumb, why!?
-                    m = thing_plotted.get_marker()
-                    c = thing_plotted.get_mfc()
-                    axes[i, j].plot(
-                        thing_plotted.get_data()[0],
-                        thing_plotted.get_data()[1],
-                        m + c,
-                    )
-                else:
-                    axes[i, j].plot(
-                        thing_plotted.get_data()[0], thing_plotted.get_data()[1]
-                    )
-    fig.savefig("full_trajectory.png", dpi=800)
+        if i < len(U):
+            u = U[i]
+        else:
+            u = None
+        img_name = show_belief_space_step(belief, u, i)
+        fnames.append(img_name)
+    fig = plt.figure(figsize=(8, 3))
+    axes = []
+    for j in range(len(fnames)):
+        axes.append(fig.add_subplot(1, len(fnames), j + 1, aspect="equal"))
+    for k, ax in enumerate(axes):
+        ax.set_xticks([])
+        raw_t = r'{}'.format(str(k))
+        ax.set_xlabel(r"$t = {}$".format(raw_t))
+        ax.set_yticks([])
+        ax.imshow(mpimg.imread(fnames[k]))
+    fig.tight_layout()
+    fig.savefig("trajectory.png", dpi=1000)
+
+
+def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, i: int):
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure(figsize=(8, 6))
+    ax1 = fig.add_subplot(1, 2, 1, aspect="equal")
+    ax2 = fig.add_subplot(2, 2, 2, aspect="equal")
+    ax3 = fig.add_subplot(2, 2, 4, aspect="equal")
+    for ax in [ax1, ax2, ax3]:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # ax.axis("off")
+    project_to_planar(b_curr.particles[1], ax1, u=u)
+    project_to_planar(b_curr.particles[0], ax2)
+    project_to_planar(b_curr.particles[2], ax3)
+    fname_saved = f"planner_step_{i}.png"
+    fig.savefig(fname_saved)
+    return fname_saved

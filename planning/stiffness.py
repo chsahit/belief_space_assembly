@@ -1,5 +1,6 @@
 import numpy as np
-from pydrake.all import RotationMatrix
+import trimesh
+from pydrake.all import RigidTransform, RotationMatrix
 from trimesh import proximity
 
 import components
@@ -30,15 +31,25 @@ def approximate_cspace_gradient(axis: int, p: state.Particle) -> np.ndarray:
     return d_drotation
 
 
+def translational_normal(X_WM: RigidTransform, mesh: trimesh.Trimesh) -> np.ndarray:
+    current_translation = np.array([X_WM.translation()])
+    _, dist, triangle_id = proximity.closest_point(mesh, current_translation)
+    if dist[0] > 0.01:
+        return None
+    translational_normal = mesh.face_normals[triangle_id][0]
+    return translational_normal
+
+
 def solve_for_compliance(p: state.Particle) -> np.ndarray:
     global env
     if env is None:
         env = cspace.ConstructEnv(p)
-    current_translation = np.array([p.X_WM.translation()])
     p.cspace_repr = cspace.ConstructCspaceSlice(env, p.X_WM.rotation()).mesh
     cspace_surface = p.cspace_repr
-    _, _, triangle_id = proximity.closest_point(cspace_surface, current_translation)
-    translational_normal = cspace_surface.face_normals[triangle_id][0]
+    translational_normal = make_translational_normal(p, cspace_surface)
+    if translational_normal is None:
+        return ablate_compliance()
+
     R_CW = normal_vec_to_matrix(translational_normal)
     # K_t_diag = np.copy(components.stiff[3:])
     # K_t_diag[2] = components.soft[5]

@@ -115,6 +115,7 @@ def cobs(
                     b0, trajectory
                 )
                 attempt_samples["contact_seq"] = contact_seq
+                attempt_samples["motions"] = trajectory
                 dump_attempt_samples(attempt_samples)
             T = time.time() - start_time
             return components.PlanningResult(trajectory, T, 0, 0, None)
