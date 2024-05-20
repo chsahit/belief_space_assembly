@@ -12,6 +12,7 @@ from scipy.spatial import ConvexHull
 import components
 import contact_defs
 import state
+import utils
 
 cross_section_cache = []
 
@@ -20,6 +21,56 @@ def is_face(name: str) -> bool:
     suffixes = ["_bottom", "_top", "_left", "_right", "_front", "_back", "_inside"]
     is_face = any([suffix in name for suffix in suffixes])
     return is_face
+
+
+def render_part(Vreps: List[VPolytope], fname: str):
+    meshes = []
+    for Vrep in Vreps:
+        verts = Vrep.vertices().T
+        hull = ConvexHull(verts).simplices
+        meshes.append(trimesh.Trimesh(vertices=verts, faces=hull))
+    joined_mesh = join_meshes(meshes)
+    utils.dump_mesh(joined_mesh, fname)
+
+
+def render_parts(env: components.Env, rotation: RotationMatrix):
+    M_Vreps = list()
+    for name, poly in env.M.items():
+        H = tf_hrepr(poly, rotation)
+        M_Vreps.append(VPolytope(np.array(toGenerators(H)).T))
+        if "4" in str(np.array(toGenerators(H).shape)):
+            breakpoint()
+    render_part(M_Vreps, "manipuland.obj")
+    O_Vreps = list()
+    for _, poly in env.O.items():
+        H = HPolyhedron(*poly)
+        O_Vreps.append(VPolytope(np.array(toGenerators(H)).T))
+    render_part(O_Vreps, "object.obj")
+
+
+def join_meshes(meshes: List[trimesh.Trimesh]) -> trimesh.Trimesh:
+    skipped_meshes = []
+    for mesh in meshes:
+        mesh.fix_normals()
+        mesh.process()
+    joined_mesh = meshes[0]
+    assert joined_mesh.is_volume
+    for mesh in meshes[1:]:
+        cand_joined = joined_mesh.union(mesh)
+        if cand_joined.is_volume:
+            joined_mesh = cand_joined
+            joined_mesh.fix_normals()
+            joined_mesh.process()
+        else:
+            skipped_meshes.append(mesh)
+    for mesh in skipped_meshes:
+        try:
+            joined_mesh = joined_mesh.union(mesh)
+            joined_mesh.fix_normals()
+            joined_mesh.process()
+        except Exception:
+            pass
+    return joined_mesh
 
 
 def ConstructEnv(p: state.Particle) -> components.Env:
@@ -46,7 +97,7 @@ def MatToArr(m: cdd.Matrix) -> np.ndarray:
 def toGenerators(H: HPolyhedron) -> np.ndarray:
     A, b = (H.A(), H.b())
     H_repr = np.hstack((np.array([b]).T, -A))
-    mat = cdd.Matrix(H_repr, number_type="float")
+    mat = cdd.Matrix(H_repr, number_type="fraction")
     mat.rep_type = cdd.RepType.INEQUALITY
     poly = cdd.Polyhedron(mat)
     V_repr = MatToArr(poly.get_generators())
@@ -88,16 +139,13 @@ def ConstructCspaceSlice(
     hulls = [(v, ConvexHull(v).simplices) for v in cspace_vol_verts]
     # make trimesh repr
     meshes = [trimesh.Trimesh(vertices=hull[0], faces=hull[1]) for hull in hulls]
-    for mesh in meshes:
-        mesh.fix_normals()
-        mesh.process()
-    joined_mesh = meshes[0]
-    for i, mesh in enumerate(meshes[1:]):
-        joined_mesh = joined_mesh.union(mesh)
+    joined_mesh = join_meshes(meshes)
 
     cspace_slice = components.CSpaceSlice(joined_mesh, rotation)
     if use_cache and len(cross_section_cache) < 10:
         cross_section_cache.append(cspace_slice)
+    # utils.dump_mesh(joined_mesh)
+    # render_parts(env, rotation)
     return cspace_slice
 
 
@@ -129,10 +177,10 @@ def label_mesh(
                 vertex_labels[i].append(label)
                 normal_map[label].append(cspace.mesh.vertex_normals[i])
                 label_to_verts[label].append(vertex)
-    # prune contact modes that are degenerate
+    # (dont!) prune contact modes that are degenerate
     V = []
     for labeled_volume in labeled_volumes:
-        if len(label_to_verts[labeled_volume[0]]) >= 2:
+        if len(label_to_verts[labeled_volume[0]]) >= 1:
             V.append(labeled_volume[0])
     # for each vertex, connect each contact associated with that vertex
     edges = set()
@@ -172,7 +220,10 @@ def make_task_plan(
         assert start_pose is not None
         distances = []
         for v in G.V:
-            distances.append(np.linalg.norm(start_pose - G.repr_points[v]))
+            if len(G.repr_points[v]) > 0:
+                distances.append(np.linalg.norm(start_pose - G.repr_points[v]))
+            else:
+                distances.append(np.inf)
         smallest_indices = np.argpartition(distances, n_closest)
         fs_neighbors = []
         for i in range(n_closest):
@@ -195,6 +246,7 @@ def make_task_plan(
         )
     except Exception as e:
         print(f"exception={e}")
+        breakpoint()
         return None
     sorted_paths = sorted(list(candidate_paths), key=lambda sched: str(sched))
     contact_schedule = sorted_paths[0]

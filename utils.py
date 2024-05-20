@@ -107,9 +107,9 @@ def label_to_str(label: components.ContactState) -> str:
     return tag
 
 
-def dump_mesh(mesh: trimesh.Trimesh):
+def dump_mesh(mesh: trimesh.Trimesh, fname: str = "cspace.obj"):
     joined_mesh_obj = mesh.export(file_type="obj")
-    with open("cspace.obj", "w") as f:
+    with open(fname, "w") as f:
         f.write(joined_mesh_obj)
 
 
