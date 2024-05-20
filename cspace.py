@@ -166,21 +166,21 @@ def label_mesh(
         for M_name, M_poly in M_faces.items():
             label = frozenset(((O_name, M_name),))
             volume = minkowski_difference(O_poly, M_poly)
-            labeled_volumes.append((label, volume))
+            labeled_volumes.append((label, volume, HPolyhedron(volume).Scale(1.1)))
     # for each vertex on mesh, check which contacts they satisfy. also build normal map
     vertex_labels = defaultdict(list)
     normal_map = defaultdict(list)
     label_to_verts = defaultdict(list)
     for i, vertex in enumerate(cspace.mesh.vertices):
-        for label, volume in labeled_volumes:
-            if volume.PointInSet(vertex):
+        for label, volume, scaled_volume in labeled_volumes:
+            if volume.PointInSet(vertex) or scaled_volume.PointInSet(vertex):
                 vertex_labels[i].append(label)
                 normal_map[label].append(cspace.mesh.vertex_normals[i])
                 label_to_verts[label].append(vertex)
     # (dont!) prune contact modes that are degenerate
     V = []
     for labeled_volume in labeled_volumes:
-        if len(label_to_verts[labeled_volume[0]]) >= 1:
+        if len(label_to_verts[labeled_volume[0]]) >= 3:
             V.append(labeled_volume[0])
     # for each vertex, connect each contact associated with that vertex
     edges = set()

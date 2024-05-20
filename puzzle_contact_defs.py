@@ -52,7 +52,7 @@ bottom = set(
 )
 s_bottom = set((("big_fixed_puzzle::b1_top", "block::b3_bottom"),))
 
-side = set((("big_fixed_puzzle::b2_left", "block::b2_right"),))
+side = frozenset((("big_fixed_puzzle::b2_left", "block::b2_right"),))
 goal = set(
     (
         ("big_fixed_puzzle::b1_top", "block::b3_bottom"),
