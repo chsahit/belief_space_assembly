@@ -70,7 +70,9 @@ def sample_from_contact(
                     aligned=True,
                 )
             else:
-                raise Exception(f"sampler failed to find targets for {contact_des}")
+                print(f"sampler failed to find targets for {contact_des}")
+                return []
+
     for i in range(num_noise):
         t_vel = gen.uniform(low=-0.01, high=0.01, size=3)
         noised_pt = satisfiying_samples[i] + t_vel

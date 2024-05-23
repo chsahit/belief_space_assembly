@@ -46,11 +46,11 @@ def solve_for_compliance(p: state.Particle) -> np.ndarray:
         env = cspace.ConstructEnv(p)
     p.cspace_repr = cspace.ConstructCspaceSlice(env, p.X_WM.rotation()).mesh
     cspace_surface = p.cspace_repr
-    translational_normal = make_translational_normal(p, cspace_surface)
-    if translational_normal is None:
+    t_normal = translational_normal(p.X_WM, cspace_surface)
+    if t_normal is None:
         return ablate_compliance()
 
-    R_CW = normal_vec_to_matrix(translational_normal)
+    R_CW = normal_vec_to_matrix(t_normal)
     # K_t_diag = np.copy(components.stiff[3:])
     # K_t_diag[2] = components.soft[5]
     K_t_diag = np.copy(components.very_stiff[3:])

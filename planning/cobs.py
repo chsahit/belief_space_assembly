@@ -36,7 +36,8 @@ def prune_edge(
 ) -> components.TaskGraph:
     if str(lr[0]) < str(lr[1]):
         lr = (lr[1], lr[0])
-    graph_init.E.remove(lr)
+    if lr in graph_init.E:
+        graph_init.E.remove(lr)
     return graph_init
 
 

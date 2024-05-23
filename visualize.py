@@ -256,7 +256,7 @@ def render_graph(nx_graph: nx.Graph, label_dict):
     fig.write_html("mode_graph.html")
 
 
-def save_trimesh(slice_2D, tf, ax):
+def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
     ax.set_aspect("equal", "datalim")
     # hardcode a format for each entity type
     eformat = {
@@ -284,6 +284,8 @@ def save_trimesh(slice_2D, tf, ax):
         if hasattr(entity, "color"):
             # if entity has specified color use it
             fmt["color"] = "b"
+            # if len(test_fns) > 0:
+            #     fmt["linestyle"] = "dotted"
         xs = []
         ys = []
         for i in range(len(discrete.T[0])):
@@ -292,15 +294,19 @@ def save_trimesh(slice_2D, tf, ax):
             xs.append(coord_W[0])
             ys.append(coord_W[2])
         ax.plot(xs, ys, **fmt)
-
-
-def compute_centroid(mesh: trimesh.Trimesh, p):
-    samples = sampler.sample_from_contact(p, contact_defs.bottom_faces_2, 200, mesh)
-    samples = [sample.multiply(p.X_GM) for sample in samples]
-    avg = (
-        sum([sample.translation() for sample in samples], np.array([0, 0, 0.0])) / 200.0
-    )
-    return avg
+        for c_idx, test_fn in enumerate(test_fns):
+            colored_xs = []
+            colored_ys = []
+            for i in range(len(xs)):
+                if test_fn(xs[i], ys[i]):
+                    colored_xs.append(xs[i])
+                    colored_ys.append(ys[i])
+            fmt["color"] = cs[c_idx]
+            fmt["linewidth"] = 2
+            ax.plot(colored_xs, colored_ys, **fmt)
+        if len(test_fns) > 0:
+            ax.text(0.495, 0.07, r"$c_2$", color="m", fontsize=28)
+            ax.text(0.51, 0.125, r"$c_1$", color="y", fontsize=28)
 
 
 def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = None):
@@ -340,11 +346,12 @@ def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = Non
         u_WM = u.X_WCd.multiply(p.X_GM)
         sp = [u_WM.translation()[0], u_WM.translation()[2]]
         ax.plot(*sp, "go")
-    q_M = [p_WM_flat[0], p_WM_flat[2], (180.0 * R_WM_flat_vec[1]/np.pi)]
+    q_M = [p_WM_flat[0], p_WM_flat[2], (180.0 * R_WM_flat_vec[1] / np.pi)]
     q_M_round = [round(x, 3) for x in q_M]
     q_M_str = r"{}".format(str(q_M_round))
     # ax.xaxis.set_visible(False)
     import matplotlib.pyplot as plt
+
     plt.setp(ax.spines.values(), visible=False)
     ax.set_xlabel(r"$q_M={}$".format(q_M_str))
 
@@ -365,18 +372,65 @@ def show_belief_space_traj(traj_fname: str):
             u = None
         img_name = show_belief_space_step(belief, u, i)
         fnames.append(img_name)
-    fig = plt.figure(figsize=(8, 3))
+    fnames_sched = show_contact_schedule(traj[0].particles[1])
+    fnames = [fnames_sched] + fnames
+    fig = plt.figure(figsize=(10, 7))
     axes = []
-    for j in range(len(fnames)):
-        axes.append(fig.add_subplot(1, len(fnames), j + 1, aspect="equal"))
+    num_panels = len(fnames)
+    axes.append(fig.add_subplot(2, 1, 1, aspect="equal"))
+    for j in range(num_panels - 1):
+        # axes.append(fig.add_subplot(1, num_panels, j + 1, aspect="equal"))
+        axes.append(fig.add_subplot(2, num_panels - 1, num_panels + j, aspect="equal"))
     for k, ax in enumerate(axes):
+        if k == 0:
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.imshow(mpimg.imread(fnames[k]))
+            ax.set_xlabel("Contact Sequence")
+            continue
+        timestep = k - 1
         ax.set_xticks([])
-        raw_t = r'{}'.format(str(k))
+        raw_t = r"{}".format(str(timestep))
         ax.set_xlabel(r"$t = {}$".format(raw_t))
         ax.set_yticks([])
         ax.imshow(mpimg.imread(fnames[k]))
     fig.tight_layout()
-    fig.savefig("trajectory.png", dpi=1000)
+    fig.savefig("trajectory.eps", dpi=800)
+
+
+def show_contact_schedule(p: state.Particle):
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(1, 1, 1, aspect="equal")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    R_WM_flat = np.copy(p.X_WM.rotation().ToRollPitchYaw().vector())
+    R_WM_flat[0] = 0
+    R_WM_flat[2] = 0
+    R_WM_flat = RotationMatrix(RollPitchYaw(R_WM_flat))
+
+    mesh = cspace.ConstructCspaceSlice(cspace.ConstructEnv(p), R_WM_flat).mesh
+
+    cross_section = mesh.section(
+        plane_origin=np.array([0.5, 0.0, 0.0]), plane_normal=([0, 1, 0])
+    )
+    planar, to_3d = cross_section.to_planar()
+    X_Wo = RigidTransform(np.array(to_3d))
+
+    def test_fn(pt_x: float, pt_z: float) -> bool:
+        return pt_x > 0.501 and pt_x < 0.52 and pt_z > -0.001
+        # return pt_x > 0.505 and pt_x < 0.5125 and pt_z > -0.001
+
+    def test_fn2(pt_x, pt_z):
+        return pt_z < 0.09 and pt_z > 0.079
+
+    save_trimesh(planar, X_Wo, ax, test_fns=[test_fn, test_fn2], cs=["y", "m"])
+    plt.setp(ax.spines.values(), visible=False)
+    fname_saved = "contact_sched.eps"
+    fig.tight_layout()
+    fig.savefig(fname_saved)
+    return fname_saved
 
 
 def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, i: int):
@@ -393,6 +447,7 @@ def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, 
     project_to_planar(b_curr.particles[1], ax1, u=u)
     project_to_planar(b_curr.particles[0], ax2)
     project_to_planar(b_curr.particles[2], ax3)
-    fname_saved = f"planner_step_{i}.png"
-    fig.savefig(fname_saved)
+    fname_saved = f"planner_step_{i}.eps"
+    fig.tight_layout()
+    fig.savefig(fname_saved, dpi=800)
     return fname_saved

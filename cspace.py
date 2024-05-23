@@ -180,7 +180,7 @@ def label_mesh(
     # (dont!) prune contact modes that are degenerate
     V = []
     for labeled_volume in labeled_volumes:
-        if len(label_to_verts[labeled_volume[0]]) >= 3:
+        if len(label_to_verts[labeled_volume[0]]) >= 4:
             V.append(labeled_volume[0])
     # for each vertex, connect each contact associated with that vertex
     edges = set()
@@ -227,6 +227,8 @@ def make_task_plan(
         smallest_indices = np.argpartition(distances, n_closest)
         fs_neighbors = []
         for i in range(n_closest):
+            if "back_chamfer" in str(G.V[smallest_indices[i]]):
+                continue
             fs_neighbors.append((contact_defs.fs, G.V[smallest_indices[i]]))
         E_fs = list(G.E) + fs_neighbors
     else:

@@ -11,15 +11,15 @@ from experiments import init_particle
 from planning import ao_b_est, cobs
 
 pitch_sweep_peg = ("pitch", [1, 3, 5, 7, 9, 12], "peg")
-pitch_sweep_peg = ("pitch", [1, 2, 4], "peg")
+pitch_sweep_peg = ("pitch", [1, 1.5, 2, 2.5, 3, 3.5, 4], "peg")
 pitch_sweep_puzzle = ("pitch", [1, 1.5, 2], "puzzle")
-x_sweep_peg = ("X_GM_x", [0.02, 0.04, 0.06], "peg")
+x_sweep_peg = ("X_GM_x", [0.025], "peg")
 z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
-y_sweep_peg = ("y", [0.01, 0.02, 0.03, 0.04], "peg")
+y_sweep_peg = ("y", [0.01, 0.02, 0.03], "peg")
 
 planners = {
-    "b_est": ao_b_est.b_est,
+    # "b_est": ao_b_est.b_est,
     "cobs": cobs.cobs,
     "no_k": cobs.no_k,
     # "no_gp": cobs.no_gp,
@@ -49,7 +49,7 @@ def sweep(dof, deviations, geometry):
         p2 = initializer(**kwarg_2)
         b = state.Belief([p0, p1, p2])
         experiment_label = (str(deviation), str(planner))
-        trials = 7
+        trials = 10
         experiment_results = []
         for trial_idx in range(trials):
             print(f"TRIAL: {trial_idx}")
@@ -70,8 +70,8 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
-    sweep(*pitch_sweep_peg)
+    sweep(*y_sweep_peg)
     # planners = {"b_est": ao_b_est.b_est}
-    visualize.show_benchmarks("pitch_puzzle_sweep_results.pkl")
+    visualize.show_benchmarks("y_peg_sweep_results.pkl")
     # sweep(*y_sweep_peg)
     # visualize.show_benchmarks("y_peg_sweep_results.pkl")

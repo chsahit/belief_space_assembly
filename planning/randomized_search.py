@@ -35,6 +35,8 @@ def evaluate_K(
     # for m in motions:
     #     dynamics.simulate(p, m, vis=True)
     # breakpoint()
+    if len(motions) == 0:
+        return [], ([], [])
     P_next = dynamics.f_cspace(p, motions)
     U = []
     for i, p_next in enumerate(P_next):
