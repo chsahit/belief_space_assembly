@@ -1,16 +1,9 @@
 import pickle
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import trimesh
-from pydrake.all import (
-    HPolyhedron,
-    Quaternion,
-    RigidTransform,
-    RollPitchYaw,
-    RotationMatrix,
-    VPolytope,
-)
+from pydrake.all import Quaternion, RigidTransform, RollPitchYaw, RotationMatrix
 
 import components
 from simulation import ik_solver
@@ -53,58 +46,23 @@ def dump_traj(
         pickle.dump(tau, f)
 
 
+def median_mad(vals: np.ndarray) -> Tuple[float, float]:
+    median = np.median(vals)
+    mad = np.median(np.absolute(vals - median))
+    return median, mad
+
+
 def result_statistics(results):
     np_list = np.array([result.num_posteriors for result in results])
-    mu_np, mu_std = np.mean(np_list), np.std(np_list)
+    mu_np, mu_std = median_mad(np_list)
     wall_time_list = np.array([result.total_time for result in results])
-    mu_walltime, std_walltime = np.mean(wall_time_list), np.std(wall_time_list)
+    mu_walltime, std_walltime = median_mad(wall_time_list)
     sim_time_list = np.array([result.sim_time for result in results])
-    mu_sim_time, std_sim_time = np.mean(sim_time_list), np.std(sim_time_list)
+    mu_sim_time, std_sim_time = median_mad(sim_time_list)
 
     succs = [r.traj for r in results if r.traj is not None]
     sr = float(len(succs)) / len(results)
     return (mu_np, mu_std), (mu_walltime, std_walltime), (mu_sim_time, std_sim_time), sr
-
-
-def envelope_analysis(data):
-    ours_max = float("-inf")
-    no_stiffness_max = float("-inf")
-    no_gp_max = float("-inf")
-    for params, results in data.items():
-        has_success = any([result.traj is not None for result in results])
-        if params[1] == "True" and params[2] == "True" and has_success:
-            ours_max = max(ours_max, 2 * float(params[0]))
-        elif params[1] == "True" and params[2] == "False" and has_success:
-            no_stiffness_max = max(no_stiffness_max, 2 * float(params[0]))
-        elif params[1] == "False" and params[2] == "True" and has_success:
-            no_gp_max = max(no_gp_max, 2 * float(params[0]))
-
-    print(f"{ours_max=}")
-    print(f"{no_stiffness_max=}")
-    print(f"{no_gp_max=}")
-
-
-def GetVertices(H: HPolyhedron, assert_count: bool = True) -> np.ndarray:
-    try:
-        V = VPolytope(H.ReduceInequalities(tol=1e-6))
-    except SystemExit:
-        try:
-            V = VPolytope(H.ReduceInequalities(tol=1e-2))
-        except SystemExit as se:
-            print(f"SystemExit {se} from getvertices")
-            # breakpoint()
-            return None
-    vertices = V.vertices().T
-    return vertices
-
-
-def label_to_str(label: components.ContactState) -> str:
-    tag = ""
-    for contact in label:
-        A = contact[0][contact[0].find("::") + 2 :]
-        B = contact[1][contact[1].find("::") + 2 :]
-        tag += f"({A}, {B}), "
-    return tag
 
 
 def dump_mesh(mesh: trimesh.Trimesh, fname: str = "cspace.obj"):

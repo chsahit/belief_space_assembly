@@ -171,6 +171,7 @@ def show_benchmarks(fname: str):
             mu, std = stats[dvar_idx]
             trends[params[1]].append((params[0], (mu, mu - std, mu + std)))
         for planner, trend in trends.items():
+            print(f"{planner=}, {dvar=}")
             x_coords = [float(stat[0]) for stat in trend]
             y_coords = [stat[1][0] for stat in trend]
             lb = [stat[1][1] for stat in trend]
@@ -182,6 +183,9 @@ def show_benchmarks(fname: str):
                 ycs.append(y_coords[sorted_order[i]])
                 lbs.append(lb[sorted_order[i]])
                 ubs.append(ub[sorted_order[i]])
+                print(
+                    f"deviation={xcs[-1]}, median={ycs[-1]}, mad={ubs[-1] - ycs[-1]}\n"
+                )
             plt.fill_between(xcs, lbs, ubs, alpha=0.2)
             plt.plot(xcs, ycs, label=planner)
         if "pitch" in fname:
