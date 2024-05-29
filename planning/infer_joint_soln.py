@@ -90,7 +90,7 @@ def infer(
         all_samples_r6.append(np.concatenate((r, t)))
 
     # compute test_points
-    K = 16
+    K = 31
     num_noised = int(0.15 * K)
     if do_gp:
         num_test_points = 1000

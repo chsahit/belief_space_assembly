@@ -10,17 +10,21 @@ import visualize
 from experiments import init_particle
 from planning import ao_b_est, cobs
 
-pitch_sweep_peg = ("pitch", [3], "peg")
-pitch_sweep_puzzle = ("pitch", [1, 1.5, 2], "puzzle")
-x_sweep_peg = ("X_GM_x", [0.01, 0.02, 0.025, 0.03], "peg")
-z_sweep_puzzle = ("X_GM_x", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
-z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
+pitch_sweep_peg = ("pitch", [1, 2, 3, 4], "peg")
+x_sweep_peg = ("X_GM_x", [0.01, 0.02], "peg")
 y_sweep_peg = ("y", [0.01, 0.02], "peg")
 
+pitch_sweep_puzzle = ("pitch", [2], "puzzle")
+x_sweep_puzzle = ("X_GM_x", [0.01], "puzzle")
+y_sweep_puzzle = ("y", [0.01, 0.02], "puzzle")
+
+z_sweep_puzzle = ("X_GM_z", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
+z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
+
 planners = {
-    "cobs": cobs.cobs,
-    "no_k": cobs.no_k,
-    "b_est": ao_b_est.b_est,
+    "cobs3": cobs.cobs,
+    "no_k3": cobs.no_k,
+    # "b_est": ao_b_est.b_est,
     # "no_gp": cobs.no_gp,
     # "no_replan": cobs.no_replan,
 }
@@ -69,8 +73,15 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
-    sweep(*pitch_sweep_puzzle)
-    # planners = {"b_est": ao_b_est.b_est}
-    # visualize.show_benchmarks("pitch_puzzle_sweep_results.pkl")
+    """
+    sweep(*pitch_sweep_peg)
+    sweep(*x_sweep_peg)
+    sweep(*y_sweep_peg)
+    """
+    sweep(*x_sweep_puzzle)
+    sweep(*y_sweep_puzzle)
+    # sweep(*pitch_sweep_puzzle)
+    # sweep(*x_sweep_puzzle)
+    # visualize.show_benchmarks("y_peg_sweep_results.pkl")
     # sweep(*y_sweep_peg)
     # visualize.show_benchmarks("y_peg_sweep_results.pkl")

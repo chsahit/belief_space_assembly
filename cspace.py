@@ -1,4 +1,5 @@
 import itertools
+import random
 from collections import defaultdict
 from typing import List
 
@@ -14,6 +15,7 @@ import contact_defs
 import state
 import utils
 
+random.seed(1)
 cross_section_cache = []
 
 
@@ -177,6 +179,11 @@ def label_mesh(
                 vertex_labels[i].append(label)
                 normal_map[label].append(cspace.mesh.vertex_normals[i])
                 label_to_verts[label].append(vertex)
+    # important assumption -- all normals are "outward facing" relative to mesh
+    for label, normals in normal_map.items():
+        np_normals = [np.array(normal) for normal in normals]
+        avg_normal = (1.0 / len(np_normals)) * sum(np_normals, np.array([0, 0, 0]))
+        normal_map[label] = [avg_normal]
     # (dont!) prune contact modes that are degenerate
     V = []
     for labeled_volume in labeled_volumes:
@@ -215,7 +222,7 @@ def make_task_plan(
     start_pose: np.ndarray = None,
 ) -> List[components.ContactState]:
     # decide on free space neighbors
-    n_closest = 2
+    n_closest = 3
     if start_mode == contact_defs.fs:
         assert start_pose is not None
         distances = []
@@ -227,8 +234,8 @@ def make_task_plan(
         smallest_indices = np.argpartition(distances, n_closest)
         fs_neighbors = []
         for i in range(n_closest):
-            if "back_chamfer" in str(G.V[smallest_indices[i]]):
-                continue
+            # if "back_chamfer" in str(G.V[smallest_indices[i]]):
+            #     continue
             fs_neighbors.append((contact_defs.fs, G.V[smallest_indices[i]]))
         E_fs = list(G.E) + fs_neighbors
     else:
@@ -251,5 +258,5 @@ def make_task_plan(
         breakpoint()
         return None
     sorted_paths = sorted(list(candidate_paths), key=lambda sched: str(sched))
-    contact_schedule = sorted_paths[0]
+    contact_schedule = random.choice(sorted_paths)
     return contact_schedule

@@ -26,7 +26,7 @@ def evaluate_K(
     scores = []
     negative_motions = []
     if targets is None:
-        targets = sampler.sample_from_contact(p, CF_d, num_samples=32, num_noise=16)
+        targets = sampler.sample_from_contact(p, CF_d, num_samples=32, num_noise=32)
     sample_logs.append([target.multiply(p.X_GM) for target in targets])
     X_GC = RigidTransform([0, 0, 0.0])
     targets = [target.multiply(X_GC) for target in targets]

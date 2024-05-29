@@ -48,6 +48,9 @@ def sample_from_contact(
     env_face = HPolyhedron(*p.constraints[ef_name])
     volume_desired = cspace.minkowski_difference(env_face, manip_face)
     scaled_vol = HPolyhedron(volume_desired).Scale(1.01)
+    # scaled_vol_large = HPolyhedron(volume_desired).Scale(1.25)
+    goal_loc = np.array([0, 0, 0])
+    curr_dist = np.linalg.norm(p.X_WM.translation() - goal_loc)
     attempts = 0
     while len(satisfiying_samples) < num_samples:
         pt = np.array(
@@ -55,7 +58,9 @@ def sample_from_contact(
                 mesh, 1, face_weight=[1] * len(mesh.faces), seed=attempts + seed
             )[0][0],
         )
-        if volume_desired.PointInSet(pt) or scaled_vol.PointInSet(pt):
+        pt_dist = np.linalg.norm(pt - goal_loc)
+        improvement = (pt_dist <= curr_dist) or True
+        if (volume_desired.PointInSet(pt) or scaled_vol.PointInSet(pt)) and improvement:
             satisfiying_samples.append(pt)
         attempts += 1
         if attempts > 5000 and len(satisfiying_samples) < (num_samples / 2.0):
