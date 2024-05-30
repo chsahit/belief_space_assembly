@@ -14,16 +14,16 @@ pitch_sweep_peg = ("pitch", [1, 2, 3, 4], "peg")
 x_sweep_peg = ("X_GM_x", [0.01, 0.02], "peg")
 y_sweep_peg = ("y", [0.01, 0.02], "peg")
 
-pitch_sweep_puzzle = ("pitch", [2], "puzzle")
-x_sweep_puzzle = ("X_GM_x", [0.01], "puzzle")
+pitch_sweep_puzzle = ("pitch", [1, 2], "puzzle")
+x_sweep_puzzle = ("X_GM_x", [0.02], "puzzle")
 y_sweep_puzzle = ("y", [0.01, 0.02], "puzzle")
 
 z_sweep_puzzle = ("X_GM_z", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
 
 planners = {
-    "cobs3": cobs.cobs,
-    "no_k3": cobs.no_k,
+    "cobs": cobs.cobs,
+    "no_k": cobs.no_k,
     # "b_est": ao_b_est.b_est,
     # "no_gp": cobs.no_gp,
     # "no_replan": cobs.no_replan,
@@ -77,11 +77,8 @@ if __name__ == "__main__":
     sweep(*pitch_sweep_peg)
     sweep(*x_sweep_peg)
     sweep(*y_sweep_peg)
+    sweep(*pitch_sweep_puzzle)
+    sweep(*y_sweep_puzzle)
     """
     sweep(*x_sweep_puzzle)
-    sweep(*y_sweep_puzzle)
-    # sweep(*pitch_sweep_puzzle)
-    # sweep(*x_sweep_puzzle)
-    # visualize.show_benchmarks("y_peg_sweep_results.pkl")
-    # sweep(*y_sweep_peg)
-    # visualize.show_benchmarks("y_peg_sweep_results.pkl")
+    visualize.show_benchmarks("X_GM_x_sweep_results.pkl")

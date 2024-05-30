@@ -264,6 +264,8 @@ def render_graph(nx_graph: nx.Graph, label_dict):
 
 
 def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
+    from matplotlib.patches import Polygon
+
     ax.set_aspect("equal", "datalim")
     # hardcode a format for each entity type
     eformat = {
@@ -295,12 +297,16 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
             #     fmt["linestyle"] = "dotted"
         xs = []
         ys = []
+        pts = []
         for i in range(len(discrete.T[0])):
             coord = np.array([discrete.T[0][i], discrete.T[1][i], 0, 1])
             coord_W = tf.GetAsMatrix4() @ coord
             xs.append(coord_W[0])
             ys.append(coord_W[2])
-        ax.plot(xs, ys, **fmt)
+            pts.append([coord_W[0], coord_W[2]])
+        pts = np.array(pts)
+        ax.add_patch(Polygon(pts, facecolor="b"))
+        # ax.plot(xs, ys, **fmt)
         for c_idx, test_fn in enumerate(test_fns):
             colored_xs = []
             colored_ys = []
@@ -450,11 +456,13 @@ def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, 
     for ax in [ax1, ax2, ax3]:
         ax.set_xticks([])
         ax.set_yticks([])
+        ax.set_xlim(left=0.44, right=0.56)
+        ax.set_ylim(bottom=0.07, top=0.19)
         # ax.axis("off")
     project_to_planar(b_curr.particles[1], ax1, u=u)
     project_to_planar(b_curr.particles[0], ax2)
     project_to_planar(b_curr.particles[2], ax3)
-    fname_saved = f"planner_step_{i}.eps"
+    fname_saved = f"planner_step_{i}.png"
     fig.tight_layout()
     fig.savefig(fname_saved, dpi=800)
     return fname_saved
