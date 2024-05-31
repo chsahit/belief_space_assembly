@@ -10,6 +10,7 @@ def init_peg(
     mu: float = 0.45,
     yaw: float = 0.0,
     y: float = 0.0,
+    peg_urdf: str = "assets/peg.urdf",
 ) -> state.Particle:
     z = 0.16 + X_GM_z
     X_WG_0 = utils.xyz_rpy_deg([0.5, 0.0, 0.36], [180, 0, 0])
@@ -22,7 +23,7 @@ def init_peg(
         X_GM,
         X_WO,
         "assets/real_hole.sdf",
-        "assets/peg.urdf",
+        peg_urdf,
         mu=mu,
     )
     return p0
