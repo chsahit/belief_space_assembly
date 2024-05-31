@@ -292,7 +292,7 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
         fmt = eformat[e_key].copy()
         if hasattr(entity, "color"):
             # if entity has specified color use it
-            fmt["color"] = "b"
+            fmt["color"] = "lightsteelblue"
             # if len(test_fns) > 0:
             #     fmt["linestyle"] = "dotted"
         xs = []
@@ -305,7 +305,7 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
             ys.append(coord_W[2])
             pts.append([coord_W[0], coord_W[2]])
         pts = np.array(pts)
-        ax.add_patch(Polygon(pts, facecolor="b"))
+        ax.add_patch(Polygon(pts, facecolor="lightsteelblue"))
         # ax.plot(xs, ys, **fmt)
         for c_idx, test_fn in enumerate(test_fns):
             colored_xs = []
@@ -318,8 +318,8 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
             fmt["linewidth"] = 2
             ax.plot(colored_xs, colored_ys, **fmt)
         if len(test_fns) > 0:
-            ax.text(0.495, 0.07, r"$c_2$", color="m", fontsize=28)
-            ax.text(0.51, 0.125, r"$c_1$", color="y", fontsize=28)
+            ax.text(0.495, 0.081, r"$c_2$", color="m", fontsize=28)
+            ax.text(0.51, 0.125, r"$c_1$", color="darkorange", fontsize=28)
 
 
 def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = None):
@@ -366,7 +366,7 @@ def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = Non
     import matplotlib.pyplot as plt
 
     plt.setp(ax.spines.values(), visible=False)
-    ax.set_xlabel(r"$q_M={}$".format(q_M_str))
+    ax.set_xlabel(r"$q_M={}$".format(q_M_str), fontsize=20)
 
 
 def show_belief_space_traj(traj_fname: str):
@@ -418,6 +418,9 @@ def show_contact_schedule(p: state.Particle):
     ax = fig.add_subplot(1, 1, 1, aspect="equal")
     ax.set_xticks([])
     ax.set_yticks([])
+    ax.set_xlim(left=0.435, right=0.555)
+    ax.set_ylim(bottom=0.08, top=0.21)
+
     R_WM_flat = np.copy(p.X_WM.rotation().ToRollPitchYaw().vector())
     R_WM_flat[0] = 0
     R_WM_flat[2] = 0
@@ -438,7 +441,7 @@ def show_contact_schedule(p: state.Particle):
     def test_fn2(pt_x, pt_z):
         return pt_z < 0.09 and pt_z > 0.079
 
-    save_trimesh(planar, X_Wo, ax, test_fns=[test_fn, test_fn2], cs=["y", "m"])
+    save_trimesh(planar, X_Wo, ax, test_fns=[test_fn, test_fn2], cs=["darkorange", "m"])
     plt.setp(ax.spines.values(), visible=False)
     fname_saved = "contact_sched.eps"
     fig.tight_layout()
@@ -456,13 +459,13 @@ def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, 
     for ax in [ax1, ax2, ax3]:
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_xlim(left=0.44, right=0.56)
-        ax.set_ylim(bottom=0.07, top=0.19)
+        ax.set_xlim(left=0.435, right=0.555)
+        ax.set_ylim(bottom=0.08, top=0.21)
         # ax.axis("off")
     project_to_planar(b_curr.particles[1], ax1, u=u)
     project_to_planar(b_curr.particles[0], ax2)
     project_to_planar(b_curr.particles[2], ax3)
-    fname_saved = f"planner_step_{i}.png"
+    fname_saved = f"planner_step_{i}.eps"
     fig.tight_layout()
     fig.savefig(fname_saved, dpi=800)
     return fname_saved
