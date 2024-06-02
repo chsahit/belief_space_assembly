@@ -1,6 +1,7 @@
-from typing import List
+import logging
 
-import components
+from tqdm import tqdm
+
 import contact_defs
 import dynamics
 import state
@@ -13,6 +14,7 @@ peg_urdfs = {
     "big": "assets/big_peg.urdf",
 }
 planners = {"cobs": cobs.cobs, "b_est": ao_b_est.b_est}
+logging.basicConfig(level=logging.WARNING)
 
 
 def make_b0(peg_size: str) -> state.Belief:
@@ -24,10 +26,11 @@ def make_b0(peg_size: str) -> state.Belief:
 
 
 def sweep_geoms(planner_name: str):
-    for geom_size in ["small", "big"]:
-        trials = 10
+    results = []
+    for geom_size in ["big"]:
+        trials = 50
         num_succs = 0.0
-        for trial in range(trials):
+        for trial in tqdm(range(trials)):
             b0 = make_b0("normal")
             goal = contact_defs.bottom_faces_2
             planner = planners[planner_name]
@@ -35,11 +38,19 @@ def sweep_geoms(planner_name: str):
             assert plan_result.traj is not None
             b0_test = make_b0(geom_size)
             bT_test = dynamics.sequential_f_bel(b0_test, plan_result.traj)[-1]
+            """
+            if planner_name == "cobs" and geom_size == "big" and trial == 0:
+                p_vis = b0_test.particles[0]
+                for u in plan_result.traj:
+                    p_vis = dynamics.simulate(p_vis, u, vis=True)
+            """
             if bT_test.satisfies_contact(goal):
                 num_succs += 1.0
         sr = num_succs / trials
-        print(f"{planner_name=}, {geom_size=}, {sr=}")
+        results.append((planner_name, geom_size, sr))
+    print(f"\n{results}")
 
 
 if __name__ == "__main__":
     sweep_geoms("cobs")
+    sweep_geoms("b_est")

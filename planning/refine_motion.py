@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 import components
@@ -6,6 +7,7 @@ import state
 from planning import randomized_search
 
 sample_logs_rr = []
+logger = logging.getLogger(__name__)
 
 
 def randomized_refine(
@@ -27,7 +29,7 @@ def randomized_refine(
                 last_refined = (None, mode)
             else:
                 last_refined = (modes[i - 1], modes[i])
-            print(f"{mode=}")
+            logger.info(f"{mode=}")
             m_best_score = 0.0
             while m_best_score < len(b.particles):
                 u_star = randomized_search.refine_b(

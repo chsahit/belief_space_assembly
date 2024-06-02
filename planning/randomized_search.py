@@ -1,3 +1,4 @@
+import logging
 import random
 from typing import List
 
@@ -14,6 +15,7 @@ random.seed(1)
 gen = np.random.default_rng(1)
 np.set_printoptions(precision=3, suppress=True)
 sample_logs = []
+logger = logging.getLogger(__name__)
 
 
 def evaluate_K(
@@ -46,7 +48,7 @@ def evaluate_K(
             negative_motions.append(motions[i])
             scores.append(0)
     if p.satisfies_contact(CF_d) and len(U) == 0:
-        print("warning, entire motion set loses contact")
+        logger.info("warning, entire motion set loses contact")
     return U, (negative_motions, scores)
 
 
@@ -114,7 +116,7 @@ def refine_b(
         # print(f"{K_star=}, {len(samples)=}")
     else:
         K_star, samples = stiffness.ablate_compliance()
-    print(f"{np.diag(K_star)=}, ", end="")
+    logger.info(f"{np.diag(K_star)=}, ")
     best_u_root = None
     best_certainty_all = float("-inf")
     data = [[], []]
@@ -130,17 +132,17 @@ def refine_b(
         data[1] += data_i[1]
         # print(f"certainty_{p_idx}={certainty_i}")
         if success:
-            print(f"certainty_{p_idx}={certainty_i}")
+            logger.info(f"certainty_{p_idx}={certainty_i}")
             return best_u_i
         if certainty_i > best_certainty_all:
             best_certainty_all = certainty_i
             best_u_root = best_u_i
     if best_u_root is None:
-        print("candidate motion sets are empty")
+        logger.info("candidate motion sets are empty")
         return None
     u_gp, certainty_gp, success_gp = iterative_gp(data, b, CF_d, do_gp)
     if certainty_gp > best_certainty_all:
-        print(f"{certainty_gp=}")
+        logger.info(f"{certainty_gp=}")
         return u_gp
-    print(f"{best_certainty_all=}")
+    logger.info(f"{best_certainty_all=}")
     return best_u_root

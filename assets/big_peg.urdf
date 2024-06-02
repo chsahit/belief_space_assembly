@@ -9,7 +9,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.06 0.06 0.16"/>
+        <box size="0.062 0.062 0.16"/>
       </geometry>
       <material name="red">
         <color rgba="0.8 0.1 0.1 0.9"/>
@@ -17,7 +17,7 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.0625 0.0625 0.1625"/>
+        <box size="0.062 0.062 0.16"/>
     </geometry>
     <drake:proximity_properties>
         <drake:mu_dynamic value="0.05"/>
