@@ -23,7 +23,7 @@ def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
 
 
 def gripper_to_joint_states(
-    X_WG: RigidTransform, plant: MultibodyPlant = None
+    X_WG: RigidTransform, plant: MultibodyPlant = None, finger_width=0.015
 ) -> np.ndarray:
     if plant is None:
         builder = DiagramBuilder()
@@ -63,8 +63,8 @@ def gripper_to_joint_states(
         0.06961755,
         2.52396334,
         0.6796144,
-        0.04287501,
-        0.04266755,
+        finger_width,
+        finger_width,
     ]
     prog.AddQuadraticErrorCost(np.identity(len(q)), q0_guess, q)
     prog.SetInitialGuess(q, q0_guess)

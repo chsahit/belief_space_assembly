@@ -59,7 +59,7 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
                     pass
 
 
-def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
+def _make_combined_plant(b: state.Belief, meshcat: Meshcat, pretty: bool):
     builder = DiagramBuilder()
     plant, scene_graph, parser = plant_builder.init_plant(builder, timestep=0.005)
     parser.SetAutoRenaming(True)
@@ -84,7 +84,21 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
     colors = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
     for i, p in enumerate(b.particles):
         P, O, M = instance_list[i]
-        set_transparency_of_models(plant, [P, O, M], colors[i % 3], 0.5, scene_graph)
+        if not pretty:
+            set_transparency_of_models(
+                plant, [P, O, M], colors[i % 3], 0.5, scene_graph
+            )
+        else:
+            alpha_mode = "m"
+            if alpha_mode == "solid":
+                alpha = 1.0
+            elif alpha_mode == "translucent":
+                alpha = 0.3
+            else:
+                alphas = [0.3, 1.0, 0.3]
+                alpha = alphas[i]
+            set_transparency_of_models(plant, [P, M], colors[i % 3], alpha, scene_graph)
+            set_transparency_of_models(plant, [O], [0, 0, 0], 1.0, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
         plant_builder.wire_controller(
             P,
@@ -128,10 +142,13 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat):
 
 
 def play_motions_on_belief(
-    b: state.Belief, U: List[components.CompliantMotion], fname: str = None
+    b: state.Belief,
+    U: List[components.CompliantMotion],
+    fname: str = None,
+    pretty: bool = True,
 ):
     meshcat = Meshcat()
-    diagram = _make_combined_plant(b, meshcat)
+    diagram = _make_combined_plant(b, meshcat, pretty)
     simulator = Simulator(diagram)
     visualizer = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
     visualizer.StartRecording()

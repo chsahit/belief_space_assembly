@@ -118,7 +118,9 @@ def best_node(tree: SearchTree) -> BNode:
 
 
 def b_est(
-    b0: state.Belief, goal: components.ContactState, timeout: float = 900.0
+    b0: state.Belief,
+    goal: components.ContactState,
+    timeout: float = 900.0,
 ) -> components.PlanningResult:
     if "puzzle" in b0.particles[0].env_geom:
         workspace = workspace_puzzle
@@ -132,7 +134,7 @@ def b_est(
     while time.time() - start_time < timeout:
         if (time.time() - last_printed_time) > 5:
             runtime = time.time() - start_time
-            print(f"{int(runtime)=}, {tree.num_nodes=}", end="\r")
+            # print(f"{int(runtime)=}, {tree.num_nodes=}", end="\r")
             last_printed_time = time.time()
         bn = tree.sample()
         u = sample_control(bn.b)

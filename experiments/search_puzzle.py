@@ -1,3 +1,6 @@
+import logging
+import pickle
+
 import puzzle_contact_defs
 import state
 import utils
@@ -5,21 +8,30 @@ import visualize
 from experiments import init_particle
 from planning import ao_b_est, cobs, refine_motion
 
+logging.basicConfig(level=logging.INFO)
+
 
 def run_search(ours: bool = True):
-    p0 = init_particle.init_puzzle(pitch=1)
+    p0 = init_particle.init_puzzle(X_GM_x=-0.01)
     p1 = init_particle.init_puzzle(pitch=0.0)
-    p2 = init_particle.init_puzzle(pitch=-1)
+    p2 = init_particle.init_puzzle(X_GM_x=0.01)
     b = state.Belief([p0, p1, p2])
     if ours:
         result = cobs.cobs(b, puzzle_contact_defs.side)
     else:
         result = ao_b_est.b_est(b, puzzle_contact_defs.side)
     if result.traj is not None:
+        print("vis")
+        utils.log_experiment_result("puzzle_soln.pkl", "result", [result])
         visualize.play_motions_on_belief(
-            state.Belief([p0, p1, p2]), result.traj, fname="puzzle_soln.html"
+            state.Belief([p0, p1, p2]),
+            result.traj,
+            fname="puzzle_soln.html",
+            pretty=True,
         )
         input()
+    else:
+        logging.error("no soln found")
 
 
 def simple_down():
@@ -43,5 +55,17 @@ def simple_down():
     input()
 
 
+def view_puzzle_soln():
+    p0 = init_particle.init_puzzle(X_GM_x=-0.01)
+    p1 = init_particle.init_puzzle(pitch=0.0)
+    p2 = init_particle.init_puzzle(X_GM_x=0.01)
+    b = state.Belief([p0, p1, p2])
+    with open("puzzle_soln.pkl", "rb") as f:
+        result = pickle.load(f)
+    traj = result["result"][0].traj
+    visualize.play_motions_on_belief(b, traj, pretty=True)
+    input()
+
+
 if __name__ == "__main__":
-    run_search(ours=True)
+    view_puzzle_soln()
