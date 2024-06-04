@@ -9,13 +9,13 @@ from simulation import ik_solver
 
 def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(X_GM_x=-1)
+    p0 = init_particle.init_peg(y=-0.01)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(X_GM_x=1)
+    p2 = init_particle.init_peg(y=0.01)
     b = state.Belief([p0, p1, p2])
     if ours:
         # result = cobs.cobs(b, contact_defs.bottom_faces_2)
-        result = cobs.cobs(b, contact_defs.bottom_faces_2, log_samples=True)
+        result = cobs.cobs(b, contact_defs.bottom_faces_2, log_samples=False)
         for u in result.traj:
             ik_solver.update_motion_qd(u)
         utils.pickle_trajectory(p1, result.traj)
@@ -55,5 +55,5 @@ def show_planner_trace():
 
 
 if __name__ == "__main__":
-    # auto_tp_sd(ours=True)
-    show_planner_trace()
+    auto_tp_sd(ours=True)
+    # show_planner_trace()

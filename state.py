@@ -38,6 +38,7 @@ class Particle:
         self.trajectory = []
         self._sim_id = None
         self.cspace_repr = None
+        self.noisy = False
 
     def make_plant(
         self,
@@ -134,6 +135,7 @@ class Particle:
         new_p._constraints = self._constraints
         new_p._manip_poly = self._manip_poly
         new_p._sim_id = self._sim_id
+        new_p.noisy = self.noisy
         return new_p
 
     def satisfies_contact(self, CF_d: components.ContactState, epsilon=0.001) -> bool:

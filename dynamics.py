@@ -52,6 +52,7 @@ def simulate(
 
     controller = diagram.GetSubsystemByName("controller")
     controller.kp = motion.K
+    controller.noisy = p.noisy
     setpoint = diagram.GetSubsystemByName("setpoint")
     motion = ik_solver.update_motion_qd(motion)
     setpoint.setpoint = motion.q_d

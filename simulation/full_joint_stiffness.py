@@ -8,12 +8,15 @@ from pydrake.all import (
     ValueProducer,
 )
 
+gen = np.random.default_rng(1)
+
 
 class JointStiffnessController(LeafSystem):
-    def __init__(self, plant, kp, panda_name="panda"):
+    def __init__(self, plant, kp, panda_name="panda", noisy: bool = False):
         LeafSystem.__init__(self)
         self.plant = plant
         self.kp = kp
+        self.noisy = noisy
 
         self.panda = self.plant.GetModelInstanceByName(panda_name)
         num_states = self.plant.num_multibody_states(self.panda)
@@ -162,6 +165,11 @@ class JointStiffnessController(LeafSystem):
         tau += spring_damper_F
         lims = np.array([87.0, 87.0, 87.0, 87, 12, 12, 12, 10, 10])
         tau = np.clip(tau, -lims, lims)
+        if self.noisy:
+            direction = np.zeros((3,))
+            while np.linalg.norm(direction) < 1e-5:
+                direction = gen.standard_normal(size=9)
+            tau += 2 * direction
         output.SetFromVector(tau)
 
 

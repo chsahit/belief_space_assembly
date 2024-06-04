@@ -40,18 +40,22 @@ class NonDaemonPool(multiprocessing.pool.Pool):
         return proc
 
 
-def make_b0(peg_size: str) -> state.Belief:
+def make_b0(peg_size: str, noisy: bool = False) -> state.Belief:
+    peg_size = "normal"
     urdf = peg_urdfs[peg_size]
     p0 = init_particle.init_peg(X_GM_x=-0.01, peg_urdf=urdf)
+    p0.noisy = noisy
     p1 = init_particle.init_peg(pitch=0, peg_urdf=urdf)
+    p1.noisy = noisy
     p2 = init_particle.init_peg(X_GM_x=0.01, peg_urdf=urdf)
+    p2.noisy = noisy
     return state.Belief([p0, p1, p2])
 
 
 def run_test(planner_name: str, goal: components.ContactState):
     b0 = make_b0("normal")
     plan_result = planners[planner_name](b0, goal)
-    b0_test = make_b0("big")
+    b0_test = make_b0("normal", noisy=True)
     bT_test = dynamics.sequential_f_bel(b0_test, plan_result.traj)[-1]
     if bT_test.satisfies_contact(goal):
         print("return 1.0")
@@ -66,7 +70,7 @@ def parallel_sweep(planner_name: str, trials: int = 25):
     scores = p.starmap(run_test, arg_list)
     p.close()
     p.join()
-    sr = float(scores) / float(len(trials))
+    sr = float(sum(scores)) / float(trials)
     print(f"{planner_name}, {sr}")
 
 
@@ -81,7 +85,7 @@ def sweep_geoms(planner_name: str):
             planner = planners[planner_name]
             plan_result = planner(b0, goal)
             assert plan_result.traj is not None
-            b0_test = make_b0(geom_size)
+            b0_test = make_b0(geom_size, noisy=True)
             bT_test = dynamics.sequential_f_bel(b0_test, plan_result.traj)[-1]
             if planner_name == "cobs" and geom_size == "big" and trial == 0:
                 p_vis = b0_test.particles[0]
@@ -95,4 +99,5 @@ def sweep_geoms(planner_name: str):
 
 
 if __name__ == "__main__":
+    sweep_geoms("cobs")
     parallel_sweep("b_est")
