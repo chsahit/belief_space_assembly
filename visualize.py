@@ -47,7 +47,8 @@ def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph
                     if color is not None:
                         phong.set(*color, alpha)
                     else:
-                        phong.set(phong.r(), phong.g(), phong.b(), alpha)
+                        phong.set(*color, alpha)
+                        # phong.set(phong.r(), phong.g(), phong.b(), alpha)
                     properties.UpdateProperty("phong", "diffuse", phong)
                     scene_graph.AssignRole(
                         plant.get_source_id(),
@@ -98,7 +99,7 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat, pretty: bool):
                 alphas = [0.3, 1.0, 0.3]
                 alpha = alphas[i]
             set_transparency_of_models(plant, [P, M], colors[i % 3], alpha, scene_graph)
-            set_transparency_of_models(plant, [O], [0, 0, 0], 1.0, scene_graph)
+            set_transparency_of_models(plant, [O], colors[i % 3], alpha, scene_graph)
         plant.SetDefaultPositions(P, p.q_r)
         plant_builder.wire_controller(
             P,
@@ -109,7 +110,7 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat, pretty: bool):
             plant,
         )
 
-    meshcat_vis = MeshcatVisualizer.AddToBuilder(
+    MeshcatVisualizer.AddToBuilder(
         builder, scene_graph, meshcat, MeshcatVisualizerParams()
     )
     diagram = builder.Build()
@@ -214,7 +215,7 @@ def show_benchmarks(fname: str):
             plt.xlabel("Amount of Uncertainty (meters)")
         plt.ylabel(dvar)
         plt.legend()
-        plt.savefig(f"{fname[:3]}_{dvar}.png", dpi=1200)
+        plt.savefig(f"logs/{fname[:3]}_{dvar}.png", dpi=1200)
         plt.close()
 
 
@@ -277,7 +278,7 @@ def render_graph(nx_graph: nx.Graph, label_dict):
     node_trace.text = labels
     fig = go.Figure(data=[edge_trace, node_trace])
     fig.update_layout(showlegend=False)
-    fig.write_html("mode_graph.html")
+    fig.write_html("logs/mode_graph.html")
 
 
 def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
@@ -425,7 +426,7 @@ def show_belief_space_traj(traj_fname: str):
         ax.set_yticks([])
         ax.imshow(mpimg.imread(fnames[k]))
     fig.tight_layout()
-    fig.savefig("trajectory.eps", dpi=800)
+    fig.savefig("logs/trajectory.eps", dpi=800)
 
 
 def show_contact_schedule(p: state.Particle):
@@ -460,7 +461,7 @@ def show_contact_schedule(p: state.Particle):
 
     save_trimesh(planar, X_Wo, ax, test_fns=[test_fn, test_fn2], cs=["darkorange", "m"])
     plt.setp(ax.spines.values(), visible=False)
-    fname_saved = "contact_sched.eps"
+    fname_saved = "logs/contact_sched.eps"
     fig.tight_layout()
     fig.savefig(fname_saved)
     return fname_saved
@@ -482,7 +483,7 @@ def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, 
     project_to_planar(b_curr.particles[1], ax1, u=u)
     project_to_planar(b_curr.particles[0], ax2)
     project_to_planar(b_curr.particles[2], ax3)
-    fname_saved = f"planner_step_{i}.eps"
+    fname_saved = f"logs/planner_step_{i}.eps"
     fig.tight_layout()
     fig.savefig(fname_saved, dpi=800)
     return fname_saved

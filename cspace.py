@@ -42,12 +42,12 @@ def render_parts(env: components.Env, rotation: RotationMatrix):
         M_Vreps.append(VPolytope(np.array(toGenerators(H)).T))
         if "4" in str(np.array(toGenerators(H).shape)):
             breakpoint()
-    render_part(M_Vreps, "manipuland.obj")
+    render_part(M_Vreps, "logs/manipuland.obj")
     O_Vreps = list()
     for _, poly in env.O.items():
         H = HPolyhedron(*poly)
         O_Vreps.append(VPolytope(np.array(toGenerators(H)).T))
-    render_part(O_Vreps, "object.obj")
+    render_part(O_Vreps, "logs/object.obj")
 
 
 def join_meshes(meshes: List[trimesh.Trimesh]) -> trimesh.Trimesh:

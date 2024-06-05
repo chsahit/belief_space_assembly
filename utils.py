@@ -35,7 +35,7 @@ def rt_to_str(X: RigidTransform) -> str:
 def dump_traj(
     init_q: np.ndarray,
     traj: List[components.CompliantMotion],
-    fname: str = "traj_out.pkl",
+    fname: str = "logs/traj_out.pkl",
 ):
     tau = [(init_q, components.stiff)]
     for u in traj:
@@ -65,7 +65,7 @@ def result_statistics(results):
     return (mu_np, mu_std), (mu_walltime, std_walltime), (mu_sim_time, std_sim_time), sr
 
 
-def dump_mesh(mesh: trimesh.Trimesh, fname: str = "cspace.obj"):
+def dump_mesh(mesh: trimesh.Trimesh, fname: str = "logs/cspace.obj"):
     joined_mesh_obj = mesh.export(file_type="obj")
     with open(fname, "w") as f:
         f.write(joined_mesh_obj)
@@ -90,7 +90,7 @@ def log_experiment_result(
 def pickle_trajectory(
     p0,
     traj: List[components.CompliantMotion],
-    fname: str = "traj_out.pkl",
+    fname: str = "logs/traj_out.pkl",
     joints: bool = True,
 ):
     data = []

@@ -22,8 +22,10 @@ def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
     return RigidTransform(RollPitchYaw(rpy_deg * np.pi / 180), xyz)
 
 
+# puzzle: finger_width=0.015
+# peg: finger_width=0.03
 def gripper_to_joint_states(
-    X_WG: RigidTransform, plant: MultibodyPlant = None, finger_width=0.015
+    X_WG: RigidTransform, plant: MultibodyPlant = None, finger_width=0.03
 ) -> np.ndarray:
     if plant is None:
         builder = DiagramBuilder()

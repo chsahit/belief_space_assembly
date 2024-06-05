@@ -26,7 +26,7 @@ def make_homing_command(peg_urdf: str = "assets/peg.urdf"):
         RigidTransform(), p0.X_WG, np.diag(components.stiff)
     )
     ik_solver.update_motion_qd(u0)
-    utils.pickle_trajectory(p0, [u0], fname="homing.pkl")
+    utils.pickle_trajectory(p0, [u0], fname="logs/homing.pkl")
     dynamics.simulate(p0, u0, vis=True)
     input()
 
