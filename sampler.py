@@ -10,14 +10,6 @@ import cspace
 import state
 
 gen = np.random.default_rng(0)
-pwx = [0.47, 0.525]
-pwy = [-0.025, 0.025]
-
-
-def in_workspace(pt):
-    x_sat = pt[0] > pwx[0] and pt[0] > pwx[1]
-    y_sat = pt[1] > pwy[0] and pt[1] < pwy[1]
-    return x_sat and y_sat
 
 
 def sample_from_contact(
@@ -48,7 +40,6 @@ def sample_from_contact(
     env_face = HPolyhedron(*p.constraints[ef_name])
     volume_desired = cspace.minkowski_difference(env_face, manip_face)
     scaled_vol = HPolyhedron(volume_desired).Scale(1.01)
-    # scaled_vol_large = HPolyhedron(volume_desired).Scale(1.25)
     goal_loc = np.array([0, 0, 0])
     curr_dist = np.linalg.norm(p.X_WM.translation() - goal_loc)
     attempts = 0

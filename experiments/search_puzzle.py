@@ -1,7 +1,7 @@
 import logging
 import pickle
 
-import puzzle_contact_defs
+import contact_defs
 import state
 import utils
 import visualize
@@ -17,9 +17,9 @@ def run_search(ours: bool = True):
     p2 = init_particle.init_puzzle(X_GM_x=0.01)
     b = state.Belief([p0, p1, p2])
     if ours:
-        result = cobs.cobs(b, puzzle_contact_defs.side)
+        result = cobs.cobs(b, contact_defs.puzzle_goal)
     else:
-        result = ao_b_est.b_est(b, puzzle_contact_defs.side)
+        result = ao_b_est.b_est(b, contact_defs.puzzle_goal)
     if result.traj is not None:
         print("vis")
         utils.log_experiment_result("puzzle_soln.pkl", "result", [result])
@@ -32,27 +32,6 @@ def run_search(ours: bool = True):
         input()
     else:
         logging.error("no soln found")
-
-
-def simple_down():
-    modes = [
-        puzzle_contact_defs.top_touch2,
-        puzzle_contact_defs.bt,
-        puzzle_contact_defs.bottom,
-        puzzle_contact_defs.goal,
-    ]
-    p0 = init_particle.init_puzzle(pitch=2.0)
-    p1 = init_particle.init_puzzle(pitch=-2.0)
-    b = state.Belief([p0, p1])
-    result = refine_motion.randomized_refine(b, modes, max_attempts=10)
-    if result.traj is not None:
-        print("visualize")
-        visualize.play_motions_on_belief(
-            state.Belief([p0, p1]), result.traj, fname="four_deg_mu_33.html"
-        )
-        utils.dump_traj(p1.q_r, result.traj, fname="rot_uncertain.pkl")
-    print(f"elapsed time: {result.total_time}")
-    input()
 
 
 def view_puzzle_soln():

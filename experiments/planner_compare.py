@@ -3,7 +3,6 @@ import traceback
 
 import contact_defs
 import counters
-import puzzle_contact_defs
 import state
 import utils
 import visualize
@@ -33,10 +32,10 @@ def sweep(dof, deviations, geometry):
     print(f"{geometry=}, {dof=}")
     if geometry == "peg":
         initializer = init_particle.init_peg
-        goal = contact_defs.bottom_faces_2
+        goal = contact_defs.peg_goal
     elif geometry == "puzzle":
         initializer = init_particle.init_puzzle
-        goal = puzzle_contact_defs.side
+        goal = contact_defs.puzzle_goal
     else:
         raise NotImplementedError
     experiment_params = itertools.product(deviations, list(planners.keys()))

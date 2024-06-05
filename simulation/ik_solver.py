@@ -16,29 +16,26 @@ from pydrake.all import (
 )
 
 
-def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
+def xyz_rpy_deg(xyz: np.ndarray, rpy_deg: List[float]) -> RigidTransform:
     """Shorthand for defining a pose."""
-    rpy_deg = np.asarray(rpy_deg)
-    return RigidTransform(RollPitchYaw(rpy_deg * np.pi / 180), xyz)
+    rpy_deg_np = np.asarray(rpy_deg)
+    return RigidTransform(RollPitchYaw(rpy_deg_np * np.pi / 180), xyz)
 
 
 # puzzle: finger_width=0.015
 # peg: finger_width=0.03
-def gripper_to_joint_states(
-    X_WG: RigidTransform, plant: MultibodyPlant = None, finger_width=0.03
-) -> np.ndarray:
-    if plant is None:
-        builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.1)
-        parser = Parser(plant)
-        parser.package_map().Add("assets", "assets/")
-        parser.AddModels("assets/panda_arm_hand.urdf")
-        plant.WeldFrames(
-            frame_on_parent_F=plant.world_frame(),
-            frame_on_child_M=plant.GetFrameByName("panda_link0"),
-            X_FM=xyz_rpy_deg([0, 0, 0], [0, 0, 0]),
-        )
-        plant.Finalize()
+def gripper_to_joint_states(X_WG: RigidTransform, finger_width=0.03) -> np.ndarray:
+    builder = DiagramBuilder()
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.1)
+    parser = Parser(plant)
+    parser.package_map().Add("assets", "assets/")
+    parser.AddModels("assets/panda_arm_hand.urdf")
+    plant.WeldFrames(
+        frame_on_parent_F=plant.world_frame(),
+        frame_on_child_M=plant.GetFrameByName("panda_link0"),
+        X_FM=xyz_rpy_deg([0, 0, 0], [0, 0, 0]),
+    )
+    plant.Finalize()
 
     ik = InverseKinematics(plant)
     ik.AddPositionConstraint(

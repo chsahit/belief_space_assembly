@@ -66,7 +66,7 @@ def run_test(planner_name: str, goal: components.ContactState):
 
 def parallel_sweep(planner_name: str, trials: int = 25):
     p = NonDaemonPool(8)
-    arg_list = [(planner_name, contact_defs.bottom_faces_2) for i in range(trials)]
+    arg_list = [(planner_name, contact_defs.peg_goal) for i in range(trials)]
     scores = p.starmap(run_test, arg_list)
     p.close()
     p.join()
@@ -81,7 +81,7 @@ def sweep_geoms(planner_name: str):
         num_succs = 0.0
         for trial in tqdm(range(trials)):
             b0 = make_b0("normal")
-            goal = contact_defs.bottom_faces_2
+            goal = contact_defs.peg_goal
             planner = planners[planner_name]
             plan_result = planner(b0, goal)
             assert plan_result.traj is not None

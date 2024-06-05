@@ -4,8 +4,8 @@ import numpy as np
 from pydrake.all import RigidTransform
 
 import components
+import contact_defs
 import dynamics
-import puzzle_contact_defs
 import state
 import utils
 import visualize
@@ -37,7 +37,7 @@ def test_simulate():
     K = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 600.0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, K)
     p_1 = dynamics.simulate(p_0, u_0, vis=True)
-    print(p_1.satisfies_contact(puzzle_contact_defs.s_bottom))
+    print(p_1.satisfies_contact(contact_defs.puzzle_goal))
     print(f"{p_1.epsilon_contacts()=}")
     X_WG_d1 = utils.xyz_rpy_deg([0.5, 0.03, 0.2], [180, 0, 0])
     K_l = np.array([100.0, 100.0, 100.0, 100.0, 600.0, 100.0])

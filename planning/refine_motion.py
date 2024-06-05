@@ -16,7 +16,7 @@ def randomized_refine(
     search_compliance: bool = True,
     do_gp: bool = True,
     max_attempts: int = 3,
-) -> List[components.CompliantMotion]:
+) -> components.PlanningResult:
     global sample_logs_rr
     last_refined = None
     for attempt in range(max_attempts):

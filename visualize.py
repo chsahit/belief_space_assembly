@@ -1,11 +1,12 @@
 import pickle
 from collections import defaultdict
-from typing import List
+from typing import List, Optional
 
+import matplotlib
+import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
-import trimesh
 from pydrake.all import (
     CollisionFilterDeclaration,
     DiagramBuilder,
@@ -23,17 +24,16 @@ from pydrake.all import (
 from trimesh import proximity
 
 import components
-import contact_defs
 import cspace
 import dynamics
-import sampler
 import state
 import utils
 from planning import stiffness
 from simulation import ik_solver, plant_builder
 
 
-# yoinked from https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
+# yoinked from:
+# https://github.com/mpetersen94/gcs/blob/main/reproduction/prm_comparison/helpers.py
 def set_transparency_of_models(plant, model_instances, color, alpha, scene_graph):
     """Sets the transparency of the given models."""
     inspector = scene_graph.model_inspector()
@@ -145,7 +145,7 @@ def _make_combined_plant(b: state.Belief, meshcat: Meshcat, pretty: bool):
 def play_motions_on_belief(
     b: state.Belief,
     U: List[components.CompliantMotion],
-    fname: str = None,
+    fname: Optional[str] = None,
     pretty: bool = True,
 ):
     meshcat = Meshcat()
@@ -179,8 +179,6 @@ def show_particle(p: state.Particle):
 
 def show_benchmarks(fname: str):
     print(f"displaying: {fname}")
-    import matplotlib.pyplot as plt
-
     with open(fname, "rb") as f:
         data = pickle.load(f)
     for dvar_idx, dvar in enumerate(["simulator_calls", "wall_time", "sim_time"]):
@@ -217,19 +215,6 @@ def show_benchmarks(fname: str):
         plt.legend()
         plt.savefig(f"logs/{fname[:3]}_{dvar}.png", dpi=1200)
         plt.close()
-
-
-def playback_result(b, fname):
-    with open(fname, "rb") as f:
-        data = pickle.load(f)
-    # results = data[("0.009", "True")]
-    results = data[("4", "True")]
-    for result in results:
-        if (result.traj is not None) and len(result.traj) == 4:
-            play_motions_on_belief(b, result.traj)
-            break
-    print("done")
-    input()
 
 
 def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
@@ -381,7 +366,6 @@ def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = Non
     q_M_round = [round(x, 3) for x in q_M]
     q_M_str = r"{}".format(str(q_M_round))
     # ax.xaxis.set_visible(False)
-    import matplotlib.pyplot as plt
 
     plt.setp(ax.spines.values(), visible=False)
     ax.set_xlabel(r"$q_M={}$".format(q_M_str), fontsize=20)
@@ -389,7 +373,6 @@ def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = Non
 
 def show_belief_space_traj(traj_fname: str):
     import matplotlib.image as mpimg
-    import matplotlib.pyplot as plt
 
     with open(traj_fname, "rb") as f:
         dat = pickle.load(f)
@@ -414,28 +397,23 @@ def show_belief_space_traj(traj_fname: str):
         axes.append(fig.add_subplot(2, num_panels - 1, num_panels + j, aspect="equal"))
     for k, ax in enumerate(axes):
         if k == 0:
-            ax.set_xticks([])
-            ax.set_yticks([])
+            no_ticks(ax)
             ax.imshow(mpimg.imread(fnames[k]))
             ax.set_xlabel("Contact Sequence")
             continue
         timestep = k - 1
-        ax.set_xticks([])
+        no_ticks(ax)
         raw_t = r"{}".format(str(timestep))
         ax.set_xlabel(r"$t = {}$".format(raw_t))
-        ax.set_yticks([])
         ax.imshow(mpimg.imread(fnames[k]))
     fig.tight_layout()
     fig.savefig("logs/trajectory.eps", dpi=800)
 
 
 def show_contact_schedule(p: state.Particle):
-    import matplotlib.pyplot as plt
-
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(1, 1, 1, aspect="equal")
-    ax.set_xticks([])
-    ax.set_yticks([])
+    no_ticks(ax)
     ax.set_xlim(left=0.435, right=0.555)
     ax.set_ylim(bottom=0.08, top=0.21)
 
@@ -468,15 +446,12 @@ def show_contact_schedule(p: state.Particle):
 
 
 def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, i: int):
-    import matplotlib.pyplot as plt
-
     fig = plt.figure(figsize=(8, 6))
     ax1 = fig.add_subplot(1, 2, 1, aspect="equal")
     ax2 = fig.add_subplot(2, 2, 2, aspect="equal")
     ax3 = fig.add_subplot(2, 2, 4, aspect="equal")
     for ax in [ax1, ax2, ax3]:
-        ax.set_xticks([])
-        ax.set_yticks([])
+        no_ticks(ax)
         ax.set_xlim(left=0.435, right=0.555)
         ax.set_ylim(bottom=0.08, top=0.21)
         # ax.axis("off")
@@ -487,3 +462,8 @@ def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, 
     fig.tight_layout()
     fig.savefig(fname_saved, dpi=800)
     return fname_saved
+
+
+def no_ticks(ax: matplotlib.axes):
+    ax.set_xticks([])
+    ax.set_yticks([])

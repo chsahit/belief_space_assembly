@@ -28,11 +28,10 @@ def test_simulate():
     # visualize.project_to_planar(p_0)
     t0 = time.time()
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.30], [180, 0, 0])
-    mostly_stiff = np.array([100.0, 100.0, 10.0, 600.0, 600.0, 600.0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
     ik_solver.update_motion_qd(u_0)
     # print(utils.RigidTfToVec(p_0.X_WG))
-    p_1 = dynamics.simulate(p_0, u_0, vis=True)
+    dynamics.simulate(p_0, u_0, vis=True)
     tT = time.time()
     # print(f"{p_1.contacts=}")
     print(f"sim time={tT - t0}")
@@ -41,7 +40,6 @@ def test_simulate():
 
 def test_parallel_sim():
     p0 = init(X_GM_x=-0.002)
-    mostly_stiff = np.array([100.0, 100.0, 15.0, 600.0, 600.0, 600.0])
     p1 = init(X_GM_x=0.002)
     b = state.Belief([p0, p1])
     U = [
@@ -67,26 +65,6 @@ def test_motion_set():
     result_set = dynamics.f_cspace(p0, U)
     for i, pT in enumerate(result_set):
         print(f"particle {i}: {pT.contacts}")
-
-
-def test_belief_dynamics():
-    p0 = init()
-    grasps = [
-        components.Grasp(x=0, z=0.155, pitch=0),
-        components.Grasp(x=0, z=0.154, pitch=0),
-        components.Grasp(x=0, z=0.156, pitch=0),
-    ]
-    bin_poses = [
-        components.ObjectPose(x=0.5, y=0, yaw=0),
-        components.ObjectPose(x=0.5, y=0, yaw=0),
-        components.ObjectPose(x=0.5, y=0, yaw=0),
-    ]
-
-    b0 = state.Belief.make_particles(grasps, bin_poses, p0)
-    X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.2], [180, 0, 0])
-    u0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
-    b1 = dynamics.f_bel(b0, u0)
-    print([p.contacts for p in b1.particles])
 
 
 def test_vis():
@@ -115,7 +93,7 @@ def funny_rcc():
     X_WCd = utils.xyz_rpy_deg([0.45, 0.0, 0.22], [180, 0, 0])
     K_nom = np.array([10.0, 10.0, 10.0, 100.0, 100.0, 600.0])
     u_nom = components.CompliantMotion(X_GC, X_WCd, K_nom)
-    p1 = dynamics.simulate(p0, u_nom, vis=True)
+    dynamics.simulate(p0, u_nom, vis=True)
 
 
 if __name__ == "__main__":

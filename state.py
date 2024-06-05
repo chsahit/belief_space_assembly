@@ -203,29 +203,6 @@ class Belief:
             return 0.0
         return len(intersection) / len(union)
 
-    @staticmethod
-    def make_particles(
-        grasps: List[components.Grasp],
-        O_poses: List[components.ObjectPose],
-        nominal: Particle,
-    ) -> Belief:
-        assert len(grasps) == len(O_poses)
-        particles = []
-        for i in range(len(grasps)):
-            X_GM = grasps[i].get_tf()
-            X_WO = O_poses[i].get_tf()
-            particles.append(
-                Particle(
-                    nominal.q_r,
-                    X_GM,
-                    X_WO,
-                    nominal.env_geom,
-                    nominal.manip_geom,
-                    mu=nominal.mu,
-                )
-            )
-        return Belief(particles)
-
     def mean(self) -> Particle:
         avg_xyz = (1.0 / len(self.particles)) * sum(
             [p.X_WG.translation() for p in self.particles]
