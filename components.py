@@ -5,6 +5,8 @@ import numpy as np
 import trimesh
 from pydrake.all import RigidTransform, RotationMatrix
 
+from simulation import ik_solver
+
 Contact = Tuple[str, str]
 ContactState = FrozenSet[Contact]
 Hull = Tuple[np.ndarray, List[List[float]]]
@@ -20,10 +22,10 @@ class CompliantMotion:
     X_GC: RigidTransform
     X_WCd: RigidTransform
     K: np.ndarray
-    _B: np.ndarray = None
+    _B: Optional[np.ndarray] = None
     timeout: float = 5.0
     is_joint_space: bool = False
-    q_d: np.ndarray = None
+    _q_d: Optional[np.ndarray] = None
 
     @property
     def B(self) -> np.ndarray:
@@ -31,6 +33,13 @@ class CompliantMotion:
             return self._B
         else:
             return 4 * np.sqrt(self.K)
+
+    @property
+    def q_d(self) -> np.ndarray:
+        if self._q_d is None:
+            X_WG = self.X_WCd.multiply(self.X_GC.inverse())
+            self._q_d = ik_solver.gripper_to_joint_states(X_WG)
+        return self._q_d
 
 
 @dataclass

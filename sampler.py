@@ -16,7 +16,6 @@ def sample_from_contact(
     p: state.Particle,
     contact_des: components.ContactState,
     num_samples: int,
-    mesh: trimesh.Trimesh = None,
     num_noise: int = 0,
     seed: int = -1,
     aligned: bool = False,
@@ -27,11 +26,8 @@ def sample_from_contact(
         rotation = p.X_WM.rotation()
     else:
         rotation = RigidTransform().rotation()
-    if mesh is None:
-        p.cspace_repr = cspace.ConstructCspaceSlice(
-            cspace.ConstructEnv(p), rotation
-        ).mesh
-        mesh = p.cspace_repr
+    p.cspace_repr = cspace.ConstructCspaceSlice(cspace.ConstructEnv(p), rotation).mesh
+    mesh = p.cspace_repr
     # utils.dump_mesh(mesh)
     satisfiying_samples = []
     ef_name = list(contact_des)[0][0]

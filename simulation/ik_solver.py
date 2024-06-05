@@ -70,10 +70,3 @@ def gripper_to_joint_states(X_WG: RigidTransform, finger_width=0.03) -> np.ndarr
     result = Solve(ik.prog())
     soln = result.GetSolution(q)
     return soln
-
-
-def update_motion_qd(motion):
-    if motion.q_d is None:
-        X_WG = motion.X_WCd.multiply(motion.X_GC.inverse())
-        motion.q_d = gripper_to_joint_states(X_WG)
-    return motion

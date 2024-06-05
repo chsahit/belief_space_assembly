@@ -155,7 +155,6 @@ def play_motions_on_belief(
     visualizer.StartRecording()
     T = 0.0
     for u in U:
-        u = ik_solver.update_motion_qd(u)
         T += u.timeout
         for i in range(len(b.particles)):
             controller = diagram.GetSubsystemByName("controller_" + str(i))
@@ -173,7 +172,6 @@ def show_particle(p: state.Particle):
     u = components.CompliantMotion(
         RigidTransform(), p.X_WG, components.stiff, timeout=0.0
     )
-    u = ik_solver.update_motion_qd(u)
     dynamics.simulate(p, u, vis=True)
 
 

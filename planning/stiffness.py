@@ -70,7 +70,7 @@ def solve_for_compliance(p: state.Particle) -> np.ndarray:
     K = np.zeros((6, 6))
     K[:3, :3] = K_r  # np.diag(components.stiff[:3])
     K[3:, 3:] = K_t
-    return K, []
+    return K
 
 
 def ablate_compliance() -> np.ndarray:
@@ -85,4 +85,4 @@ def ablate_compliance() -> np.ndarray:
     K = np.zeros((6, 6))
     K[:3, :3] = np.diag(components.very_stiff[:3])  # K_r
     K[3:, 3:] = np.diag(components.very_stiff[3:])  # K_t
-    return K, []
+    return K

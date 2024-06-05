@@ -112,10 +112,9 @@ def refine_b(
     do_gp: bool = True,
 ) -> components.CompliantMotion:
     if search_compliance:
-        K_star, samples = stiffness.solve_for_compliance(random.choice(b.particles))
-        # print(f"{K_star=}, {len(samples)=}")
+        K_star = stiffness.solve_for_compliance(random.choice(b.particles))
     else:
-        K_star, samples = stiffness.ablate_compliance()
+        K_star = stiffness.ablate_compliance()
     logger.info(f"{np.diag(K_star)=}, ")
     best_u_root = None
     best_certainty_all = float("-inf")

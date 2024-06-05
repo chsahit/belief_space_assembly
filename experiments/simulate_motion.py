@@ -29,7 +29,6 @@ def test_simulate():
     t0 = time.time()
     X_WG_d = utils.xyz_rpy_deg([0.5, 0.0, 0.30], [180, 0, 0])
     u_0 = components.CompliantMotion(RigidTransform(), X_WG_d, components.stiff)
-    ik_solver.update_motion_qd(u_0)
     # print(utils.RigidTfToVec(p_0.X_WG))
     dynamics.simulate(p_0, u_0, vis=True)
     tT = time.time()

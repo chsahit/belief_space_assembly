@@ -6,7 +6,6 @@ import trimesh
 from pydrake.all import Quaternion, RigidTransform, RollPitchYaw, RotationMatrix
 
 import components
-from simulation import ik_solver
 
 
 def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
@@ -30,20 +29,6 @@ def rt_to_str(X: RigidTransform) -> str:
     t_str = f"translation: {np.round(X.translation(), 5)}"
     r_str = f"rotation: {np.round(X.rotation().ToRollPitchYaw().vector(), 5)}"
     return t_str + "\n" + r_str
-
-
-def dump_traj(
-    init_q: np.ndarray,
-    traj: List[components.CompliantMotion],
-    fname: str = "logs/traj_out.pkl",
-):
-    tau = [(init_q, components.stiff)]
-    for u in traj:
-        X_WGd = u.X_WCd.multiply(u.X_GC.inverse())
-        u_pkl = (X_WGd.GetAsMatrix4(), u.K)
-        tau.append(u_pkl)
-    with open(fname, "wb") as f:
-        pickle.dump(tau, f)
 
 
 def median_mad(vals: np.ndarray) -> Tuple[float, float]:
@@ -97,7 +82,6 @@ def pickle_trajectory(
     u0 = components.CompliantMotion(
         RigidTransform(), p0.X_WG, np.diag(components.stiff)
     )
-    ik_solver.update_motion_qd(u0)
     traj_ = [u0] + traj
     for u in traj_:
         K = np.copy(u.K)

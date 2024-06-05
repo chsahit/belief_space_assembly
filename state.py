@@ -35,8 +35,6 @@ class Particle:
         self._constraints = None
         self._X_WG = None
         self._manip_poly = None
-        self.trajectory = []
-        self._sim_id = None
         self.cspace_repr = None
         self.noisy = False
 
@@ -134,7 +132,6 @@ class Particle:
         )
         new_p._constraints = self._constraints
         new_p._manip_poly = self._manip_poly
-        new_p._sim_id = self._sim_id
         new_p.noisy = self.noisy
         return new_p
 
@@ -159,16 +156,6 @@ class Belief:
 
     def sample(self) -> Particle:
         return random.choice(self.particles)
-
-    def _contact_sat_dbg(self, CF_d: components.ContactState, epsilon=0.001):
-        satisfies = True
-        for p in self.particles:
-            if not p.satisfies_contact(CF_d, epsilon=epsilon):
-                print("csat failed")
-                satisfies = False
-            else:
-                print("csat succ")
-        return satisfies
 
     def satisfies_contact(self, CF_d: components.ContactState, epsilon=0.001) -> bool:
         for p in self.particles:

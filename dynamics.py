@@ -54,7 +54,6 @@ def simulate(
     controller.kp = motion.K
     controller.noisy = p.noisy
     setpoint = diagram.GetSubsystemByName("setpoint")
-    motion = ik_solver.update_motion_qd(motion)
     setpoint.setpoint = motion.q_d
     assert setpoint.setpoint is not None
     simulator.Initialize()
@@ -174,31 +173,3 @@ def sequential_f_bel(b0: state.Belief, U: List[components.CompliantMotion]):
         bnext = f_bel(traj[-1], u)
         traj.append(bnext)
     return traj
-
-
-def visualize_trajectory(
-    p: state.Particle,
-    U: List[components.CompliantMotion],
-    name: str = "meshcat_html.html",
-):
-    diagram, meshcat = p.make_plant(vis=True)
-    # plant = diagram.GetSubsystemByName("plant")
-    simulator = Simulator(diagram)
-    # plant_context = plant.GetMyContextFromRoot(simulator.get_mutable_context())
-    controller = diagram.GetSubsystemByName("controller")
-    simulator.Initialize()
-    meshcat_vis = diagram.GetSubsystemByName("meshcat_visualizer(visualizer)")
-    meshcat_vis.StartRecording()
-    t_boundary = 0.0
-    for i, u in enumerate(U):
-        controller.motion = u
-        t_boundary += u.timeout
-        try:
-            simulator.AdvanceTo(t_boundary)
-        except Exception as e:
-            print(f"EXCEPTION: {e}")
-            print(f"{u.X_WCd=}, {u.X_GC}")
-            return None
-    meshcat_vis.PublishRecording()
-    with open(name, "w") as f:
-        f.write(meshcat.StaticHtml())

@@ -6,7 +6,6 @@ import utils
 import visualize
 from experiments import init_particle
 from planning import ao_b_est, cobs
-from simulation import ik_solver
 
 
 def auto_tp_sd(ours: bool = True):
@@ -17,8 +16,6 @@ def auto_tp_sd(ours: bool = True):
     b = state.Belief([p0, p1, p2])
     if ours:
         result = cobs.cobs(b, contact_defs.peg_goal, log_samples=False)
-        for u in result.traj:
-            ik_solver.update_motion_qd(u)
         utils.pickle_trajectory(p1, result.traj)
     else:
         result = ao_b_est.b_est(b, contact_defs.peg_goal)
