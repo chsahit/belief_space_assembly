@@ -10,8 +10,9 @@ import components
 
 def xyz_rpy_deg(xyz: List[float], rpy_deg: List[float]) -> RigidTransform:
     """Shorthand for defining a pose."""
-    rpy_deg = np.asarray(rpy_deg)
-    return RigidTransform(RollPitchYaw(rpy_deg * np.pi / 180), xyz)
+    rpy_deg_np = np.asarray(rpy_deg)
+    xyz_np = np.asarray(xyz)
+    return RigidTransform(RollPitchYaw(rpy_deg_np * np.pi / 180), xyz_np)
 
 
 def RigidTfToVec(X: RigidTransform) -> np.ndarray:

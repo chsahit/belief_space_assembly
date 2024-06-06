@@ -223,7 +223,7 @@ def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
         u_noop = components.CompliantMotion(
             RigidTransform(), p_vis.X_WG, components.stiff, timeout=0.001
         )
-        u_noop.q_d = p_vis.q_r
+        u_noop._q_d = p_vis.q_r
         # p_vis.env_geom = "assets/floor.sdf"
         # p_vis.X_WO = RigidTransform([0.5, 0, -1.0])
         dynamics.simulate(p_vis, u_noop, vis=True)
@@ -324,11 +324,11 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
 
 
 def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = None):
-    R_WM_flat = np.copy(p.X_WM.rotation().ToRollPitchYaw().vector())
-    R_WM_flat[0] = 0
-    R_WM_flat[2] = 0
-    R_WM_flat_vec = np.array(R_WM_flat)
-    R_WM_flat = RotationMatrix(RollPitchYaw(R_WM_flat))
+    R_WM_flat_np = np.copy(p.X_WM.rotation().ToRollPitchYaw().vector())
+    R_WM_flat_np[0] = 0
+    R_WM_flat_np[2] = 0
+    R_WM_flat_vec = np.array(R_WM_flat_np)
+    R_WM_flat = RotationMatrix(RollPitchYaw(R_WM_flat_vec))
     p_WM_flat = np.array([p.X_WM.translation()[0], 0, p.X_WM.translation()[2]])
 
     mesh = cspace.ConstructCspaceSlice(cspace.ConstructEnv(p), R_WM_flat).mesh
@@ -462,6 +462,6 @@ def show_belief_space_step(b_curr: state.Belief, u: components.CompliantMotion, 
     return fname_saved
 
 
-def no_ticks(ax: matplotlib.axes):
+def no_ticks(ax: matplotlib.axes.Axes):
     ax.set_xticks([])
     ax.set_yticks([])

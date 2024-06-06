@@ -20,11 +20,11 @@ z_sweep_puzzle = ("X_GM_z", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
 
 planners = {
-    # "cobs": cobs.cobs,
+    "cobs": cobs.cobs,
     # "no_k": cobs.no_k,
-    # "b_est": ao_b_est.b_est,
-    "no_gp": cobs.no_gp,
-    "no_replan": cobs.no_replan,
+    "b_est": ao_b_est.b_est,
+    # "no_gp": cobs.no_gp,
+    # "no_replan": cobs.no_replan,
 }
 
 
@@ -71,8 +71,8 @@ def sweep(dof, deviations, geometry):
 
 
 if __name__ == "__main__":
-    """
     sweep(*pitch_sweep_peg)
+    """
     sweep(*x_sweep_peg)
     sweep(*y_sweep_peg)
     sweep(*pitch_sweep_puzzle)

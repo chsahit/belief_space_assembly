@@ -9,7 +9,6 @@ from pydrake.all import Simulator
 import components
 import counters
 import state
-from simulation import ik_solver
 
 
 def AdvanceToWithTimeout(
@@ -68,7 +67,7 @@ def simulate(
             print(f"{motion.X_WCd=}, {motion.X_GC}")
             return None
         meshcat_vis.PublishRecording()
-        with open("meshcat_html.html", "w") as f:
+        with open("logs/meshcat_html.html", "w") as f:
             f.write(meshcat.StaticHtml())
     else:
         AdvanceToWithTimeout(simulator, motion.timeout)

@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import List
+from typing import List, Optional, Tuple
 
 import numpy as np
 from pydrake.all import RigidTransform
@@ -16,19 +16,18 @@ gen = np.random.default_rng(1)
 np.set_printoptions(precision=3, suppress=True)
 sample_logs = []
 logger = logging.getLogger(__name__)
+Data = Tuple[List[components.CompliantMotion], List[float]]
 
 
-def evaluate_K(
+def compute_motions_from_particle(
     p: state.Particle,
     CF_d: components.ContactState,
     K: np.ndarray,
-    targets: List[RigidTransform] = None,
-) -> List[components.CompliantMotion]:
+) -> Tuple[List[components.CompliantMotion], Data]:
     global sample_logs
     scores = []
     negative_motions = []
-    if targets is None:
-        targets = sampler.sample_from_contact(p, CF_d, num_samples=32, num_noise=32)
+    targets = sampler.sample_from_contact(p, CF_d, num_samples=32, num_noise=32)
     sample_logs.append([target.multiply(p.X_GM) for target in targets])
     X_GC = RigidTransform([0, 0, 0.0])
     targets = [target.multiply(X_GC) for target in targets]
@@ -52,15 +51,13 @@ def evaluate_K(
     return U, (negative_motions, scores)
 
 
-def score_tree_root(
+def compute_best_motion(
     b: state.Belief,
-    CF_d: components.CompliantMotion,
+    CF_d: components.ContactState,
     K_star: np.ndarray,
     p_idx: int = 0,
-    validated_samples=[],
-) -> components.CompliantMotion:
-    U0, data = evaluate_K(b.particles[p_idx], CF_d, K_star)
-    U0 = U0 + validated_samples
+) -> Tuple[components.CompliantMotion, float, bool, Data]:
+    U0, data = compute_motions_from_particle(b.particles[p_idx], CF_d, K_star)
     if len(U0) == 0:
         return None, float("-inf"), False, ([], [])
     posteriors = dynamics.parallel_f_bel(b, U0)
@@ -110,7 +107,7 @@ def refine_b(
     CF_d: components.ContactState,
     search_compliance: bool,
     do_gp: bool = True,
-) -> components.CompliantMotion:
+) -> Optional[components.CompliantMotion]:
     if search_compliance:
         K_star = stiffness.solve_for_compliance(random.choice(b.particles))
     else:
@@ -120,12 +117,8 @@ def refine_b(
     best_certainty_all = float("-inf")
     data = [[], []]
     for p_idx, p in enumerate(b.particles):
-        if p_idx == 0:
-            validated_samples = samples
-        else:
-            validated_samples = []
-        best_u_i, certainty_i, success, data_i = score_tree_root(
-            b, CF_d, K_star, p_idx=p_idx, validated_samples=validated_samples
+        best_u_i, certainty_i, success, data_i = compute_best_motion(
+            b, CF_d, K_star, p_idx=p_idx
         )
         data[0] += data_i[0]
         data[1] += data_i[1]

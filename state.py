@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import random
 from multiprocessing import Process, Queue
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import numpy.linalg as la
-from pydrake.all import RigidTransform, System
+from pydrake.all import Diagram, Meshcat, RigidTransform
 
 import components
 from simulation import plant_builder
@@ -43,7 +43,7 @@ class Particle:
         vis: bool = False,
         collision: bool = False,
         meshcat_instance=None,
-    ) -> System:
+    ) -> Tuple[Diagram, Meshcat]:
         return plant_builder.make_plant(
             self.q_r,
             self.X_GM,
@@ -197,7 +197,7 @@ class Belief:
         best_particle = None
         smallest_diff = float("inf")
         for p in self.particles:
-            diff = np.linalg.norm(p.X_WG.translation() - avg_xyz)
+            diff = float(np.linalg.norm(p.X_WG.translation() - avg_xyz))
             if diff < smallest_diff:
                 smallest_diff = diff
                 best_particle = p

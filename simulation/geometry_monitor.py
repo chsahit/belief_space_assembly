@@ -56,7 +56,7 @@ class GeometryMonitor(LeafSystem):
                     query_obj, g_id, reference_frame=frame_id_local
                 )
                 self.manip_poly[name] = (polyhedron.A(), polyhedron.b())
-                success = self.aa_compute_fine_geometries(
+                self.aa_compute_fine_geometries(
                     name, self.manip_poly, polyhedron.A(), polyhedron.b()
                 )
 
