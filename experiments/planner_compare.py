@@ -39,7 +39,7 @@ def sweep(dof, deviations, geometry):
     else:
         raise NotImplementedError
     experiment_params = itertools.product(deviations, list(planners.keys()))
-    fname = dof + "_" + geometry + "_" + "sweep_results.pkl"
+    fname = "logs/" + dof + "_" + geometry + "_" + "sweep_results.pkl"
     for deviation, planner in experiment_params:
         print(f"{deviation=}, {planner=}")
         kwarg_0 = {dof: -deviation}
