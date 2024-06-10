@@ -78,7 +78,7 @@ def make_kdtree(xlims: Bound, ylims: Bound, zlims: Bound, bins: int) -> KDTree:
 
 def sample_control(b: state.Belief) -> components.CompliantMotion:
     X_GC = RigidTransform()
-    K = components.stiff
+    K = np.diag(components.stiff)
     # r_vel = gen.uniform(low=-0.02, high=0.02, size=3)
     r_vel = np.zeros((3,))
     # t_vel = gen.uniform(low=-0.01, high=0.01, size=3)

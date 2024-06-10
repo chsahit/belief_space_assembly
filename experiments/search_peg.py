@@ -10,9 +10,9 @@ from planning import ao_b_est, cobs
 
 def auto_tp_sd(ours: bool = True):
     # p0 = init_particle.init_peg(y=-0.015)
-    p0 = init_particle.init_peg(y=-0.01)
+    p0 = init_particle.init_peg(y=-0.01, pitch=-2)
     p1 = init_particle.init_peg(pitch=0)
-    p2 = init_particle.init_peg(y=0.01)
+    p2 = init_particle.init_peg(y=0.01, pitch=2)
     b = state.Belief([p0, p1, p2])
     if ours:
         result = cobs.cobs(b, contact_defs.peg_goal, log_samples=False)
@@ -43,6 +43,6 @@ def view_peg_soln():
 
 
 if __name__ == "__main__":
-    view_peg_soln()
-    # auto_tp_sd(ours=True)
+    # view_peg_soln()
+    auto_tp_sd(ours=True)
     # show_planner_trace()

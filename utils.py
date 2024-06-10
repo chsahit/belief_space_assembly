@@ -81,7 +81,7 @@ def pickle_trajectory(
 ):
     data = []
     u0 = components.CompliantMotion(
-        RigidTransform(), p0.X_WG, np.diag(components.stiff)
+        RigidTransform(), p0.X_WG, np.diag(components.very_stiff)
     )
     traj_ = [u0] + traj
     for u in traj_:
