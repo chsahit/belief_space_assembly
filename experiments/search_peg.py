@@ -44,5 +44,5 @@ def view_peg_soln():
 
 if __name__ == "__main__":
     # view_peg_soln()
-    auto_tp_sd(ours=True)
-    # show_planner_trace()
+    # auto_tp_sd(ours=True)
+    show_planner_trace()
