@@ -1,6 +1,8 @@
 import itertools
 import traceback
 
+import numpy as np
+
 import contact_defs
 import counters
 import state
@@ -9,7 +11,7 @@ import visualize
 from experiments import init_particle
 from planning import ao_b_est, cobs
 
-pitch_sweep_peg = ("pitch", [1, 2, 3, 4], "peg")
+pitch_sweep_peg = ("pitch", [4], "peg")
 x_sweep_peg = ("X_GM_x", [0.01, 0.02], "peg")
 y_sweep_peg = ("y", [0.01, 0.02], "peg")
 
@@ -20,7 +22,7 @@ z_sweep_puzzle = ("X_GM_z", [0.0025, 0.005, 0.01, 0.015, 0.02], "puzzle")
 z_sweep_peg = ("X_GM_z", [0.005, 0.01, 0.015, 0.02], "peg")
 
 planners = {
-    "cobs": cobs.cobs,
+    # "cobs": cobs.cobs,
     # "no_k": cobs.no_k,
     "b_est": ao_b_est.b_est,
     # "no_gp": cobs.no_gp,
@@ -39,7 +41,7 @@ def sweep(dof, deviations, geometry):
     else:
         raise NotImplementedError
     experiment_params = itertools.product(deviations, list(planners.keys()))
-    fname = dof + "_" + geometry + "_" + "sweep_results.pkl"
+    fname = "logs/" + dof + "_" + geometry + "_" + "sweep_results.pkl"
     for deviation, planner in experiment_params:
         print(f"{deviation=}, {planner=}")
         kwarg_0 = {dof: -deviation}
@@ -70,6 +72,20 @@ def sweep(dof, deviations, geometry):
         print("\n")
 
 
+def dat_to_csv(all_dat):
+    csv = ""
+    for dat in all_dat:
+        for k, v in dat.items():
+            row = str(k[0]) + "," + str(k[1]) + "," + str(k[2]) + ","
+            for time in v:
+                t_str = str(np.round(time, 5)) + ","
+                row += t_str
+            csv += row
+            csv += "\n"
+    with open("all_data.csv", "w") as f:
+        f.write(csv)
+
+
 if __name__ == "__main__":
     sweep(*pitch_sweep_peg)
     """
@@ -78,7 +94,12 @@ if __name__ == "__main__":
     sweep(*pitch_sweep_puzzle)
     sweep(*y_sweep_puzzle)
     """
+    all_data = []
     # sweep(*x_sweep_puzzle)
-    visualize.show_benchmarks("pitch_puzzle_sweep_results.pkl")
-    visualize.show_benchmarks("X_GM_x_puzzle_sweep_results.pkl")
-    visualize.show_benchmarks("y_puzzle_sweep_results.pkl")
+    all_data.append(visualize.show_benchmarks("logs/pitch_peg_sweep_results.pkl"))
+    all_data.append(visualize.show_benchmarks("logs/X_GM_x_peg_sweep_results.pkl"))
+    all_data.append(visualize.show_benchmarks("logs/y_peg_sweep_results.pkl"))
+    all_data.append(visualize.show_benchmarks("logs/pitch_puzzle_sweep_results.pkl"))
+    all_data.append(visualize.show_benchmarks("logs/X_GM_x_puzzle_sweep_results.pkl"))
+    all_data.append(visualize.show_benchmarks("logs/y_puzzle_sweep_results.pkl"))
+    dat_to_csv(all_data)

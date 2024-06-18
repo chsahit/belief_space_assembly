@@ -177,11 +177,23 @@ def show_particle(p: state.Particle):
 
 def show_benchmarks(fname: str):
     print(f"displaying: {fname}")
+    full_dist = dict()
     with open(fname, "rb") as f:
         data = pickle.load(f)
     for dvar_idx, dvar in enumerate(["simulator_calls", "wall_time", "sim_time"]):
         trends = defaultdict(list)
         for params, results in data.items():
+            p_to_report = params[1] in ["cobs", "no_k", "b_est"]
+            float_dev = float(params[0])
+            if float_dev < 1:
+                dev_to_report = True
+            else:
+                dev_to_report = (int(float_dev) == float_dev) and float_dev < 5
+            if p_to_report and dev_to_report:
+                name, dev = (params[1], str(params[0]))
+                full_dist[(name, dev, fname)] = [
+                    result.total_time for result in results
+                ]
             stats = utils.result_statistics(results)
             mu, std = stats[dvar_idx]
             trends[params[1]].append((params[0], (mu, mu - std, mu + std)))
@@ -211,8 +223,9 @@ def show_benchmarks(fname: str):
             plt.xlabel("Amount of Uncertainty (meters)")
         plt.ylabel(dvar)
         plt.legend()
-        plt.savefig(f"logs/{fname[:3]}_{dvar}.png", dpi=1200)
+        # plt.savefig(f"logs/{fname[:3]}_{dvar}.png", dpi=1200)
         plt.close()
+    return full_dist
 
 
 def visualize_targets(p_nom: state.Particle, targets: List[RigidTransform]):
@@ -267,7 +280,7 @@ def render_graph(nx_graph: nx.Graph, label_dict):
 def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
     from matplotlib.patches import Polygon
 
-    ax.set_aspect("equal", "datalim")
+    ax.set_aspect("equal", adjustable="datalim")
     # hardcode a format for each entity type
     eformat = {
         "Line0": {"color": "g", "linewidth": 1},
@@ -293,7 +306,7 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
         fmt = eformat[e_key].copy()
         if hasattr(entity, "color"):
             # if entity has specified color use it
-            fmt["color"] = "lightsteelblue"
+            fmt["color"] = "powderblue"
             # if len(test_fns) > 0:
             #     fmt["linestyle"] = "dotted"
         xs = []
@@ -306,8 +319,9 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
             ys.append(coord_W[2])
             pts.append([coord_W[0], coord_W[2]])
         pts = np.array(pts)
-        ax.add_patch(Polygon(pts, facecolor="lightsteelblue"))
+        ax.add_patch(Polygon(pts, facecolor="powderblue"))
         # ax.plot(xs, ys, **fmt)
+        """
         for c_idx, test_fn in enumerate(test_fns):
             colored_xs = []
             colored_ys = []
@@ -318,9 +332,12 @@ def save_trimesh(slice_2D, tf, ax, test_fns=[], cs=[]):
             fmt["color"] = cs[c_idx]
             fmt["linewidth"] = 2
             ax.plot(colored_xs, colored_ys, **fmt)
+        """
+        """
         if len(test_fns) > 0:
             ax.text(0.495, 0.081, r"$c_2$", color="m", fontsize=28)
-            ax.text(0.51, 0.125, r"$c_1$", color="darkorange", fontsize=28)
+            ax.text(0.51, 0.125, r"$c_1$", color='#F17B0E', fontsize=28)
+        """
 
 
 def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = None):
@@ -351,7 +368,7 @@ def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = Non
         pose_t2 = [closest[0][0], closest[0][2]]
     else:
         pose_t2 = [pose_t2[0][0], pose_t2[0][2]]
-    ax.plot(*pose_t2, "ro")
+    ax.plot(*pose_t2, "ro", markersize=8)
     if compliance_dir is not None and u is not None:
         normed_dir = 0.025 * (compliance_dir / np.linalg.norm(compliance_dir))
         arrow_mags = [normed_dir[0], normed_dir[2]]
@@ -359,7 +376,7 @@ def project_to_planar(p: state.Particle, ax, u: components.CompliantMotion = Non
     if u is not None:
         u_WM = u.X_WCd.multiply(p.X_GM)
         sp = [u_WM.translation()[0], u_WM.translation()[2]]
-        ax.plot(*sp, "go")
+        ax.plot(*sp, "go", markersize=8)
     q_M = [p_WM_flat[0], p_WM_flat[2], (180.0 * R_WM_flat_vec[1] / np.pi)]
     q_M_round = [round(x, 3) for x in q_M]
     q_M_str = r"{}".format(str(q_M_round))
@@ -412,8 +429,9 @@ def show_contact_schedule(p: state.Particle):
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(1, 1, 1, aspect="equal")
     no_ticks(ax)
-    ax.set_xlim(left=0.435, right=0.555)
-    ax.set_ylim(bottom=0.08, top=0.21)
+    ax.set_xlim(left=0.455, right=0.535)
+    # ax.set_ylim(bottom=0.08, top=0.21)
+    ax.set_ylim(bottom=0.00, top=0.15)
 
     R_WM_flat = np.copy(p.X_WM.rotation().ToRollPitchYaw().vector())
     R_WM_flat[0] = 0
@@ -421,6 +439,8 @@ def show_contact_schedule(p: state.Particle):
     R_WM_flat = RotationMatrix(RollPitchYaw(R_WM_flat))
 
     mesh = cspace.ConstructCspaceSlice(cspace.ConstructEnv(p), R_WM_flat).mesh
+    _, Obj = cspace.render_parts(cspace.ConstructEnv(p), RotationMatrix())
+    mesh = Obj
 
     cross_section = mesh.section(
         plane_origin=np.array([0.5, 0.0, 0.0]), plane_normal=([0, 1, 0])
@@ -435,10 +455,11 @@ def show_contact_schedule(p: state.Particle):
     def test_fn2(pt_x, pt_z):
         return pt_z < 0.09 and pt_z > 0.079
 
-    save_trimesh(planar, X_Wo, ax, test_fns=[test_fn, test_fn2], cs=["darkorange", "m"])
+    save_trimesh(planar, X_Wo, ax, test_fns=[test_fn, test_fn2], cs=["#F17B0E", "m"])
     plt.setp(ax.spines.values(), visible=False)
-    fname_saved = "logs/contact_sched.eps"
+    fname_saved = "logs/contact_sched.png"
     fig.tight_layout()
+    print("saved")
     fig.savefig(fname_saved)
     return fname_saved
 
