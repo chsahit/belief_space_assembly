@@ -17,11 +17,11 @@ def auto_tp_sd(ours: bool = True):
     if ours:
         result = cobs.cobs(b, contact_defs.peg_goal, log_samples=False)
         assert result.traj is not None
-        utils.pickle_trajectory(p1, result.traj)
+        # utils.pickle_trajectory(p1, result.traj)
     else:
         result = ao_b_est.b_est(b, contact_defs.peg_goal)
     if result.traj is not None:
-        utils.log_experiment_result("logs/peg_soln.pkl", "result", [result])
+        # utils.log_experiment_result("logs/peg_soln.pkl", "result", [result])
         visualize.play_motions_on_belief(state.Belief([p0, p1, p2]), result.traj)
         input()
 
@@ -44,5 +44,5 @@ def view_peg_soln():
 
 if __name__ == "__main__":
     # view_peg_soln()
-    # auto_tp_sd(ours=True)
-    show_planner_trace()
+    auto_tp_sd(ours=True)
+    # show_planner_trace()

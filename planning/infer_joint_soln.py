@@ -130,5 +130,10 @@ def infer(
                 nominal.X_GC, nominal.X_WCd.multiply(X), nominal.K
             )
         )
+        X_WGd = U[-1].X_WCd.multiply(U[-1].X_GC.inverse())
+        nominal_X_WGd = nominal.X_WCd.multiply(nominal.X_GC.inverse())
+        assert nominal._offset is not None
+        nominal_X_WG = nominal_X_WGd.multiply(nominal._offset.inverse())
+        U[-1]._offset = nominal_X_WG.InvertAndCompose(X_WGd)
 
     return U

@@ -53,7 +53,7 @@ def simulate(
     controller.kp = motion.K
     controller.noisy = p.noisy
     setpoint = diagram.GetSubsystemByName("setpoint")
-    setpoint.setpoint = motion.q_d
+    setpoint.setpoint = motion.q_d(p.X_WG)
     assert setpoint.setpoint is not None
     simulator.Initialize()
 

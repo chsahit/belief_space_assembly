@@ -29,6 +29,7 @@ class CompliantMotion:
     timeout: float = 5.0
     is_joint_space: bool = False
     _q_d: Optional[np.ndarray] = None
+    _offset: Optional[RigidTransform] = None
 
     @property
     def B(self) -> np.ndarray:
@@ -37,11 +38,20 @@ class CompliantMotion:
         else:
             return 4 * np.sqrt(self.K)
 
+    """
     @property
     def q_d(self) -> np.ndarray:
         if self._q_d is None:
             X_WG = self.X_WCd.multiply(self.X_GC.inverse())
             self._q_d = ik_solver.gripper_to_joint_states(X_WG)
+        return self._q_d
+    """
+
+    # @property
+    def q_d(self, X_WG: RigidTransform) -> np.ndarray:
+        if self._q_d is None:
+            X_WGd = X_WG.multiply(self._offset)
+            self._q_d = ik_solver.gripper_to_joint_states(X_WGd)
         return self._q_d
 
 

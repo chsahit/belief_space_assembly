@@ -33,6 +33,9 @@ def compute_motions_from_particle(
     targets = [target.multiply(X_GC) for target in targets]
     # visualize.visualize_targets(p, targets)
     motions = [components.CompliantMotion(X_GC, target, K) for target in targets]
+    for motion in motions:
+        X_WGd = motion.X_WCd.multiply(motion.X_GC.inverse())
+        motion._offset = p.X_WG.InvertAndCompose(X_WGd)
     # for m in motions:
     #     dynamics.simulate(p, m, vis=True)
     # breakpoint()

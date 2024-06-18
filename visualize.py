@@ -159,7 +159,7 @@ def play_motions_on_belief(
         for i in range(len(b.particles)):
             controller = diagram.GetSubsystemByName("controller_" + str(i))
             setpoint = diagram.GetSubsystemByName("setpoint_" + str(i))
-            setpoint.setpoint = u.q_d
+            setpoint.setpoint = u.q_d(b.particles[i].X_WG)
             controller.kp = u.K
         simulator.AdvanceTo(T)
     visualizer.PublishRecording()
