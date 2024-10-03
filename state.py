@@ -214,7 +214,7 @@ class Belief:
     def direction(self) -> np.ndarray:
         qs = np.array([p.X_WM.translation() for p in self.particles])
         qs_normalized = qs - np.mean(qs)
-        cov = np.cov(qs_normalized, rowvar=True)
+        cov = np.cov(qs_normalized, rowvar=False)
         evals, evecs = la.eig(cov)
         idx = np.argsort(evals)
         return evecs[idx[0]]

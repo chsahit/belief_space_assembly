@@ -52,7 +52,7 @@ def sample_from_contact(
         attempts += 1
         if attempts > 5000 and len(satisfiying_samples) < (num_samples / 2.0):
             if not aligned:
-                print("using aligned sampler")
+                # print("using aligned sampler")
                 return sample_from_contact(
                     p,
                     contact_des,
